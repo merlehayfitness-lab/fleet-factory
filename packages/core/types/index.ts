@@ -24,6 +24,7 @@ export type AgentStatus =
   | "provisioning"
   | "active"
   | "paused"
+  | "frozen"
   | "error"
   | "retired";
 

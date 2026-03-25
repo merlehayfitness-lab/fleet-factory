@@ -14,3 +14,36 @@ export type {
 export { createBusinessSchema } from "./tenant/schema";
 export type { CreateBusinessInput } from "./tenant/schema";
 export { provisionBusinessTenant } from "./tenant/provision";
+
+// Agent lifecycle
+export {
+  canTransition,
+  assertTransition,
+  getValidTransitions,
+  VALID_TRANSITIONS,
+} from "./agent/lifecycle";
+
+// Agent service
+export {
+  transitionAgentStatus,
+  updateAgentConfig,
+} from "./agent/service";
+
+// Template schema
+export {
+  createTemplateSchema,
+  updateTemplateSchema,
+} from "./agent/template-schema";
+export type {
+  CreateTemplateInput,
+  UpdateTemplateInput,
+} from "./agent/template-schema";
+
+// Template service
+export {
+  getTemplates,
+  getTemplateById,
+  createTemplate,
+  updateTemplate,
+  deleteTemplate,
+} from "./agent/template-service";

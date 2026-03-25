@@ -1,0 +1,329 @@
+-- Combined schema for Agency Factory
+-- Paste this entire file into Supabase SQL Editor and run it.
+
+-- 001: Businesses
+CREATE TABLE IF NOT EXISTS public.businesses (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name text NOT NULL,
+  slug text NOT NULL UNIQUE,
+  industry text DEFAULT 'general',
+  status text NOT NULL DEFAULT 'provisioning'
+    CHECK (status IN ('provisioning', 'active', 'suspended', 'disabled')),
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+ALTER TABLE public.businesses ENABLE ROW LEVEL SECURITY;
+
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN NEW.updated_at = now(); RETURN NEW; END; $$;
+
+DROP TRIGGER IF EXISTS set_businesses_updated_at ON public.businesses;
+CREATE TRIGGER set_businesses_updated_at BEFORE UPDATE ON public.businesses
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- 002: Profiles
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
+  email text,
+  full_name text,
+  avatar_url text,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+
+DROP TRIGGER IF EXISTS set_profiles_updated_at ON public.profiles;
+CREATE TRIGGER set_profiles_updated_at BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, avatar_url)
+  VALUES (NEW.id, NEW.email,
+    COALESCE(NEW.raw_user_meta_data ->> 'full_name', ''),
+    COALESCE(NEW.raw_user_meta_data ->> 'avatar_url', ''));
+  RETURN NEW;
+END; $$;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- 003: Business Users
+CREATE TABLE IF NOT EXISTS public.business_users (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES auth.users ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('owner', 'admin', 'manager', 'member')),
+  created_at timestamptz DEFAULT now() NOT NULL,
+  UNIQUE (business_id, user_id)
+);
+ALTER TABLE public.business_users ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_business_users_business_user ON public.business_users (business_id, user_id);
+
+-- 004: Departments
+CREATE TABLE IF NOT EXISTS public.departments (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  name text NOT NULL,
+  type text NOT NULL CHECK (type IN ('owner', 'sales', 'support', 'operations', 'custom')),
+  description text,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_departments_business_type ON public.departments (business_id, type);
+DROP TRIGGER IF EXISTS set_departments_updated_at ON public.departments;
+CREATE TRIGGER set_departments_updated_at BEFORE UPDATE ON public.departments
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- 005: Agent Templates
+CREATE TABLE IF NOT EXISTS public.agent_templates (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name text NOT NULL,
+  department_type text NOT NULL,
+  description text,
+  system_prompt text NOT NULL,
+  tool_profile jsonb DEFAULT '{}',
+  model_profile jsonb DEFAULT '{}',
+  is_active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+ALTER TABLE public.agent_templates ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_agent_templates_department_type ON public.agent_templates (department_type);
+DROP TRIGGER IF EXISTS set_agent_templates_updated_at ON public.agent_templates;
+CREATE TRIGGER set_agent_templates_updated_at BEFORE UPDATE ON public.agent_templates
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+INSERT INTO public.agent_templates (name, department_type, description, system_prompt, tool_profile, model_profile)
+VALUES
+  ('Owner Agent', 'owner', 'Business owner oversight and strategy agent',
+   'You are an owner agent for {{business_name}}. You help with business oversight, strategy, and high-level decision making.', '{}', '{}'),
+  ('Sales Agent', 'sales', 'Lead generation, outreach, and deal management agent',
+   'You are a sales agent for {{business_name}}. You help with lead generation, outreach, and deal management.', '{}', '{}'),
+  ('Support Agent', 'support', 'Customer support and ticket resolution agent',
+   'You are a support agent for {{business_name}}. You help with customer support and ticket resolution.', '{}', '{}'),
+  ('Operations Agent', 'operations', 'Internal operations, scheduling, and process management agent',
+   'You are an operations agent for {{business_name}}. You help with internal operations, scheduling, and process management.', '{}', '{}')
+ON CONFLICT DO NOTHING;
+
+-- 006: Agents
+CREATE TABLE IF NOT EXISTS public.agents (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  department_id uuid NOT NULL REFERENCES public.departments ON DELETE CASCADE,
+  template_id uuid NOT NULL REFERENCES public.agent_templates,
+  name text NOT NULL,
+  system_prompt text NOT NULL,
+  tool_profile jsonb DEFAULT '{}',
+  model_profile jsonb DEFAULT '{}',
+  status text NOT NULL DEFAULT 'provisioning'
+    CHECK (status IN ('provisioning', 'active', 'paused', 'error', 'retired')),
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+ALTER TABLE public.agents ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_agents_business_department ON public.agents (business_id, department_id);
+DROP TRIGGER IF EXISTS set_agents_updated_at ON public.agents;
+CREATE TRIGGER set_agents_updated_at BEFORE UPDATE ON public.agents
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+-- 007: Deployments
+CREATE TABLE IF NOT EXISTS public.deployments (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  version integer NOT NULL DEFAULT 1,
+  status text NOT NULL DEFAULT 'queued'
+    CHECK (status IN ('queued', 'building', 'deploying', 'live', 'failed', 'rolled_back')),
+  config_snapshot jsonb,
+  error_message text,
+  started_at timestamptz,
+  completed_at timestamptz,
+  created_at timestamptz DEFAULT now() NOT NULL
+);
+ALTER TABLE public.deployments ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_deployments_business_created ON public.deployments (business_id, created_at DESC);
+
+-- 008: Audit Logs
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  actor_id uuid REFERENCES auth.users,
+  action text NOT NULL,
+  entity_type text,
+  entity_id uuid,
+  metadata jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now() NOT NULL
+);
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_audit_logs_business_created ON public.audit_logs (business_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_business_action ON public.audit_logs (business_id, action);
+
+-- 009: RLS Helpers
+CREATE OR REPLACE FUNCTION public.is_business_member(p_business_id uuid)
+RETURNS boolean LANGUAGE sql SECURITY DEFINER SET search_path = '' AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.business_users bu
+    JOIN public.businesses b ON b.id = bu.business_id
+    WHERE bu.user_id = (SELECT auth.uid())
+      AND bu.business_id = p_business_id
+      AND b.status != 'disabled'
+  );
+$$;
+
+CREATE OR REPLACE FUNCTION public.has_role_on_business(p_business_id uuid, p_role text DEFAULT NULL)
+RETURNS boolean LANGUAGE sql SECURITY DEFINER SET search_path = '' AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.business_users bu
+    JOIN public.businesses b ON b.id = bu.business_id
+    WHERE bu.user_id = (SELECT auth.uid())
+      AND bu.business_id = p_business_id
+      AND b.status != 'disabled'
+      AND (p_role IS NULL OR bu.role = p_role)
+  );
+$$;
+
+-- 010: RLS Policies
+CREATE POLICY "businesses_select_member" ON public.businesses FOR SELECT TO authenticated
+  USING (public.is_business_member(id));
+CREATE POLICY "businesses_insert_authenticated" ON public.businesses FOR INSERT TO authenticated
+  WITH CHECK (true);
+CREATE POLICY "businesses_update_owner" ON public.businesses FOR UPDATE TO authenticated
+  USING (public.has_role_on_business(id, 'owner')) WITH CHECK (public.has_role_on_business(id, 'owner'));
+CREATE POLICY "businesses_delete_owner" ON public.businesses FOR DELETE TO authenticated
+  USING (public.has_role_on_business(id, 'owner'));
+
+CREATE POLICY "profiles_select_own" ON public.profiles FOR SELECT TO authenticated
+  USING (auth.uid() = id);
+CREATE POLICY "profiles_update_own" ON public.profiles FOR UPDATE TO authenticated
+  USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+CREATE POLICY "business_users_select_member" ON public.business_users FOR SELECT TO authenticated
+  USING (public.is_business_member(business_id));
+CREATE POLICY "business_users_insert_owner" ON public.business_users FOR INSERT TO authenticated
+  WITH CHECK (public.has_role_on_business(business_id, 'owner'));
+CREATE POLICY "business_users_update_owner" ON public.business_users FOR UPDATE TO authenticated
+  USING (public.has_role_on_business(business_id, 'owner')) WITH CHECK (public.has_role_on_business(business_id, 'owner'));
+CREATE POLICY "business_users_delete_owner" ON public.business_users FOR DELETE TO authenticated
+  USING (public.has_role_on_business(business_id, 'owner'));
+
+CREATE POLICY "departments_select_member" ON public.departments FOR SELECT TO authenticated
+  USING (public.is_business_member(business_id));
+CREATE POLICY "departments_insert_owner_admin" ON public.departments FOR INSERT TO authenticated
+  WITH CHECK (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+CREATE POLICY "departments_update_owner_admin" ON public.departments FOR UPDATE TO authenticated
+  USING (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'))
+  WITH CHECK (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+CREATE POLICY "departments_delete_owner_admin" ON public.departments FOR DELETE TO authenticated
+  USING (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+
+CREATE POLICY "agent_templates_select_authenticated" ON public.agent_templates FOR SELECT TO authenticated
+  USING (true);
+
+CREATE POLICY "agents_select_member" ON public.agents FOR SELECT TO authenticated
+  USING (public.is_business_member(business_id));
+CREATE POLICY "agents_insert_owner_admin" ON public.agents FOR INSERT TO authenticated
+  WITH CHECK (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+CREATE POLICY "agents_update_owner_admin" ON public.agents FOR UPDATE TO authenticated
+  USING (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'))
+  WITH CHECK (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+CREATE POLICY "agents_delete_owner_admin" ON public.agents FOR DELETE TO authenticated
+  USING (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+
+CREATE POLICY "deployments_select_member" ON public.deployments FOR SELECT TO authenticated
+  USING (public.is_business_member(business_id));
+CREATE POLICY "deployments_insert_owner_admin" ON public.deployments FOR INSERT TO authenticated
+  WITH CHECK (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+CREATE POLICY "deployments_update_owner_admin" ON public.deployments FOR UPDATE TO authenticated
+  USING (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'))
+  WITH CHECK (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+
+CREATE POLICY "audit_logs_select_member" ON public.audit_logs FOR SELECT TO authenticated
+  USING (public.is_business_member(business_id));
+CREATE POLICY "audit_logs_insert_authenticated" ON public.audit_logs FOR INSERT TO authenticated
+  WITH CHECK (public.is_business_member(business_id));
+
+-- 010: Provision RPC
+CREATE OR REPLACE FUNCTION public.provision_business_tenant(
+  p_name text, p_slug text, p_industry text DEFAULT 'general'
+) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER SET search_path = '' AS $$
+DECLARE
+  v_user_id uuid := auth.uid();
+  v_business_id uuid;
+  v_existing_id uuid;
+  v_dept_types text[] := ARRAY['owner', 'sales', 'support', 'operations'];
+  v_dept_type text;
+  v_dept_id uuid;
+  v_template RECORD;
+BEGIN
+  IF v_user_id IS NULL THEN RAISE EXCEPTION 'Not authenticated'; END IF;
+
+  SELECT b.id INTO v_existing_id FROM public.businesses b
+  JOIN public.business_users bu ON bu.business_id = b.id
+  WHERE b.slug = p_slug AND bu.user_id = v_user_id AND bu.role = 'owner';
+  IF v_existing_id IS NOT NULL THEN RETURN v_existing_id; END IF;
+
+  INSERT INTO public.businesses (name, slug, industry, status)
+  VALUES (p_name, p_slug, p_industry, 'provisioning') RETURNING id INTO v_business_id;
+
+  INSERT INTO public.business_users (business_id, user_id, role)
+  VALUES (v_business_id, v_user_id, 'owner');
+
+  FOREACH v_dept_type IN ARRAY v_dept_types LOOP
+    INSERT INTO public.departments (business_id, name, type)
+    VALUES (v_business_id, initcap(v_dept_type), v_dept_type) RETURNING id INTO v_dept_id;
+
+    FOR v_template IN SELECT * FROM public.agent_templates
+      WHERE department_type = v_dept_type AND is_active = true
+    LOOP
+      INSERT INTO public.agents (business_id, department_id, template_id, name, system_prompt, tool_profile, model_profile, status)
+      VALUES (v_business_id, v_dept_id, v_template.id, v_template.name, v_template.system_prompt,
+        v_template.tool_profile, v_template.model_profile, 'provisioning');
+    END LOOP;
+  END LOOP;
+
+  INSERT INTO public.deployments (business_id, version, status) VALUES (v_business_id, 1, 'queued');
+  UPDATE public.businesses SET status = 'active' WHERE id = v_business_id;
+  RETURN v_business_id;
+END; $$;
+
+-- 011: Agent Frozen Status
+ALTER TABLE public.agents
+  DROP CONSTRAINT IF EXISTS agents_status_check;
+
+ALTER TABLE public.agents
+  ADD CONSTRAINT agents_status_check
+  CHECK (status IN ('provisioning', 'active', 'paused', 'frozen', 'error', 'retired'));
+
+-- 012: Agent Templates RLS (Platform Admin)
+CREATE OR REPLACE FUNCTION public.is_platform_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.business_users bu
+    WHERE bu.user_id = (SELECT auth.uid())
+      AND bu.role = 'owner'
+  );
+$$;
+
+CREATE POLICY "agent_templates_insert_admin"
+  ON public.agent_templates FOR INSERT
+  TO authenticated
+  WITH CHECK (public.is_platform_admin());
+
+CREATE POLICY "agent_templates_update_admin"
+  ON public.agent_templates FOR UPDATE
+  TO authenticated
+  USING (public.is_platform_admin())
+  WITH CHECK (public.is_platform_admin());
+
+CREATE POLICY "agent_templates_delete_admin"
+  ON public.agent_templates FOR DELETE
+  TO authenticated
+  USING (public.is_platform_admin());
