@@ -118,6 +118,13 @@ export function BusinessOverview({
         <h2 className="mb-3 text-lg font-semibold">Quick Links</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <QuickLinkCard
+            href={`/businesses/${business.id}/agents`}
+            label="Agents"
+            description="View and manage agents"
+            icon={Bot}
+            enabled
+          />
+          <QuickLinkCard
             href={`/businesses/${business.id}/departments`}
             label="Departments"
             description="View and manage departments"
