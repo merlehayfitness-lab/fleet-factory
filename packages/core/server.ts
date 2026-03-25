@@ -13,3 +13,11 @@ export {
   rollbackDeployment,
   getDeploymentHistory,
 } from "./deployment/service";
+
+// Secrets service (uses crypto for encrypt/decrypt)
+export {
+  getSecrets,
+  saveSecret,
+  deleteSecret,
+  decryptSecretsForDeployment,
+} from "./secrets/service";
