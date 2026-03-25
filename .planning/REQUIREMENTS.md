@@ -90,10 +90,10 @@
 ### Dashboard & UI
 
 - [x] **DASH-01**: Sign-in page
-- [ ] **DASH-02**: Businesses list page showing all businesses with status badges
+- [x] **DASH-02**: Businesses list page showing all businesses with status badges
 - [x] **DASH-03**: Create business wizard (multi-step: name/industry → departments → integrations → deploy target)
-- [ ] **DASH-04**: Business overview dashboard (health, active agents, pending approvals, recent activity, deployment status, quick links)
-- [ ] **DASH-05**: Departments setup page per business
+- [x] **DASH-04**: Business overview dashboard (health, active agents, pending approvals, recent activity, deployment status, quick links)
+- [x] **DASH-05**: Departments setup page per business
 - [ ] **DASH-06**: Agents list page per business
 - [ ] **DASH-07**: Agent detail page (config, status, activity, conversations)
 - [ ] **DASH-08**: Deployment center page per business
@@ -183,10 +183,10 @@
 | PROV-05 | Phase 1 | Complete |
 | PROV-06 | Phase 1 | Complete |
 | DASH-01 | Phase 1 | Complete |
-| DASH-02 | Phase 1 | Pending |
+| DASH-02 | Phase 1 | Complete |
 | DASH-03 | Phase 1 | Complete |
-| DASH-04 | Phase 1 | Pending |
-| DASH-05 | Phase 1 | Pending |
+| DASH-04 | Phase 1 | Complete |
+| DASH-05 | Phase 1 | Complete |
 | AGNT-01 | Phase 2 | Pending |
 | AGNT-02 | Phase 2 | Pending |
 | AGNT-03 | Phase 2 | Pending |
