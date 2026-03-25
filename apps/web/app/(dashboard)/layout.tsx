@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/_lib/supabase/server";
-import { signOut } from "@/_actions/auth-actions";
-import { Button } from "@/components/ui/button";
+import { SidebarNav } from "@/_components/sidebar-nav";
 
 /**
  * Protected dashboard layout.
@@ -28,31 +27,12 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="flex w-64 flex-col border-r bg-muted/30">
-        <div className="flex h-14 items-center border-b px-4">
-          <span className="text-sm font-semibold tracking-tight">
-            Agency Factory
-          </span>
-        </div>
-
-        <nav className="flex-1 p-4">
-          {/* Navigation links will be added in future plans */}
-        </nav>
-
-        <div className="border-t p-4">
-          <p className="mb-2 truncate text-xs text-muted-foreground">
-            {user.email}
-          </p>
-          <form action={signOut}>
-            <Button type="submit" variant="outline" size="sm" className="w-full">
-              Sign out
-            </Button>
-          </form>
-        </div>
-      </aside>
-
-      {/* Main content */}
+      <SidebarNav
+        user={{
+          email: user.email ?? "",
+          full_name: user.user_metadata?.full_name as string | null,
+        }}
+      />
       <main className="flex-1 p-6">{children}</main>
     </div>
   );
