@@ -22,12 +22,12 @@
 
 ### Business Provisioning
 
-- [ ] **PROV-01**: Admin can create a new business via create business wizard (name, slug, industry, departments, integrations, deployment target)
-- [ ] **PROV-02**: Business creation uses atomic Postgres RPC (business + membership + departments + agents + deployment job in one transaction)
-- [ ] **PROV-03**: 4 default departments seeded per business (Owner, Sales, Support, Operations)
-- [ ] **PROV-04**: Starter agents created from matching agent_templates per department
-- [ ] **PROV-05**: Deployment job created with status 'queued' upon provisioning
-- [ ] **PROV-06**: Provisioning is idempotent-safe (re-running does not create duplicates)
+- [x] **PROV-01**: Admin can create a new business via create business wizard (name, slug, industry, departments, integrations, deployment target)
+- [x] **PROV-02**: Business creation uses atomic Postgres RPC (business + membership + departments + agents + deployment job in one transaction)
+- [x] **PROV-03**: 4 default departments seeded per business (Owner, Sales, Support, Operations)
+- [x] **PROV-04**: Starter agents created from matching agent_templates per department
+- [x] **PROV-05**: Deployment job created with status 'queued' upon provisioning
+- [x] **PROV-06**: Provisioning is idempotent-safe (re-running does not create duplicates)
 
 ### Agent Management
 
@@ -91,7 +91,7 @@
 
 - [x] **DASH-01**: Sign-in page
 - [ ] **DASH-02**: Businesses list page showing all businesses with status badges
-- [ ] **DASH-03**: Create business wizard (multi-step: name/industry → departments → integrations → deploy target)
+- [x] **DASH-03**: Create business wizard (multi-step: name/industry → departments → integrations → deploy target)
 - [ ] **DASH-04**: Business overview dashboard (health, active agents, pending approvals, recent activity, deployment status, quick links)
 - [ ] **DASH-05**: Departments setup page per business
 - [ ] **DASH-06**: Agents list page per business
@@ -176,15 +176,15 @@
 | ISOL-03 | Phase 1 | Complete |
 | ISOL-04 | Phase 1 | Complete |
 | ISOL-05 | Phase 1 | Complete |
-| PROV-01 | Phase 1 | Pending |
-| PROV-02 | Phase 1 | Pending |
-| PROV-03 | Phase 1 | Pending |
-| PROV-04 | Phase 1 | Pending |
-| PROV-05 | Phase 1 | Pending |
-| PROV-06 | Phase 1 | Pending |
+| PROV-01 | Phase 1 | Complete |
+| PROV-02 | Phase 1 | Complete |
+| PROV-03 | Phase 1 | Complete |
+| PROV-04 | Phase 1 | Complete |
+| PROV-05 | Phase 1 | Complete |
+| PROV-06 | Phase 1 | Complete |
 | DASH-01 | Phase 1 | Complete |
 | DASH-02 | Phase 1 | Pending |
-| DASH-03 | Phase 1 | Pending |
+| DASH-03 | Phase 1 | Complete |
 | DASH-04 | Phase 1 | Pending |
 | DASH-05 | Phase 1 | Pending |
 | AGNT-01 | Phase 2 | Pending |

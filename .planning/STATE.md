@@ -10,32 +10,33 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 1 of 6 (Foundation and Tenant Provisioning)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: Executing Phase 1
-Last activity: 2026-03-25 -- Completed 01-02 (Supabase Auth + Route Protection)
+Last activity: 2026-03-25 -- Completed 01-03 (Atomic Provisioning RPC + Create Business Wizard)
 
-Progress: [████░░░░░░] 8% (2/24 plans)
+Progress: [█████░░░░░] 13% (3/24 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 5min
-- Total execution time: 0.17 hours
+- Total plans completed: 3
+- Average duration: 6min
+- Total execution time: 0.30 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 2 | 10min | 5min |
+| 01 | 3 | 18min | 6min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (5min), 01-02 (5min)
+- Last 5 plans: 01-01 (5min), 01-02 (5min), 01-03 (8min)
 - Trend: steady
 
 *Updated after each plan completion*
 | Phase 01 P01 | 5min | 2 tasks | 29 files |
 | Phase 01 P02 | 5min | 2 tasks | 22 files |
+| Phase 01 P03 | 8min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -56,6 +57,10 @@ Recent decisions affecting current work:
 - [01-02]: Middleware redirects authenticated users away from auth pages to /businesses
 - [01-02]: Sign-out action in separate 'use server' file for clean Server Action isolation
 - [01-02]: shadcn/ui initialized with Tailwind v4 defaults (OKLCH colors, tw-animate-css, data-slot pattern)
+- [01-03]: Removed Zod .default() to avoid input/output type mismatch with react-hook-form; default via form defaultValues
+- [01-03]: Thin Server Action pattern: createBusiness under 20 lines, delegates to core + RPC
+- [01-03]: Multi-step wizard with local state (useState) for step navigation
+- [01-03]: Slug auto-generation from name with manual override via slugManuallyEdited flag
 
 ### Pending Todos
 
@@ -68,5 +73,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-25
-Stopped at: Completed 01-02-PLAN.md
-Resume file: .planning/phases/01-foundation-and-tenant-provisioning/01-02-SUMMARY.md
+Stopped at: Completed 01-03-PLAN.md
+Resume file: .planning/phases/01-foundation-and-tenant-provisioning/01-03-SUMMARY.md
