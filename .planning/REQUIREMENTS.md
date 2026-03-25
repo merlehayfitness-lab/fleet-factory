@@ -40,7 +40,7 @@
 
 ### Deployment Pipeline
 
-- [ ] **DEPL-01**: Deployment center shows current version, status, and deployment history per business
+- [x] **DEPL-01**: Deployment center shows current version, status, and deployment history per business
 - [x] **DEPL-02**: Admin can trigger deploy and redeploy from deployment center
 - [x] **DEPL-03**: Deployment runner generates tenant-config.json per business
 - [x] **DEPL-04**: Deployment runner generates docker-compose.generated.yml per business
@@ -96,7 +96,7 @@
 - [x] **DASH-05**: Departments setup page per business
 - [x] **DASH-06**: Agents list page per business
 - [x] **DASH-07**: Agent detail page (config, status, activity, conversations)
-- [ ] **DASH-08**: Deployment center page per business
+- [x] **DASH-08**: Deployment center page per business
 - [ ] **DASH-09**: Tasks and approvals page per business
 - [ ] **DASH-10**: Command center chat interface with routing to agents via orchestrator
 - [ ] **DASH-11**: Conversation log viewer with transcript history and tool call traces
@@ -195,7 +195,7 @@
 | AGNT-06 | Phase 2 | Complete |
 | DASH-06 | Phase 2 | Complete |
 | DASH-07 | Phase 2 | Complete |
-| DEPL-01 | Phase 3 | Pending |
+| DEPL-01 | Phase 3 | Complete |
 | DEPL-02 | Phase 3 | Complete |
 | DEPL-03 | Phase 3 | Complete |
 | DEPL-04 | Phase 3 | Complete |
@@ -205,7 +205,7 @@
 | DEPL-08 | Phase 3 | Complete |
 | DEPL-09 | Phase 3 | Complete |
 | DEPL-10 | Phase 3 | Complete |
-| DASH-08 | Phase 3 | Pending |
+| DASH-08 | Phase 3 | Complete |
 | SECR-01 | Phase 3 | Complete |
 | SECR-02 | Phase 3 | Complete |
 | INTG-01 | Phase 3 | Complete |

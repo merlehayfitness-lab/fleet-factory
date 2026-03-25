@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 3 of 6 (Deployment Pipeline)
-Plan: 2 of 4 in current phase (2 complete)
+Plan: 3 of 4 in current phase (3 complete)
 Status: Executing Phase 3
-Last activity: 2026-03-25 -- Completed 03-02 (Deployment Job Queue)
+Last activity: 2026-03-25 -- Completed 03-03 (Deployment Center UI)
 
-Progress: [████████░░] 33% (8/24 plans)
+Progress: [█████████░] 38% (9/24 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
+- Total plans completed: 9
 - Average duration: 6min
-- Total execution time: 0.83 hours
+- Total execution time: 0.95 hours
 
 **By Phase:**
 
@@ -29,10 +29,10 @@ Progress: [████████░░] 33% (8/24 plans)
 |-------|-------|-------|----------|
 | 01 | 4 | 23min | 6min |
 | 02 | 2 | 15min | 8min |
-| 03 | 2 | 12min | 6min |
+| 03 | 3 | 19min | 6min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (9min), 02-02 (6min), 03-01 (4min), 03-02 (8min)
+- Last 5 plans: 02-02 (6min), 03-01 (4min), 03-02 (8min), 03-03 (7min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -44,6 +44,7 @@ Progress: [████████░░] 33% (8/24 plans)
 | Phase 02 P02 | 6min | 2 tasks | 12 files |
 | Phase 03 P01 | 4min | 2 tasks | 23 files |
 | Phase 03 P02 | 8min | 2 tasks | 10 files |
+| Phase 03 P03 | 7min | 2 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,10 @@ Recent decisions affecting current work:
 - [03-02]: Removed unused @agency-factory/core dependency from runtime to eliminate circular workspace dependency
 - [03-02]: Deployment service returns full record on both success and failure for consistent API
 - [03-02]: Secrets decryption errors handled gracefully with empty array fallback for dev without ENCRYPTION_KEY
+- [03-03]: CollapsibleTrigger used directly without asChild -- base-ui Collapsible does not support asChild
+- [03-03]: Select onValueChange wrapped with null guard for base-ui compatibility (value can be string | null)
+- [03-03]: Secrets never decrypted client-side -- reveal shows confirmation text only, decryption server-side during deployment
+- [03-03]: Deployment center uses client wrapper component for selected deployment state across list and detail panels
 
 ### Pending Todos
 
@@ -99,5 +104,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-25
-Stopped at: Completed 03-02-PLAN.md
-Resume file: .planning/phases/03-deployment-pipeline/03-02-SUMMARY.md
+Stopped at: Completed 03-03-PLAN.md
+Resume file: .planning/phases/03-deployment-pipeline/03-03-SUMMARY.md
