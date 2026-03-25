@@ -36,3 +36,12 @@ export type DeploymentStatus =
   | "live"
   | "failed"
   | "rolled_back";
+
+/** Integration type categories */
+export type IntegrationType = "crm" | "email" | "helpdesk" | "calendar" | "messaging";
+
+/** Integration status */
+export type IntegrationStatus = "active" | "inactive" | "mock";
+
+/** Secret category */
+export type SecretCategory = "api_key" | "credential" | "token";

@@ -8,6 +8,9 @@ export type {
   DepartmentType,
   AgentStatus,
   DeploymentStatus,
+  IntegrationType,
+  IntegrationStatus,
+  SecretCategory,
 } from "./types/index";
 
 // Tenant provisioning
@@ -47,3 +50,12 @@ export {
   updateTemplate,
   deleteTemplate,
 } from "./agent/template-service";
+
+// Crypto
+export { encrypt, decrypt } from "./crypto/encryption";
+
+// Integration adapter
+export type { IntegrationAdapter } from "./integrations/adapter";
+
+// Integration registry
+export { getAdapter, MOCK_ADAPTERS } from "./integrations/index";
