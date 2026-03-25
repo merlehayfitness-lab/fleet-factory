@@ -5,32 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 1: Foundation and Tenant Provisioning
+**Current focus:** Phase 2: Agent Management
 
 ## Current Position
 
-Phase: 1 of 6 (Foundation and Tenant Provisioning) -- COMPLETE
-Plan: 4 of 4 in current phase (all complete)
-Status: Phase 1 Complete -- Ready for Phase 2
-Last activity: 2026-03-25 -- Completed 01-04 (Admin Dashboard Shell)
+Phase: 2 of 6 (Agent Management)
+Plan: 1 of 2 in current phase (1 complete)
+Status: Executing Phase 2
+Last activity: 2026-03-25 -- Completed 02-01 (Agent Templates and Lifecycle)
 
-Progress: [██████░░░░] 17% (4/24 plans)
+Progress: [██████░░░░] 21% (5/24 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
+- Total plans completed: 5
 - Average duration: 6min
-- Total execution time: 0.38 hours
+- Total execution time: 0.53 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 4 | 23min | 6min |
+| 02 | 1 | 9min | 9min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (5min), 01-02 (5min), 01-03 (8min), 01-04 (5min)
+- Last 5 plans: 01-02 (5min), 01-03 (8min), 01-04 (5min), 02-01 (9min)
 - Trend: steady
 
 *Updated after each plan completion*
@@ -38,6 +39,7 @@ Progress: [██████░░░░] 17% (4/24 plans)
 | Phase 01 P02 | 5min | 2 tasks | 22 files |
 | Phase 01 P03 | 8min | 2 tasks | 14 files |
 | Phase 01 P04 | 5min | 2 tasks | 14 files |
+| Phase 02 P01 | 9min | 2 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -66,6 +68,10 @@ Recent decisions affecting current work:
 - [01-04]: Business sub-nav extracted from pathname via regex match for dynamic route detection
 - [01-04]: Disabled nav links rendered as span elements with cursor-not-allowed and reduced opacity
 - [01-04]: signOut invoked from client via async wrapper function calling the server action directly
+- [02-01]: Added dom lib to packages/core tsconfig for console.error support in service layer
+- [02-01]: Agent audit logging is best-effort (errors logged not thrown) to avoid failing core operations
+- [02-01]: Templates are global but routed under business path for navigation consistency
+- [02-01]: Added Toaster from sonner to root layout for toast notification support
 
 ### Pending Todos
 
@@ -78,5 +84,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-25
-Stopped at: Completed 01-04-PLAN.md (Phase 1 complete)
-Resume file: .planning/phases/01-foundation-and-tenant-provisioning/01-04-SUMMARY.md
+Stopped at: Completed 02-01-PLAN.md
+Resume file: .planning/phases/02-agent-management/02-01-SUMMARY.md

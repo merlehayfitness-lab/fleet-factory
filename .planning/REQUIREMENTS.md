@@ -31,12 +31,12 @@
 
 ### Agent Management
 
-- [ ] **AGNT-01**: Agent templates store system_prompt, tool_profile, and model_profile per department_type
+- [x] **AGNT-01**: Agent templates store system_prompt, tool_profile, and model_profile per department_type
 - [ ] **AGNT-02**: Admin can view list of agents per business with status, department, and template info
 - [ ] **AGNT-03**: Admin can view agent detail page with config, status, recent activity, and conversation history
-- [ ] **AGNT-04**: Agents track lifecycle status (provisioning, active, paused, error, retired)
-- [ ] **AGNT-05**: Admin can freeze an agent immediately (emergency control — stops execution, revokes tool access)
-- [ ] **AGNT-06**: Agents are created only from approved templates (no dynamic spawning by end users)
+- [x] **AGNT-04**: Agents track lifecycle status (provisioning, active, paused, error, retired)
+- [x] **AGNT-05**: Admin can freeze an agent immediately (emergency control — stops execution, revokes tool access)
+- [x] **AGNT-06**: Agents are created only from approved templates (no dynamic spawning by end users)
 
 ### Deployment Pipeline
 
@@ -187,12 +187,12 @@
 | DASH-03 | Phase 1 | Complete |
 | DASH-04 | Phase 1 | Complete |
 | DASH-05 | Phase 1 | Complete |
-| AGNT-01 | Phase 2 | Pending |
+| AGNT-01 | Phase 2 | Complete |
 | AGNT-02 | Phase 2 | Pending |
 | AGNT-03 | Phase 2 | Pending |
-| AGNT-04 | Phase 2 | Pending |
-| AGNT-05 | Phase 2 | Pending |
-| AGNT-06 | Phase 2 | Pending |
+| AGNT-04 | Phase 2 | Complete |
+| AGNT-05 | Phase 2 | Complete |
+| AGNT-06 | Phase 2 | Complete |
 | DASH-06 | Phase 2 | Pending |
 | DASH-07 | Phase 2 | Pending |
 | DEPL-01 | Phase 3 | Pending |
