@@ -13,7 +13,7 @@ Agency Factory delivers a multi-tenant SaaS platform for deploying and managing 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [ ] **Phase 1: Foundation and Tenant Provisioning** - Auth, RLS isolation, atomic business provisioning, and core admin screens
-- [ ] **Phase 2: Agent Management** - Template-based agent lifecycle with list and detail views
+- [x] **Phase 2: Agent Management** - Template-based agent lifecycle with list and detail views (completed 2026-03-25)
 - [ ] **Phase 3: Deployment Pipeline** - Config generation, deployment execution, secrets, and integration adapters
 - [ ] **Phase 4: Task Execution and Approvals** - Orchestrator routing, worker execution, approval gates, and security controls
 - [ ] **Phase 5: Observability and Command Center** - Tenant health monitoring, audit viewer, chat interface, and emergency controls
@@ -129,7 +129,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation and Tenant Provisioning | 0/4 | Not started | - |
-| 2. Agent Management | 0/2 | Not started | - |
+| 2. Agent Management | 0/2 | Complete    | 2026-03-25 |
 | 3. Deployment Pipeline | 0/3 | Not started | - |
 | 4. Task Execution and Approvals | 0/4 | Not started | - |
 | 5. Observability and Command Center | 0/3 | Not started | - |
