@@ -21,7 +21,7 @@ export const createBusinessSchema = z.object({
       /^[a-z0-9-]+$/,
       "Slug must contain only lowercase letters, numbers, and hyphens",
     ),
-  industry: z.string().min(1, "Industry is required").default("general"),
+  industry: z.string().min(1, "Industry is required"),
 });
 
 /** Inferred type for business creation input */
