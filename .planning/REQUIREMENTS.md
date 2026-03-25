@@ -7,10 +7,10 @@
 
 ### Authentication
 
-- [ ] **AUTH-01**: User can sign in with email and password via Supabase Auth
-- [ ] **AUTH-02**: User session persists across browser refresh
-- [ ] **AUTH-03**: User can sign out and session is invalidated
-- [ ] **AUTH-04**: Unauthenticated users are redirected to sign-in page
+- [x] **AUTH-01**: User can sign in with email and password via Supabase Auth
+- [x] **AUTH-02**: User session persists across browser refresh
+- [x] **AUTH-03**: User can sign out and session is invalidated
+- [x] **AUTH-04**: Unauthenticated users are redirected to sign-in page
 
 ### Tenant Isolation
 
@@ -89,7 +89,7 @@
 
 ### Dashboard & UI
 
-- [ ] **DASH-01**: Sign-in page
+- [x] **DASH-01**: Sign-in page
 - [ ] **DASH-02**: Businesses list page showing all businesses with status badges
 - [ ] **DASH-03**: Create business wizard (multi-step: name/industry → departments → integrations → deploy target)
 - [ ] **DASH-04**: Business overview dashboard (health, active agents, pending approvals, recent activity, deployment status, quick links)
@@ -167,10 +167,10 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AUTH-01 | Phase 1 | Pending |
-| AUTH-02 | Phase 1 | Pending |
-| AUTH-03 | Phase 1 | Pending |
-| AUTH-04 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
+| AUTH-02 | Phase 1 | Complete |
+| AUTH-03 | Phase 1 | Complete |
+| AUTH-04 | Phase 1 | Complete |
 | ISOL-01 | Phase 1 | Complete |
 | ISOL-02 | Phase 1 | Complete |
 | ISOL-03 | Phase 1 | Complete |
@@ -182,7 +182,7 @@
 | PROV-04 | Phase 1 | Pending |
 | PROV-05 | Phase 1 | Pending |
 | PROV-06 | Phase 1 | Pending |
-| DASH-01 | Phase 1 | Pending |
+| DASH-01 | Phase 1 | Complete |
 | DASH-02 | Phase 1 | Pending |
 | DASH-03 | Phase 1 | Pending |
 | DASH-04 | Phase 1 | Pending |
