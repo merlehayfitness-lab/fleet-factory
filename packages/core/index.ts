@@ -59,3 +59,23 @@ export type { IntegrationAdapter } from "./integrations/adapter";
 
 // Integration registry
 export { getAdapter, MOCK_ADAPTERS } from "./integrations/index";
+
+// Deployment lifecycle
+export {
+  DEPLOYMENT_TRANSITIONS,
+  canTransitionDeployment,
+  assertDeploymentTransition,
+  getValidDeploymentTransitions,
+} from "./deployment/lifecycle";
+
+// Deployment service
+export {
+  triggerDeployment,
+  retryDeployment,
+  rollbackDeployment,
+  getDeploymentHistory,
+} from "./deployment/service";
+
+// Deployment snapshot
+export { createConfigSnapshot, restoreFromSnapshot } from "./deployment/snapshot";
+export type { ConfigSnapshot } from "./deployment/snapshot";

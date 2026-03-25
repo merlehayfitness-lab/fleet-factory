@@ -7,7 +7,5 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
-    "@agency-factory/core": "workspace:*"
-  }
+  "dependencies": {}
 }

@@ -93,6 +93,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@agency-factory/runtime':
+        specifier: workspace:*
+        version: link:../runtime
       '@supabase/supabase-js':
         specifier: ^2.100.0
         version: 2.100.0
@@ -113,11 +116,7 @@ importers:
         specifier: ^5.7.3
         version: 5.9.3
 
-  packages/runtime:
-    dependencies:
-      '@agency-factory/core':
-        specifier: workspace:*
-        version: link:../core
+  packages/runtime: {}
 
 packages:
 
