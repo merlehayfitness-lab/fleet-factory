@@ -134,9 +134,9 @@ export function BusinessOverview({
           <QuickLinkCard
             href={`/businesses/${business.id}/deployments`}
             label="Deployments"
-            description="Coming in Phase 3"
+            description="Manage deployments"
             icon={Rocket}
-            enabled={false}
+            enabled
           />
           <QuickLinkCard
             href={`/businesses/${business.id}/tasks`}

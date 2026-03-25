@@ -86,7 +86,7 @@ function getBusinessSubNav(businessId: string) {
       href: `/businesses/${businessId}/deployments`,
       label: "Deployments",
       icon: Rocket,
-      enabled: false,
+      enabled: true,
     },
     {
       href: `/businesses/${businessId}/approvals`,
