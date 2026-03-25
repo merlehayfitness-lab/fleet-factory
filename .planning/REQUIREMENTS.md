@@ -41,15 +41,15 @@
 ### Deployment Pipeline
 
 - [ ] **DEPL-01**: Deployment center shows current version, status, and deployment history per business
-- [ ] **DEPL-02**: Admin can trigger deploy and redeploy from deployment center
+- [x] **DEPL-02**: Admin can trigger deploy and redeploy from deployment center
 - [x] **DEPL-03**: Deployment runner generates tenant-config.json per business
 - [x] **DEPL-04**: Deployment runner generates docker-compose.generated.yml per business
 - [x] **DEPL-05**: Deployment runner generates .env.generated per business
 - [x] **DEPL-06**: Deployment runner generates one runtime config file per agent (prompt, tools, model)
-- [ ] **DEPL-07**: Deployment status tracked (queued, building, deploying, live, failed)
-- [ ] **DEPL-08**: Failed deployments can be retried
-- [ ] **DEPL-09**: Deployments support rollback to last working version
-- [ ] **DEPL-10**: Agent configs are versioned — each deployment creates a new version snapshot
+- [x] **DEPL-07**: Deployment status tracked (queued, building, deploying, live, failed)
+- [x] **DEPL-08**: Failed deployments can be retried
+- [x] **DEPL-09**: Deployments support rollback to last working version
+- [x] **DEPL-10**: Agent configs are versioned — each deployment creates a new version snapshot
 
 ### Task Execution
 
@@ -196,15 +196,15 @@
 | DASH-06 | Phase 2 | Complete |
 | DASH-07 | Phase 2 | Complete |
 | DEPL-01 | Phase 3 | Pending |
-| DEPL-02 | Phase 3 | Pending |
+| DEPL-02 | Phase 3 | Complete |
 | DEPL-03 | Phase 3 | Complete |
 | DEPL-04 | Phase 3 | Complete |
 | DEPL-05 | Phase 3 | Complete |
 | DEPL-06 | Phase 3 | Complete |
-| DEPL-07 | Phase 3 | Pending |
-| DEPL-08 | Phase 3 | Pending |
-| DEPL-09 | Phase 3 | Pending |
-| DEPL-10 | Phase 3 | Pending |
+| DEPL-07 | Phase 3 | Complete |
+| DEPL-08 | Phase 3 | Complete |
+| DEPL-09 | Phase 3 | Complete |
+| DEPL-10 | Phase 3 | Complete |
 | DASH-08 | Phase 3 | Pending |
 | SECR-01 | Phase 3 | Complete |
 | SECR-02 | Phase 3 | Complete |
