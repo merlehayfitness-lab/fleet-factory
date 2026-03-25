@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   Rocket,
+  Plug,
   Bot,
   Users,
   Shield,
@@ -136,6 +137,13 @@ export function BusinessOverview({
             label="Deployments"
             description="Manage deployments"
             icon={Rocket}
+            enabled
+          />
+          <QuickLinkCard
+            href={`/businesses/${business.id}/integrations`}
+            label="Integrations"
+            description="Manage connections"
+            icon={Plug}
             enabled
           />
           <QuickLinkCard

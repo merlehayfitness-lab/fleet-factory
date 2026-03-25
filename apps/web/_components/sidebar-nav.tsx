@@ -9,6 +9,7 @@ import {
   Bot,
   FileText,
   Rocket,
+  Plug,
   Shield,
   CheckSquare,
   ScrollText,
@@ -86,6 +87,12 @@ function getBusinessSubNav(businessId: string) {
       href: `/businesses/${businessId}/deployments`,
       label: "Deployments",
       icon: Rocket,
+      enabled: true,
+    },
+    {
+      href: `/businesses/${businessId}/integrations`,
+      label: "Integrations",
+      icon: Plug,
       enabled: true,
     },
     {
