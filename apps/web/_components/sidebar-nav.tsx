@@ -6,6 +6,8 @@ import {
   Building2,
   LayoutDashboard,
   Users,
+  Bot,
+  FileText,
   Rocket,
   Shield,
   CheckSquare,
@@ -66,6 +68,18 @@ function getBusinessSubNav(businessId: string) {
       href: `/businesses/${businessId}/departments`,
       label: "Departments",
       icon: Users,
+      enabled: true,
+    },
+    {
+      href: `/businesses/${businessId}/agents`,
+      label: "Agents",
+      icon: Bot,
+      enabled: true,
+    },
+    {
+      href: `/businesses/${businessId}/templates`,
+      label: "Templates",
+      icon: FileText,
       enabled: true,
     },
     {

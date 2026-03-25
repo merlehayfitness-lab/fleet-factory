@@ -38,6 +38,12 @@ const STATUS_CONFIG: Record<
   error: { variant: "destructive" },
   failed: { variant: "destructive" },
 
+  // Frozen state (emergency)
+  frozen: {
+    variant: "secondary",
+    className: "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-500",
+  },
+
   // Inactive / muted states
   paused: { variant: "outline" },
   suspended: { variant: "outline" },
