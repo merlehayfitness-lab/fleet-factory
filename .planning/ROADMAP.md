@@ -64,12 +64,12 @@ Plans:
   3. Failed deployments can be retried, and any deployment can be rolled back to the last working version
   4. Each deployment creates a versioned snapshot of all agent configs, and deployment history is visible in the deployment center
   5. Secrets are stored encrypted (never plaintext), integration credentials are scoped per tenant, and mock adapters exist for CRM, email, helpdesk, calendar, and messaging with a swappable adapter interface
-**Plans**: TBD
+**Plans**: 3 plans in 2 waves
 
 Plans:
-- [ ] 03-01: Config generation pure functions (tenant-config, docker-compose, env, agent runtime)
-- [ ] 03-02: Deployment job queue, status tracking, retry, and rollback
-- [ ] 03-03: Deployment center UI, secrets management, and integration adapters
+- [ ] 03-01: Schema migrations (secrets, integrations), encryption helpers, integration adapters, and packages/runtime config generators
+- [ ] 03-02: Deployment state machine, deploy/retry/rollback service, config snapshots, and Server Actions
+- [ ] 03-03: Deployment center UI (split-view, stepper, artifact viewer), secrets page, and nav updates
 
 ### Phase 4: Task Execution and Approvals
 **Goal**: Tasks flow through the orchestrator to department agents, agents execute with sandboxed tool access, and risky actions pause for human approval with risk-tiered routing
