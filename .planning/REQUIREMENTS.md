@@ -14,11 +14,11 @@
 
 ### Tenant Isolation
 
-- [ ] **ISOL-01**: RLS enabled on all operational tables with `is_business_member()` helper function
-- [ ] **ISOL-02**: Users can only read/write rows for businesses they belong to via business_users membership
-- [ ] **ISOL-03**: Write operations gated by role (owner, admin, manager) on sensitive tables
-- [ ] **ISOL-04**: Agent templates table is globally readable but admin-only writable
-- [ ] **ISOL-05**: Tenant kill switch can disable a business (freeze agents, block deployments, revoke access) without affecting other tenants
+- [x] **ISOL-01**: RLS enabled on all operational tables with `is_business_member()` helper function
+- [x] **ISOL-02**: Users can only read/write rows for businesses they belong to via business_users membership
+- [x] **ISOL-03**: Write operations gated by role (owner, admin, manager) on sensitive tables
+- [x] **ISOL-04**: Agent templates table is globally readable but admin-only writable
+- [x] **ISOL-05**: Tenant kill switch can disable a business (freeze agents, block deployments, revoke access) without affecting other tenants
 
 ### Business Provisioning
 
@@ -171,11 +171,11 @@
 | AUTH-02 | Phase 1 | Pending |
 | AUTH-03 | Phase 1 | Pending |
 | AUTH-04 | Phase 1 | Pending |
-| ISOL-01 | Phase 1 | Pending |
-| ISOL-02 | Phase 1 | Pending |
-| ISOL-03 | Phase 1 | Pending |
-| ISOL-04 | Phase 1 | Pending |
-| ISOL-05 | Phase 1 | Pending |
+| ISOL-01 | Phase 1 | Complete |
+| ISOL-02 | Phase 1 | Complete |
+| ISOL-03 | Phase 1 | Complete |
+| ISOL-04 | Phase 1 | Complete |
+| ISOL-05 | Phase 1 | Complete |
 | PROV-01 | Phase 1 | Pending |
 | PROV-02 | Phase 1 | Pending |
 | PROV-03 | Phase 1 | Pending |
