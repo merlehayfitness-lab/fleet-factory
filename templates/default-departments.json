@@ -1,0 +1,6 @@
+[
+  { "type": "owner", "name": "Owner", "description": "Business owner oversight and strategy" },
+  { "type": "sales", "name": "Sales", "description": "Lead generation, outreach, and deal management" },
+  { "type": "support", "name": "Support", "description": "Customer support and ticket resolution" },
+  { "type": "operations", "name": "Operations", "description": "Internal operations, scheduling, and process management" }
+]
