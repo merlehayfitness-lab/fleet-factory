@@ -51,16 +51,13 @@ export {
   deleteTemplate,
 } from "./agent/template-service";
 
-// Crypto
-export { encrypt, decrypt } from "./crypto/encryption";
-
 // Integration adapter
 export type { IntegrationAdapter } from "./integrations/adapter";
 
 // Integration registry
 export { getAdapter, MOCK_ADAPTERS } from "./integrations/index";
 
-// Deployment lifecycle
+// Deployment lifecycle (pure functions, no Node.js deps)
 export {
   DEPLOYMENT_TRANSITIONS,
   canTransitionDeployment,
@@ -68,14 +65,9 @@ export {
   getValidDeploymentTransitions,
 } from "./deployment/lifecycle";
 
-// Deployment service
-export {
-  triggerDeployment,
-  retryDeployment,
-  rollbackDeployment,
-  getDeploymentHistory,
-} from "./deployment/service";
-
-// Deployment snapshot
+// Deployment snapshot (pure functions, no Node.js deps)
 export { createConfigSnapshot, restoreFromSnapshot } from "./deployment/snapshot";
 export type { ConfigSnapshot } from "./deployment/snapshot";
+
+// NOTE: Server-only exports (crypto, deployment service) are in "@agency-factory/core/server"
+// to prevent node:crypto from being bundled in client components.

@@ -40,3 +40,20 @@ export function getSupabaseServiceRoleKey(): string {
   }
   return key;
 }
+
+/**
+ * Server-only. Used for encrypting/decrypting tenant secrets.
+ * Optional in development -- returns empty string if not set to allow
+ * deployment pipeline to run without real encryption.
+ */
+export function getEncryptionKey(): string {
+  const key = process.env.ENCRYPTION_KEY;
+  if (!key) {
+    console.warn(
+      "ENCRYPTION_KEY not set. Secrets encryption will not work. " +
+        "Set a 64-character hex string in .env.local for production use.",
+    );
+    return "";
+  }
+  return key;
+}
