@@ -32,8 +32,8 @@
 ### Agent Management
 
 - [x] **AGNT-01**: Agent templates store system_prompt, tool_profile, and model_profile per department_type
-- [ ] **AGNT-02**: Admin can view list of agents per business with status, department, and template info
-- [ ] **AGNT-03**: Admin can view agent detail page with config, status, recent activity, and conversation history
+- [x] **AGNT-02**: Admin can view list of agents per business with status, department, and template info
+- [x] **AGNT-03**: Admin can view agent detail page with config, status, recent activity, and conversation history
 - [x] **AGNT-04**: Agents track lifecycle status (provisioning, active, paused, error, retired)
 - [x] **AGNT-05**: Admin can freeze an agent immediately (emergency control — stops execution, revokes tool access)
 - [x] **AGNT-06**: Agents are created only from approved templates (no dynamic spawning by end users)
@@ -94,8 +94,8 @@
 - [x] **DASH-03**: Create business wizard (multi-step: name/industry → departments → integrations → deploy target)
 - [x] **DASH-04**: Business overview dashboard (health, active agents, pending approvals, recent activity, deployment status, quick links)
 - [x] **DASH-05**: Departments setup page per business
-- [ ] **DASH-06**: Agents list page per business
-- [ ] **DASH-07**: Agent detail page (config, status, activity, conversations)
+- [x] **DASH-06**: Agents list page per business
+- [x] **DASH-07**: Agent detail page (config, status, activity, conversations)
 - [ ] **DASH-08**: Deployment center page per business
 - [ ] **DASH-09**: Tasks and approvals page per business
 - [ ] **DASH-10**: Command center chat interface with routing to agents via orchestrator
@@ -188,13 +188,13 @@
 | DASH-04 | Phase 1 | Complete |
 | DASH-05 | Phase 1 | Complete |
 | AGNT-01 | Phase 2 | Complete |
-| AGNT-02 | Phase 2 | Pending |
-| AGNT-03 | Phase 2 | Pending |
+| AGNT-02 | Phase 2 | Complete |
+| AGNT-03 | Phase 2 | Complete |
 | AGNT-04 | Phase 2 | Complete |
 | AGNT-05 | Phase 2 | Complete |
 | AGNT-06 | Phase 2 | Complete |
-| DASH-06 | Phase 2 | Pending |
-| DASH-07 | Phase 2 | Pending |
+| DASH-06 | Phase 2 | Complete |
+| DASH-07 | Phase 2 | Complete |
 | DEPL-01 | Phase 3 | Pending |
 | DEPL-02 | Phase 3 | Pending |
 | DEPL-03 | Phase 3 | Pending |
