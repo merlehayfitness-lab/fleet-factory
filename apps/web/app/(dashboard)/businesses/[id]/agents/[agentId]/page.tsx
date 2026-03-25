@@ -52,6 +52,14 @@ export default async function AgentDetailPage({
     .order("created_at", { ascending: false })
     .limit(20);
 
+  // Fetch integrations for this agent
+  const { data: integrations } = await supabase
+    .from("integrations")
+    .select("*")
+    .eq("agent_id", agentId)
+    .eq("business_id", businessId)
+    .order("type");
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -74,6 +82,7 @@ export default async function AgentDetailPage({
         agent={agent}
         auditLogs={auditLogs ?? []}
         businessId={businessId}
+        integrations={integrations ?? []}
       />
     </div>
   );

@@ -1,0 +1,181 @@
+"use server";
+
+import { createServerClient } from "@/_lib/supabase/server";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+
+/**
+ * Fetch all integrations for a specific agent.
+ */
+export async function getAgentIntegrationsAction(agentId: string) {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("integrations")
+      .select("*")
+      .eq("agent_id", agentId)
+      .order("type");
+
+    if (error) throw new Error(error.message);
+
+    return { integrations: data ?? [] };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error ? err.message : "Failed to fetch integrations",
+    };
+  }
+}
+
+/**
+ * Fetch all integrations for a business with agent names.
+ */
+export async function getBusinessIntegrationsAction(businessId: string) {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("integrations")
+      .select("*, agents(id, name)")
+      .eq("business_id", businessId)
+      .order("type")
+      .order("created_at");
+
+    if (error) throw new Error(error.message);
+
+    return { integrations: data ?? [] };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to fetch business integrations",
+    };
+  }
+}
+
+/**
+ * Save (upsert) an integration for a specific agent and type.
+ */
+export async function saveIntegrationAction(
+  businessId: string,
+  agentId: string,
+  type: string,
+  provider: string,
+  config?: Record<string, unknown>
+) {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const effectiveStatus = provider.startsWith("mock") ? "mock" : "inactive";
+
+  try {
+    const { error } = await supabase
+      .from("integrations")
+      .upsert(
+        {
+          business_id: businessId,
+          agent_id: agentId,
+          type,
+          provider,
+          config: config ?? null,
+          status: effectiveStatus,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "business_id,agent_id,type",
+        }
+      )
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    // Audit log (best-effort)
+    try {
+      await supabase.from("audit_logs").insert({
+        business_id: businessId,
+        action: "integration.configured",
+        metadata: { agent_id: agentId, type, provider },
+      });
+    } catch {
+      // best-effort
+    }
+
+    revalidatePath(`/businesses/${businessId}/agents/${agentId}`);
+    revalidatePath(`/businesses/${businessId}/integrations`);
+    return { success: true };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error ? err.message : "Failed to save integration",
+    };
+  }
+}
+
+/**
+ * Delete an integration by ID.
+ */
+export async function deleteIntegrationAction(
+  businessId: string,
+  integrationId: string
+) {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  try {
+    const { error } = await supabase
+      .from("integrations")
+      .delete()
+      .eq("id", integrationId)
+      .eq("business_id", businessId);
+
+    if (error) throw new Error(error.message);
+
+    // Audit log (best-effort)
+    try {
+      await supabase.from("audit_logs").insert({
+        business_id: businessId,
+        action: "integration.deleted",
+        metadata: { integrationId },
+      });
+    } catch {
+      // best-effort
+    }
+
+    revalidatePath(`/businesses/${businessId}/integrations`);
+    return { success: true };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error ? err.message : "Failed to delete integration",
+    };
+  }
+}

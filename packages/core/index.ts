@@ -57,6 +57,14 @@ export type { IntegrationAdapter } from "./integrations/adapter";
 // Integration registry
 export { getAdapter, MOCK_ADAPTERS } from "./integrations/index";
 
+// Integration CRUD service
+export {
+  getIntegrationsForAgent,
+  getIntegrationsForBusiness,
+  upsertIntegration,
+  deleteIntegration,
+} from "./integrations/service";
+
 // Deployment lifecycle (pure functions, no Node.js deps)
 export {
   DEPLOYMENT_TRANSITIONS,

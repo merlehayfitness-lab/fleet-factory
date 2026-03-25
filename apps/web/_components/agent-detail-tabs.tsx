@@ -5,6 +5,7 @@ import { AgentOverview } from "@/_components/agent-overview";
 import { AgentConfig } from "@/_components/agent-config";
 import { AgentActivity } from "@/_components/agent-activity";
 import { AgentConversations } from "@/_components/agent-conversations";
+import { AgentIntegrations } from "@/_components/agent-integrations";
 
 interface AuditLog {
   id: string;
@@ -36,22 +37,36 @@ interface Agent {
   agent_templates: Template | null;
 }
 
+interface Integration {
+  id: string;
+  business_id: string;
+  agent_id: string;
+  type: string;
+  provider: string;
+  config: Record<string, unknown> | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface AgentDetailTabsProps {
   agent: Agent;
   auditLogs: AuditLog[];
   businessId: string;
+  integrations: Integration[];
 }
 
 /**
- * Client-side 4-tab layout for the agent detail page.
+ * Client-side 5-tab layout for the agent detail page.
  *
- * Tabs: Overview, Config, Activity, Conversations.
+ * Tabs: Overview, Config, Activity, Conversations, Integrations.
  * Uses client-side state only (no URL changes) to prevent full page reloads.
  */
 export function AgentDetailTabs({
   agent,
   auditLogs,
   businessId,
+  integrations,
 }: AgentDetailTabsProps) {
   return (
     <Tabs defaultValue="overview">
@@ -60,6 +75,7 @@ export function AgentDetailTabs({
         <TabsTrigger value="config">Config</TabsTrigger>
         <TabsTrigger value="activity">Activity</TabsTrigger>
         <TabsTrigger value="conversations">Conversations</TabsTrigger>
+        <TabsTrigger value="integrations">Integrations</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview">
@@ -80,6 +96,14 @@ export function AgentDetailTabs({
 
       <TabsContent value="conversations">
         <AgentConversations />
+      </TabsContent>
+
+      <TabsContent value="integrations">
+        <AgentIntegrations
+          agentId={agent.id}
+          businessId={businessId}
+          integrations={integrations}
+        />
       </TabsContent>
     </Tabs>
   );
