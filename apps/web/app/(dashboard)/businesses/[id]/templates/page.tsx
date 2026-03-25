@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createServerClient } from "@/_lib/supabase/server";
 import { TemplateList } from "@/_components/template-list";
-import { buttonVariants } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
 /**
@@ -39,7 +38,7 @@ export default async function TemplatesPage({
         </div>
         <Link
           href={`/businesses/${id}/templates/new`}
-          className={buttonVariants({ variant: "default" })}
+          className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-xs hover:bg-primary/90"
         >
           <Plus className="size-4" />
           New Template

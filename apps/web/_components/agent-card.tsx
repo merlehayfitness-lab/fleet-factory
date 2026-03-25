@@ -12,7 +12,6 @@ import {
   CardTitle,
   CardAction,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -99,10 +98,8 @@ export function AgentCard({ agent, businessId }: AgentCardProps) {
           </CardTitle>
           <CardAction>
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Button variant="ghost" size="icon-xs">
-                  <MoreVertical className="size-4" />
-                </Button>
+              <DropdownMenuTrigger className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+                <MoreVertical className="size-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem>
