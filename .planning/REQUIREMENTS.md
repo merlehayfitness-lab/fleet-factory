@@ -165,17 +165,92 @@
 
 ## Traceability
 
-Updated during roadmap creation.
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated during roadmap) | — | — |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| ISOL-01 | Phase 1 | Pending |
+| ISOL-02 | Phase 1 | Pending |
+| ISOL-03 | Phase 1 | Pending |
+| ISOL-04 | Phase 1 | Pending |
+| ISOL-05 | Phase 1 | Pending |
+| PROV-01 | Phase 1 | Pending |
+| PROV-02 | Phase 1 | Pending |
+| PROV-03 | Phase 1 | Pending |
+| PROV-04 | Phase 1 | Pending |
+| PROV-05 | Phase 1 | Pending |
+| PROV-06 | Phase 1 | Pending |
+| DASH-01 | Phase 1 | Pending |
+| DASH-02 | Phase 1 | Pending |
+| DASH-03 | Phase 1 | Pending |
+| DASH-04 | Phase 1 | Pending |
+| DASH-05 | Phase 1 | Pending |
+| AGNT-01 | Phase 2 | Pending |
+| AGNT-02 | Phase 2 | Pending |
+| AGNT-03 | Phase 2 | Pending |
+| AGNT-04 | Phase 2 | Pending |
+| AGNT-05 | Phase 2 | Pending |
+| AGNT-06 | Phase 2 | Pending |
+| DASH-06 | Phase 2 | Pending |
+| DASH-07 | Phase 2 | Pending |
+| DEPL-01 | Phase 3 | Pending |
+| DEPL-02 | Phase 3 | Pending |
+| DEPL-03 | Phase 3 | Pending |
+| DEPL-04 | Phase 3 | Pending |
+| DEPL-05 | Phase 3 | Pending |
+| DEPL-06 | Phase 3 | Pending |
+| DEPL-07 | Phase 3 | Pending |
+| DEPL-08 | Phase 3 | Pending |
+| DEPL-09 | Phase 3 | Pending |
+| DEPL-10 | Phase 3 | Pending |
+| DASH-08 | Phase 3 | Pending |
+| SECR-01 | Phase 3 | Pending |
+| SECR-02 | Phase 3 | Pending |
+| INTG-01 | Phase 3 | Pending |
+| INTG-02 | Phase 3 | Pending |
+| INTG-03 | Phase 3 | Pending |
+| INTG-04 | Phase 3 | Pending |
+| TASK-01 | Phase 4 | Pending |
+| TASK-02 | Phase 4 | Pending |
+| TASK-03 | Phase 4 | Pending |
+| TASK-04 | Phase 4 | Pending |
+| TASK-05 | Phase 4 | Pending |
+| TASK-06 | Phase 4 | Pending |
+| APRV-01 | Phase 4 | Pending |
+| APRV-02 | Phase 4 | Pending |
+| APRV-03 | Phase 4 | Pending |
+| APRV-04 | Phase 4 | Pending |
+| APRV-05 | Phase 4 | Pending |
+| APRV-06 | Phase 4 | Pending |
+| APRV-07 | Phase 4 | Pending |
+| DASH-09 | Phase 4 | Pending |
+| SECR-03 | Phase 4 | Pending |
+| SECR-04 | Phase 4 | Pending |
+| SECR-05 | Phase 4 | Pending |
+| TOPS-04 | Phase 4 | Pending |
+| TOPS-01 | Phase 5 | Pending |
+| TOPS-02 | Phase 5 | Pending |
+| TOPS-03 | Phase 5 | Pending |
+| TOPS-05 | Phase 5 | Pending |
+| COMM-01 | Phase 5 | Pending |
+| COMM-02 | Phase 5 | Pending |
+| COMM-03 | Phase 5 | Pending |
+| DASH-10 | Phase 5 | Pending |
+| DASH-11 | Phase 5 | Pending |
+| SECR-06 | Phase 5 | Pending |
+| BLDR-01 | Phase 6 | Pending |
+| BLDR-02 | Phase 6 | Pending |
+| BLDR-03 | Phase 6 | Pending |
+| BLDR-04 | Phase 6 | Pending |
+| BLDR-05 | Phase 6 | Pending |
 
 **Coverage:**
-- v1 requirements: 72 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 72
+- v1 requirements: 78 total
+- Mapped to phases: 78
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-25*
-*Last updated: 2026-03-25 after initial definition*
+*Last updated: 2026-03-25 after roadmap creation*
