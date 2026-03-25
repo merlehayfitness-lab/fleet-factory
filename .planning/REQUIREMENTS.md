@@ -42,10 +42,10 @@
 
 - [ ] **DEPL-01**: Deployment center shows current version, status, and deployment history per business
 - [ ] **DEPL-02**: Admin can trigger deploy and redeploy from deployment center
-- [ ] **DEPL-03**: Deployment runner generates tenant-config.json per business
-- [ ] **DEPL-04**: Deployment runner generates docker-compose.generated.yml per business
-- [ ] **DEPL-05**: Deployment runner generates .env.generated per business
-- [ ] **DEPL-06**: Deployment runner generates one runtime config file per agent (prompt, tools, model)
+- [x] **DEPL-03**: Deployment runner generates tenant-config.json per business
+- [x] **DEPL-04**: Deployment runner generates docker-compose.generated.yml per business
+- [x] **DEPL-05**: Deployment runner generates .env.generated per business
+- [x] **DEPL-06**: Deployment runner generates one runtime config file per agent (prompt, tools, model)
 - [ ] **DEPL-07**: Deployment status tracked (queued, building, deploying, live, failed)
 - [ ] **DEPL-08**: Failed deployments can be retried
 - [ ] **DEPL-09**: Deployments support rollback to last working version
@@ -72,8 +72,8 @@
 
 ### Security
 
-- [ ] **SECR-01**: Secrets stored encrypted, never plaintext in database or config files
-- [ ] **SECR-02**: Per-tenant credential isolation — one business cannot access another's secrets
+- [x] **SECR-01**: Secrets stored encrypted, never plaintext in database or config files
+- [x] **SECR-02**: Per-tenant credential isolation — one business cannot access another's secrets
 - [ ] **SECR-03**: Agent execution sandboxed — no host filesystem access, no elevated exec, restricted mounts
 - [ ] **SECR-04**: Tool access validated against tenant-scoped allowlists before execution
 - [ ] **SECR-05**: Agents never run with service_role credentials
@@ -117,10 +117,10 @@
 
 ### Integrations
 
-- [ ] **INTG-01**: Integration model supports provider, credentials_ref, and status per business
-- [ ] **INTG-02**: Mock/stub adapters for CRM, email, helpdesk, calendar, and messaging in MVP
-- [ ] **INTG-03**: Integration adapter interface designed for swappable real connectors later
-- [ ] **INTG-04**: Integration credentials scoped per tenant and stored encrypted
+- [x] **INTG-01**: Integration model supports provider, credentials_ref, and status per business
+- [x] **INTG-02**: Mock/stub adapters for CRM, email, helpdesk, calendar, and messaging in MVP
+- [x] **INTG-03**: Integration adapter interface designed for swappable real connectors later
+- [x] **INTG-04**: Integration credentials scoped per tenant and stored encrypted
 
 ## v2 Requirements
 
@@ -197,21 +197,21 @@
 | DASH-07 | Phase 2 | Complete |
 | DEPL-01 | Phase 3 | Pending |
 | DEPL-02 | Phase 3 | Pending |
-| DEPL-03 | Phase 3 | Pending |
-| DEPL-04 | Phase 3 | Pending |
-| DEPL-05 | Phase 3 | Pending |
-| DEPL-06 | Phase 3 | Pending |
+| DEPL-03 | Phase 3 | Complete |
+| DEPL-04 | Phase 3 | Complete |
+| DEPL-05 | Phase 3 | Complete |
+| DEPL-06 | Phase 3 | Complete |
 | DEPL-07 | Phase 3 | Pending |
 | DEPL-08 | Phase 3 | Pending |
 | DEPL-09 | Phase 3 | Pending |
 | DEPL-10 | Phase 3 | Pending |
 | DASH-08 | Phase 3 | Pending |
-| SECR-01 | Phase 3 | Pending |
-| SECR-02 | Phase 3 | Pending |
-| INTG-01 | Phase 3 | Pending |
-| INTG-02 | Phase 3 | Pending |
-| INTG-03 | Phase 3 | Pending |
-| INTG-04 | Phase 3 | Pending |
+| SECR-01 | Phase 3 | Complete |
+| SECR-02 | Phase 3 | Complete |
+| INTG-01 | Phase 3 | Complete |
+| INTG-02 | Phase 3 | Complete |
+| INTG-03 | Phase 3 | Complete |
+| INTG-04 | Phase 3 | Complete |
 | TASK-01 | Phase 4 | Pending |
 | TASK-02 | Phase 4 | Pending |
 | TASK-03 | Phase 4 | Pending |

@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 2: Agent Management
+**Current focus:** Phase 3: Deployment Pipeline
 
 ## Current Position
 
-Phase: 2 of 6 (Agent Management) -- COMPLETE
-Plan: 2 of 2 in current phase (2 complete)
-Status: Phase 2 Complete
-Last activity: 2026-03-25 -- Completed 02-02 (Agent List and Detail Pages)
+Phase: 3 of 6 (Deployment Pipeline)
+Plan: 1 of 4 in current phase (1 complete)
+Status: Executing Phase 3
+Last activity: 2026-03-25 -- Completed 03-01 (Runtime Config Generators)
 
-Progress: [██████░░░░] 25% (6/24 plans)
+Progress: [███████░░░] 29% (7/24 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 7
 - Average duration: 6min
-- Total execution time: 0.63 hours
+- Total execution time: 0.70 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [██████░░░░] 25% (6/24 plans)
 |-------|-------|-------|----------|
 | 01 | 4 | 23min | 6min |
 | 02 | 2 | 15min | 8min |
+| 03 | 1 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (8min), 01-04 (5min), 02-01 (9min), 02-02 (6min)
-- Trend: steady
+- Last 5 plans: 01-04 (5min), 02-01 (9min), 02-02 (6min), 03-01 (4min)
+- Trend: improving
 
 *Updated after each plan completion*
 | Phase 01 P01 | 5min | 2 tasks | 29 files |
@@ -41,6 +42,7 @@ Progress: [██████░░░░] 25% (6/24 plans)
 | Phase 01 P04 | 5min | 2 tasks | 14 files |
 | Phase 02 P01 | 9min | 2 tasks | 23 files |
 | Phase 02 P02 | 6min | 2 tasks | 12 files |
+| Phase 03 P01 | 4min | 2 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -76,6 +78,10 @@ Recent decisions affecting current work:
 - [02-02]: Controlled AlertDialog pattern for freeze/retire dialogs triggered from kebab menus
 - [02-02]: Template diff uses JSON.stringify comparison with side-by-side amber-highlighted display
 - [02-02]: Activity timeline computes relative times client-side to avoid hydration mismatches
+- [03-01]: Added @types/node to packages/core for Node.js crypto module support
+- [03-01]: Pure function generators with string output for maximum testability and portability
+- [03-01]: Docker compose YAML built via template literals (no yaml library) for zero dependencies
+- [03-01]: Frozen and retired agents excluded from docker-compose generation
 
 ### Pending Todos
 
@@ -88,5 +94,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-25
-Stopped at: Completed 02-02-PLAN.md (Phase 2 complete)
-Resume file: .planning/phases/02-agent-management/02-02-SUMMARY.md
+Stopped at: Completed 03-01-PLAN.md
+Resume file: .planning/phases/03-deployment-pipeline/03-01-SUMMARY.md
