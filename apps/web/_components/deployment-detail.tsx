@@ -177,7 +177,7 @@ export function DeploymentDetail({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="space-y-1">
@@ -334,7 +334,7 @@ export function DeploymentDetail({
             departments)
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-muted p-4 font-mono text-xs leading-relaxed">
+            <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-muted p-4 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap">
               {JSON.stringify(snapshot, null, 2)}
             </pre>
           </CollapsibleContent>

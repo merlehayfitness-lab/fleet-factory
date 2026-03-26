@@ -48,7 +48,7 @@ export function DeploymentCenter({
       </div>
 
       {/* Right panel: selected deployment details */}
-      <div className="min-h-[400px] flex-1 rounded-lg border p-4">
+      <div className="min-h-[400px] min-w-0 flex-1 rounded-lg border p-4">
         <DeploymentDetail
           deployment={selectedDeployment}
           businessId={businessId}
