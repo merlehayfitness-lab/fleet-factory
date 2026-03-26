@@ -95,3 +95,17 @@ export {
   disableTenant,
   restoreTenant,
 } from "./emergency/emergency-service";
+
+// Chat service (server-only -- database operations)
+export {
+  getOrCreateConversation,
+  sendMessage,
+  getMessages,
+  getConversationsForBusiness,
+  archiveConversation,
+  getDepartmentChannels,
+  routeAndRespond,
+} from "./chat/chat-service";
+
+// Chat stub (server-only -- simulated responses)
+export { generateStubResponse } from "./chat/chat-stub";

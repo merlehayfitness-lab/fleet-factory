@@ -131,5 +131,14 @@ export type {
   BulkActionInput,
 } from "./approval/approval-schema";
 
+// Chat types (client-safe)
+export type {
+  ChatMessage,
+  ChatConversation,
+  ToolCallTrace,
+  StubResponse,
+  DepartmentChannel,
+} from "./chat/chat-types";
+
 // NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker, approval service)
 // are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.

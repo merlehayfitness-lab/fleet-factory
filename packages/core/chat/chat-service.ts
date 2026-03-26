@@ -1,0 +1,564 @@
+// Chat CRUD service for conversations and messages.
+// All functions accept SupabaseClient as first argument (server-only pattern).
+
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type {
+  ChatConversation,
+  ChatMessage,
+  DepartmentChannel,
+  ToolCallTrace,
+} from "./chat-types";
+import { selectAgent } from "../orchestrator/router";
+import { generateStubResponse } from "./chat-stub";
+
+/**
+ * Get or create a conversation for a business + department + user.
+ * Creates one conversation per department per user and reuses existing active ones.
+ */
+export async function getOrCreateConversation(
+  supabase: SupabaseClient,
+  businessId: string,
+  departmentId: string,
+  userId: string,
+): Promise<ChatConversation> {
+  // Check for existing active conversation
+  const { data: existing, error: fetchError } = await supabase
+    .from("conversations")
+    .select(
+      "id, business_id, department_id, user_id, title, status, last_message_at, message_count, created_at",
+    )
+    .eq("business_id", businessId)
+    .eq("department_id", departmentId)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .limit(1);
+
+  if (fetchError) {
+    throw new Error(
+      `Failed to fetch conversation: ${fetchError.message}`,
+    );
+  }
+
+  if (existing && existing.length > 0) {
+    const conv = existing[0];
+    // Fetch department info for the response
+    const { data: dept } = await supabase
+      .from("departments")
+      .select("name, department_type")
+      .eq("id", departmentId)
+      .single();
+
+    return {
+      id: conv.id as string,
+      businessId: conv.business_id as string,
+      departmentId: conv.department_id as string,
+      departmentName: (dept?.name as string) ?? "Unknown",
+      departmentType: (dept?.department_type as string) ?? "custom",
+      userId: conv.user_id as string,
+      title: conv.title as string | null,
+      status: conv.status as "active" | "archived",
+      lastMessageAt: conv.last_message_at as string,
+      messageCount: conv.message_count as number,
+      createdAt: conv.created_at as string,
+    };
+  }
+
+  // Create new conversation
+  const { data: newConv, error: insertError } = await supabase
+    .from("conversations")
+    .insert({
+      business_id: businessId,
+      department_id: departmentId,
+      user_id: userId,
+      status: "active",
+    })
+    .select(
+      "id, business_id, department_id, user_id, title, status, last_message_at, message_count, created_at",
+    )
+    .single();
+
+  if (insertError || !newConv) {
+    throw new Error(
+      `Failed to create conversation: ${insertError?.message ?? "No data returned"}`,
+    );
+  }
+
+  // Fetch department info
+  const { data: dept } = await supabase
+    .from("departments")
+    .select("name, department_type")
+    .eq("id", departmentId)
+    .single();
+
+  return {
+    id: newConv.id as string,
+    businessId: newConv.business_id as string,
+    departmentId: newConv.department_id as string,
+    departmentName: (dept?.name as string) ?? "Unknown",
+    departmentType: (dept?.department_type as string) ?? "custom",
+    userId: newConv.user_id as string,
+    title: newConv.title as string | null,
+    status: newConv.status as "active" | "archived",
+    lastMessageAt: newConv.last_message_at as string,
+    messageCount: newConv.message_count as number,
+    createdAt: newConv.created_at as string,
+  };
+}
+
+/**
+ * Send a message in a conversation.
+ * Creates the message record and updates conversation counters.
+ */
+export async function sendMessage(
+  supabase: SupabaseClient,
+  businessId: string,
+  conversationId: string,
+  content: string,
+  role: "user" | "agent" | "system",
+  agentId?: string,
+  toolCalls?: ToolCallTrace[],
+  metadata?: Record<string, unknown>,
+): Promise<ChatMessage> {
+  // Insert message
+  const { data: msg, error: insertError } = await supabase
+    .from("messages")
+    .insert({
+      conversation_id: conversationId,
+      business_id: businessId,
+      role,
+      agent_id: agentId ?? null,
+      content,
+      tool_calls: toolCalls ?? [],
+      metadata: metadata ?? {},
+    })
+    .select("id, conversation_id, business_id, role, agent_id, content, tool_calls, metadata, created_at")
+    .single();
+
+  if (insertError || !msg) {
+    throw new Error(
+      `Failed to send message: ${insertError?.message ?? "No data returned"}`,
+    );
+  }
+
+  // Update conversation counters (direct update, no RPC dependency)
+  try {
+    await supabase
+      .from("conversations")
+      .update({
+        last_message_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", conversationId);
+  } catch {
+    // Best-effort counter update -- message is already saved
+    console.error("Failed to update conversation counters");
+  }
+
+  // Fetch agent name if this is an agent message
+  let agentName: string | null = null;
+  if (agentId) {
+    const { data: agent } = await supabase
+      .from("agents")
+      .select("name")
+      .eq("id", agentId)
+      .single();
+    agentName = (agent?.name as string) ?? null;
+  }
+
+  return {
+    id: msg.id as string,
+    conversationId: msg.conversation_id as string,
+    businessId: msg.business_id as string,
+    role: msg.role as "user" | "agent" | "system",
+    agentId: (msg.agent_id as string) ?? null,
+    agentName,
+    content: msg.content as string,
+    toolCalls: (msg.tool_calls as ToolCallTrace[]) ?? [],
+    metadata: (msg.metadata as Record<string, unknown>) ?? {},
+    createdAt: msg.created_at as string,
+  };
+}
+
+/**
+ * Get messages for a conversation with pagination.
+ * Returns messages ordered by created_at ASC (oldest first).
+ */
+export async function getMessages(
+  supabase: SupabaseClient,
+  conversationId: string,
+  limit = 50,
+  before?: string,
+): Promise<ChatMessage[]> {
+  let query = supabase
+    .from("messages")
+    .select(
+      "id, conversation_id, business_id, role, agent_id, content, tool_calls, metadata, created_at",
+    )
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (before) {
+    query = query.lt("created_at", before);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(`Failed to fetch messages: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  // Batch fetch agent names for agent messages
+  const agentIds = [
+    ...new Set(
+      data
+        .filter((m) => m.agent_id)
+        .map((m) => m.agent_id as string),
+    ),
+  ];
+  const agentNameMap = new Map<string, string>();
+  if (agentIds.length > 0) {
+    const { data: agents } = await supabase
+      .from("agents")
+      .select("id, name")
+      .in("id", agentIds);
+    for (const agent of agents ?? []) {
+      agentNameMap.set(agent.id as string, agent.name as string);
+    }
+  }
+
+  return data.map((m) => ({
+    id: m.id as string,
+    conversationId: m.conversation_id as string,
+    businessId: m.business_id as string,
+    role: m.role as "user" | "agent" | "system",
+    agentId: (m.agent_id as string) ?? null,
+    agentName: m.agent_id
+      ? agentNameMap.get(m.agent_id as string) ?? null
+      : null,
+    content: m.content as string,
+    toolCalls: (m.tool_calls as ToolCallTrace[]) ?? [],
+    metadata: (m.metadata as Record<string, unknown>) ?? {},
+    createdAt: m.created_at as string,
+  }));
+}
+
+/**
+ * Get all conversations for a business.
+ * Returns conversations ordered by last_message_at DESC.
+ */
+export async function getConversationsForBusiness(
+  supabase: SupabaseClient,
+  businessId: string,
+): Promise<ChatConversation[]> {
+  const { data, error } = await supabase
+    .from("conversations")
+    .select(
+      "id, business_id, department_id, user_id, title, status, last_message_at, message_count, created_at",
+    )
+    .eq("business_id", businessId)
+    .order("last_message_at", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch conversations: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  // Batch fetch department info
+  const deptIds = [
+    ...new Set(data.map((c) => c.department_id as string)),
+  ];
+  const deptMap = new Map<
+    string,
+    { name: string; type: string }
+  >();
+  if (deptIds.length > 0) {
+    const { data: depts } = await supabase
+      .from("departments")
+      .select("id, name, department_type")
+      .in("id", deptIds);
+    for (const dept of depts ?? []) {
+      deptMap.set(dept.id as string, {
+        name: dept.name as string,
+        type: dept.department_type as string,
+      });
+    }
+  }
+
+  return data.map((c) => {
+    const dept = deptMap.get(c.department_id as string);
+    return {
+      id: c.id as string,
+      businessId: c.business_id as string,
+      departmentId: c.department_id as string,
+      departmentName: dept?.name ?? "Unknown",
+      departmentType: dept?.type ?? "custom",
+      userId: c.user_id as string,
+      title: c.title as string | null,
+      status: c.status as "active" | "archived",
+      lastMessageAt: c.last_message_at as string,
+      messageCount: c.message_count as number,
+      createdAt: c.created_at as string,
+    };
+  });
+}
+
+/**
+ * Archive a conversation.
+ * Updates status to 'archived' and creates an audit log entry.
+ */
+export async function archiveConversation(
+  supabase: SupabaseClient,
+  conversationId: string,
+): Promise<void> {
+  // Get conversation for audit log
+  const { data: conv } = await supabase
+    .from("conversations")
+    .select("business_id")
+    .eq("id", conversationId)
+    .single();
+
+  const { error } = await supabase
+    .from("conversations")
+    .update({
+      status: "archived",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", conversationId);
+
+  if (error) {
+    throw new Error(`Failed to archive conversation: ${error.message}`);
+  }
+
+  // Audit log (best-effort)
+  if (conv) {
+    try {
+      await supabase.from("audit_logs").insert({
+        business_id: conv.business_id,
+        action: "conversation.archived",
+        entity_type: "conversation",
+        entity_id: conversationId,
+        metadata: {},
+      });
+    } catch {
+      console.error("Failed to create conversation archive audit log");
+    }
+  }
+}
+
+/**
+ * Get department channels for a business with unread counts.
+ * Returns all departments with conversation status and agent health info.
+ */
+export async function getDepartmentChannels(
+  supabase: SupabaseClient,
+  businessId: string,
+  userId: string,
+): Promise<DepartmentChannel[]> {
+  // Fetch all departments for this business
+  const { data: departments, error: deptError } = await supabase
+    .from("departments")
+    .select("id, name, department_type")
+    .eq("business_id", businessId)
+    .order("name");
+
+  if (deptError) {
+    throw new Error(`Failed to fetch departments: ${deptError.message}`);
+  }
+
+  if (!departments || departments.length === 0) {
+    return [];
+  }
+
+  // Fetch active conversations for this user in this business
+  const { data: conversations } = await supabase
+    .from("conversations")
+    .select("id, department_id, last_message_at, message_count")
+    .eq("business_id", businessId)
+    .eq("user_id", userId)
+    .eq("status", "active");
+
+  // Build conversation map by department
+  const convMap = new Map<
+    string,
+    { id: string; lastMessageAt: string; messageCount: number }
+  >();
+  for (const conv of conversations ?? []) {
+    convMap.set(conv.department_id as string, {
+      id: conv.id as string,
+      lastMessageAt: conv.last_message_at as string,
+      messageCount: conv.message_count as number,
+    });
+  }
+
+  // Fetch agent status per department
+  const { data: agents } = await supabase
+    .from("agents")
+    .select("id, department_id, status")
+    .eq("business_id", businessId);
+
+  // Build agent status map by department
+  const agentStatusMap = new Map<
+    string,
+    { hasActive: boolean; hasFrozen: boolean }
+  >();
+  for (const agent of agents ?? []) {
+    const deptId = agent.department_id as string;
+    const current = agentStatusMap.get(deptId) ?? {
+      hasActive: false,
+      hasFrozen: false,
+    };
+    if (agent.status === "active") current.hasActive = true;
+    if (agent.status === "frozen") current.hasFrozen = true;
+    agentStatusMap.set(deptId, current);
+  }
+
+  // Compute unread counts: count agent messages after the user's last message in each conversation
+  const channels: DepartmentChannel[] = [];
+  for (const dept of departments) {
+    const deptId = dept.id as string;
+    const conv = convMap.get(deptId);
+    const agentStatus = agentStatusMap.get(deptId) ?? {
+      hasActive: false,
+      hasFrozen: false,
+    };
+
+    let unreadCount = 0;
+    if (conv) {
+      // Get the user's last message timestamp
+      const { data: lastUserMsg } = await supabase
+        .from("messages")
+        .select("created_at")
+        .eq("conversation_id", conv.id)
+        .eq("role", "user")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (lastUserMsg && lastUserMsg.length > 0) {
+        // Count agent messages after the user's last message
+        const { count } = await supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("conversation_id", conv.id)
+          .eq("role", "agent")
+          .gt("created_at", lastUserMsg[0].created_at as string);
+        unreadCount = count ?? 0;
+      }
+    }
+
+    channels.push({
+      departmentId: deptId,
+      departmentName: dept.name as string,
+      departmentType: dept.department_type as string,
+      lastMessageAt: conv?.lastMessageAt ?? null,
+      unreadCount,
+      hasActiveAgent: agentStatus.hasActive,
+      agentFrozen: agentStatus.hasFrozen,
+    });
+  }
+
+  return channels;
+}
+
+/**
+ * Route a user message to the appropriate agent and generate a stub response.
+ *
+ * Uses the orchestrator's selectAgent to find the right agent in the department.
+ * If the agent is frozen, returns a system message.
+ * Otherwise, generates a department-appropriate stub response.
+ */
+export async function routeAndRespond(
+  supabase: SupabaseClient,
+  businessId: string,
+  departmentId: string,
+  conversationId: string,
+  userMessage: string,
+): Promise<ChatMessage> {
+  // Get department type for stub response
+  const { data: dept } = await supabase
+    .from("departments")
+    .select("department_type")
+    .eq("id", departmentId)
+    .single();
+  const departmentType = (dept?.department_type as string) ?? "owner";
+
+  // Check for frozen agents in the department
+  const { data: frozenAgents } = await supabase
+    .from("agents")
+    .select("id, name, status")
+    .eq("department_id", departmentId)
+    .eq("business_id", businessId)
+    .eq("status", "frozen")
+    .limit(1);
+
+  // Try to select an active agent
+  let agent: { id: string; name: string; status: string } | null = null;
+  try {
+    agent = await selectAgent(supabase, departmentId, businessId);
+  } catch {
+    // No active agent found
+  }
+
+  // If no active agent but frozen agents exist, return frozen message
+  if (!agent && frozenAgents && frozenAgents.length > 0) {
+    return sendMessage(
+      supabase,
+      businessId,
+      conversationId,
+      "This agent has been frozen. Contact an admin to restore access.",
+      "system",
+    );
+  }
+
+  // If no agent at all, return a system message
+  if (!agent) {
+    return sendMessage(
+      supabase,
+      businessId,
+      conversationId,
+      "No active agent available in this department. Please contact an administrator.",
+      "system",
+    );
+  }
+
+  // Generate stub response
+  const stub = generateStubResponse(departmentType, userMessage);
+
+  // Create agent message
+  const agentMessage = await sendMessage(
+    supabase,
+    businessId,
+    conversationId,
+    stub.content,
+    "agent",
+    agent.id,
+    stub.toolCalls,
+  );
+
+  // Audit log (best-effort)
+  try {
+    await supabase.from("audit_logs").insert({
+      business_id: businessId,
+      action: "chat.message_routed",
+      entity_type: "conversation",
+      entity_id: conversationId,
+      metadata: {
+        agentId: agent.id,
+        agentName: agent.name,
+        departmentId,
+        departmentType,
+      },
+    });
+  } catch {
+    console.error("Failed to create chat routing audit log");
+  }
+
+  return agentMessage;
+}
