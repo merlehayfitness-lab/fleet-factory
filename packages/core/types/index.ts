@@ -45,3 +45,22 @@ export type IntegrationStatus = "active" | "inactive" | "mock";
 
 /** Secret category */
 export type SecretCategory = "api_key" | "credential" | "token";
+
+/** Task priority levels */
+export type TaskPriority = "low" | "medium" | "high";
+
+/** Task lifecycle status */
+export type TaskStatus =
+  | "queued"
+  | "assigned"
+  | "in_progress"
+  | "waiting_approval"
+  | "assistance_requested"
+  | "completed"
+  | "failed";
+
+/** Task creation source */
+export type TaskSource = "admin" | "api" | "webhook" | "orchestrator";
+
+/** Assistance request status */
+export type AssistanceRequestStatus = "open" | "responded" | "resolved";
