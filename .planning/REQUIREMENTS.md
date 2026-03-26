@@ -77,15 +77,15 @@
 - [x] **SECR-03**: Agent execution sandboxed — no host filesystem access, no elevated exec, restricted mounts
 - [x] **SECR-04**: Tool access validated against tenant-scoped allowlists before execution
 - [x] **SECR-05**: Agents never run with service_role credentials
-- [ ] **SECR-06**: Emergency controls: freeze agent, revoke tools, disable tenant — all take effect immediately
+- [x] **SECR-06**: Emergency controls: freeze agent, revoke tools, disable tenant — all take effect immediately
 
 ### Tenant Operations
 
 - [x] **TOPS-01**: Per-tenant health dashboard showing agent status, error rates, task throughput, and deployment state
 - [x] **TOPS-02**: All logs, metrics, and traces tagged with business_id and filterable per tenant
-- [ ] **TOPS-03**: Audit log viewer shows full action history per business (searchable, filterable by actor/event type)
+- [x] **TOPS-03**: Audit log viewer shows full action history per business (searchable, filterable by actor/event type)
 - [x] **TOPS-04**: Internal usage metering tracks token consumption and cost per tenant per agent
-- [ ] **TOPS-05**: Tenant kill switch disables business without affecting other tenants
+- [x] **TOPS-05**: Tenant kill switch disables business without affecting other tenants
 
 ### Dashboard & UI
 
@@ -232,14 +232,14 @@
 | TOPS-04 | Phase 4 | Complete |
 | TOPS-01 | Phase 5 | Complete |
 | TOPS-02 | Phase 5 | Complete |
-| TOPS-03 | Phase 5 | Pending |
-| TOPS-05 | Phase 5 | Pending |
+| TOPS-03 | Phase 5 | Complete |
+| TOPS-05 | Phase 5 | Complete |
 | COMM-01 | Phase 5 | Pending |
 | COMM-02 | Phase 5 | Pending |
 | COMM-03 | Phase 5 | Pending |
 | DASH-10 | Phase 5 | Pending |
 | DASH-11 | Phase 5 | Pending |
-| SECR-06 | Phase 5 | Pending |
+| SECR-06 | Phase 5 | Complete |
 | BLDR-01 | Phase 6 | Pending |
 | BLDR-02 | Phase 6 | Pending |
 | BLDR-03 | Phase 6 | Pending |

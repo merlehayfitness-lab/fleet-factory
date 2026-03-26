@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 5 of 6 (Observability & Command Center)
-Plan: 1 of 3 in current phase (1 complete)
+Plan: 2 of 3 in current phase (2 complete)
 Status: Executing Phase 5
-Last activity: 2026-03-26 -- Completed 05-01 (Health Dashboard & Schema)
+Last activity: 2026-03-26 -- Completed 05-02 (Audit Logs, Emergency Controls & Tenant Kill Switch)
 
-Progress: [██████████████████] 68% (17/25 plans)
+Progress: [███████████████████] 72% (18/25 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
+- Total plans completed: 18
 - Average duration: 6min
-- Total execution time: 1.48 hours
+- Total execution time: 1.63 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [██████████████████] 68% (17/25 pl
 | 02 | 2 | 15min | 8min |
 | 03 | 5 | 26min | 5min |
 | 04 | 5 | 29min | 6min |
-| 05 | 1 | 5min | 5min |
+| 05 | 2 | 14min | 7min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (4min), 04-03 (9min), 04-04 (6min), 04-05 (3min), 05-01 (5min)
+- Last 5 plans: 04-03 (9min), 04-04 (6min), 04-05 (3min), 05-01 (5min), 05-02 (9min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -55,6 +55,7 @@ Progress: [██████████████████] 68% (17/25 pl
 | Phase 04 P04 | 6min | 2 tasks | 9 files |
 | Phase 04 P05 | 3min | 2 tasks | 1 files |
 | Phase 05 P01 | 5min | 2 tasks | 14 files |
+| Phase 05 P02 | 9min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -133,6 +134,11 @@ Recent decisions affecting current work:
 - [05-01]: HealthDashboard replaces BusinessOverview as primary business page component
 - [05-01]: Agent health grid uses Collapsible from shadcn/ui (base-ui) for expandable card detail
 - [05-01]: Error rate color coding: green < 5%, amber 5-20%, red > 20%
+- [05-02]: TypeToConfirmDialog uses Dialog (not AlertDialog) for programmatic open/close control
+- [05-02]: Emergency service follows SupabaseClient-first-arg pattern with best-effort audit logging
+- [05-02]: Audit log live tail polls every 5 seconds via setInterval with Server Action
+- [05-02]: CSV/JSON export converts client-side via Blob URL and anchor click
+- [05-02]: Tenant restore does NOT auto-unfreeze agents -- admin must manually review each
 
 ### Pending Todos
 
@@ -145,5 +151,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-26
-Stopped at: Completed 05-01-PLAN.md (Health Dashboard & Schema)
-Resume file: .planning/phases/05-observability-and-command-center/05-01-SUMMARY.md
+Stopped at: Completed 05-02-PLAN.md (Audit Logs, Emergency Controls & Tenant Kill Switch)
+Resume file: .planning/phases/05-observability-and-command-center/05-02-SUMMARY.md
