@@ -1,5 +1,5 @@
 ---
-status: complete
+status: resolved
 phase: 04-task-execution-and-approvals
 source: 04-01-SUMMARY.md, 04-02-SUMMARY.md, 04-03-SUMMARY.md, 04-04-SUMMARY.md, 04-05-SUMMARY.md
 started: 2026-03-26T17:15:00Z
@@ -67,11 +67,16 @@ skipped: 0
 ## Gaps
 
 - truth: "Department dropdown shows department name, not UUID"
-  status: failed
+  status: resolved
   reason: "User reported: department dropdown is showing ID's and when I click on the drop down it shows the actual department"
   severity: minor
   test: 1
-  root_cause: ""
-  artifacts: []
-  missing: []
+  root_cause: "base-ui SelectValue cannot resolve display text from SelectItem children when items are inside a Portal and haven't been rendered yet. Falls back to showing the raw value (UUID) instead of the label."
+  artifacts:
+    - path: "apps/web/_components/task-quick-add.tsx"
+      issue: "SelectValue shows UUID instead of department name in trigger"
+    - path: "apps/web/_components/task-filters.tsx"
+      issue: "Same issue for department and agent filter dropdowns"
+  missing:
+    - "Replace SelectValue with explicit label lookup from departments/agents array for controlled selects using UUID values"
   debug_session: ""
