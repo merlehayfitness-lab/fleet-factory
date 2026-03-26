@@ -57,18 +57,18 @@
 - [x] **TASK-02**: Orchestrator service (Paperclip) routes tasks to appropriate department agent based on type and priority
 - [x] **TASK-03**: Worker service (OpenClaw) executes agent tasks with allowed tools from tool_profile
 - [x] **TASK-04**: Tasks track status (queued, assigned, in_progress, completed, failed)
-- [ ] **TASK-05**: Tasks page shows work queue across all departments for a business
+- [x] **TASK-05**: Tasks page shows work queue across all departments for a business
 - [x] **TASK-06**: Webhook/event ingestion endpoint accepts inbound events from external systems to create tasks
 
 ### Approvals & Governance
 
-- [ ] **APRV-01**: Risky agent actions create approval requests that pause execution
-- [ ] **APRV-02**: Admin can approve or reject gated actions from approvals page
-- [ ] **APRV-03**: Risk-tiered approval routing: low-risk auto-run, medium-risk async review, high-risk synchronous approval
-- [ ] **APRV-04**: Policy rules gate irreversible actions (spending money, deleting data, changing integrations, modifying production)
-- [ ] **APRV-05**: Agent confidence thresholds trigger escalation to human when uncertainty is high
-- [ ] **APRV-06**: Escalation paths defined: agent → manager → admin → owner
-- [ ] **APRV-07**: All approval decisions logged in audit_logs with full context
+- [x] **APRV-01**: Risky agent actions create approval requests that pause execution
+- [x] **APRV-02**: Admin can approve or reject gated actions from approvals page
+- [x] **APRV-03**: Risk-tiered approval routing: low-risk auto-run, medium-risk async review, high-risk synchronous approval
+- [x] **APRV-04**: Policy rules gate irreversible actions (spending money, deleting data, changing integrations, modifying production)
+- [x] **APRV-05**: Agent confidence thresholds trigger escalation to human when uncertainty is high
+- [x] **APRV-06**: Escalation paths defined: agent → manager → admin → owner
+- [x] **APRV-07**: All approval decisions logged in audit_logs with full context
 
 ### Security
 
@@ -97,7 +97,7 @@
 - [x] **DASH-06**: Agents list page per business
 - [x] **DASH-07**: Agent detail page (config, status, activity, conversations)
 - [x] **DASH-08**: Deployment center page per business
-- [ ] **DASH-09**: Tasks and approvals page per business
+- [x] **DASH-09**: Tasks and approvals page per business
 - [ ] **DASH-10**: Command center chat interface with routing to agents via orchestrator
 - [ ] **DASH-11**: Conversation log viewer with transcript history and tool call traces
 
@@ -216,16 +216,16 @@
 | TASK-02 | Phase 4 | Complete |
 | TASK-03 | Phase 4 | Complete |
 | TASK-04 | Phase 4 | Complete |
-| TASK-05 | Phase 4 | Pending |
+| TASK-05 | Phase 4 | Complete |
 | TASK-06 | Phase 4 | Complete |
-| APRV-01 | Phase 4 | Pending |
-| APRV-02 | Phase 4 | Pending |
-| APRV-03 | Phase 4 | Pending |
-| APRV-04 | Phase 4 | Pending |
-| APRV-05 | Phase 4 | Pending |
-| APRV-06 | Phase 4 | Pending |
-| APRV-07 | Phase 4 | Pending |
-| DASH-09 | Phase 4 | Pending |
+| APRV-01 | Phase 4 | Complete |
+| APRV-02 | Phase 4 | Complete |
+| APRV-03 | Phase 4 | Complete |
+| APRV-04 | Phase 4 | Complete |
+| APRV-05 | Phase 4 | Complete |
+| APRV-06 | Phase 4 | Complete |
+| APRV-07 | Phase 4 | Complete |
+| DASH-09 | Phase 4 | Complete |
 | SECR-03 | Phase 4 | Complete |
 | SECR-04 | Phase 4 | Complete |
 | SECR-05 | Phase 4 | Complete |
