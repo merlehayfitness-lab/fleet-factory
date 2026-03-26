@@ -55,7 +55,7 @@
 
 - [x] **TASK-01**: Tasks can be created via admin panel or API with title, payload, priority, and target agent/department
 - [x] **TASK-02**: Orchestrator service (Paperclip) routes tasks to appropriate department agent based on type and priority
-- [ ] **TASK-03**: Worker service (OpenClaw) executes agent tasks with allowed tools from tool_profile
+- [x] **TASK-03**: Worker service (OpenClaw) executes agent tasks with allowed tools from tool_profile
 - [x] **TASK-04**: Tasks track status (queued, assigned, in_progress, completed, failed)
 - [ ] **TASK-05**: Tasks page shows work queue across all departments for a business
 - [x] **TASK-06**: Webhook/event ingestion endpoint accepts inbound events from external systems to create tasks
@@ -74,9 +74,9 @@
 
 - [x] **SECR-01**: Secrets stored encrypted, never plaintext in database or config files
 - [x] **SECR-02**: Per-tenant credential isolation — one business cannot access another's secrets
-- [ ] **SECR-03**: Agent execution sandboxed — no host filesystem access, no elevated exec, restricted mounts
-- [ ] **SECR-04**: Tool access validated against tenant-scoped allowlists before execution
-- [ ] **SECR-05**: Agents never run with service_role credentials
+- [x] **SECR-03**: Agent execution sandboxed — no host filesystem access, no elevated exec, restricted mounts
+- [x] **SECR-04**: Tool access validated against tenant-scoped allowlists before execution
+- [x] **SECR-05**: Agents never run with service_role credentials
 - [ ] **SECR-06**: Emergency controls: freeze agent, revoke tools, disable tenant — all take effect immediately
 
 ### Tenant Operations
@@ -214,7 +214,7 @@
 | INTG-04 | Phase 3 | Complete |
 | TASK-01 | Phase 4 | Complete |
 | TASK-02 | Phase 4 | Complete |
-| TASK-03 | Phase 4 | Pending |
+| TASK-03 | Phase 4 | Complete |
 | TASK-04 | Phase 4 | Complete |
 | TASK-05 | Phase 4 | Pending |
 | TASK-06 | Phase 4 | Complete |
@@ -226,9 +226,9 @@
 | APRV-06 | Phase 4 | Pending |
 | APRV-07 | Phase 4 | Pending |
 | DASH-09 | Phase 4 | Pending |
-| SECR-03 | Phase 4 | Pending |
-| SECR-04 | Phase 4 | Pending |
-| SECR-05 | Phase 4 | Pending |
+| SECR-03 | Phase 4 | Complete |
+| SECR-04 | Phase 4 | Complete |
+| SECR-05 | Phase 4 | Complete |
 | TOPS-04 | Phase 4 | Pending |
 | TOPS-01 | Phase 5 | Pending |
 | TOPS-02 | Phase 5 | Pending |
