@@ -97,7 +97,9 @@ export function TaskQuickAdd({ departments, businessId }: TaskQuickAddProps) {
         }}
       >
         <SelectTrigger className="w-[140px]">
-          <SelectValue placeholder="Department" />
+          <span className="flex flex-1 text-left truncate">
+            {departments.find((d) => d.id === selectedDepartment)?.name ?? "Department"}
+          </span>
         </SelectTrigger>
         <SelectContent>
           {departments.map((dept) => (

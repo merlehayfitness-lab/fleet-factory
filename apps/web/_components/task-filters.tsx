@@ -93,7 +93,9 @@ export function TaskFilters({
         onValueChange={(val) => updateFilter("department", val || undefined)}
       >
         <SelectTrigger size="sm" className="w-[150px]">
-          <SelectValue placeholder="All departments" />
+          <span className="flex flex-1 text-left truncate">
+            {departments.find((d) => d.id === filters.department)?.name ?? "All departments"}
+          </span>
         </SelectTrigger>
         <SelectContent>
           {departments.map((d) => (
@@ -125,7 +127,9 @@ export function TaskFilters({
         onValueChange={(val) => updateFilter("agent", val || undefined)}
       >
         <SelectTrigger size="sm" className="w-[150px]">
-          <SelectValue placeholder="All agents" />
+          <span className="flex flex-1 text-left truncate">
+            {agents.find((a) => a.id === filters.agent)?.name ?? "All agents"}
+          </span>
         </SelectTrigger>
         <SelectContent>
           {agents.map((a) => (

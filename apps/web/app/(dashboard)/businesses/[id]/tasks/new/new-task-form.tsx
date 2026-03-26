@@ -124,7 +124,9 @@ export function NewTaskForm({
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select department" />
+                <span className="flex flex-1 text-left truncate">
+                  {departments.find((d) => d.id === selectedDepartment)?.name ?? "Select department"}
+                </span>
               </SelectTrigger>
               <SelectContent>
                 {departments.map((dept) => (
