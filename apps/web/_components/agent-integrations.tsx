@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { getAdapter } from "@agency-factory/core";
 import type { IntegrationType } from "@agency-factory/core";
 import {
@@ -147,6 +149,7 @@ function IntegrationTypeSection({
   );
   const [isPending, startTransition] = useTransition();
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const router = useRouter();
 
   const adapter = getAdapter(type);
   const capabilities = adapter.getCapabilities();
@@ -165,21 +168,39 @@ function IntegrationTypeSection({
 
   function handleSave() {
     startTransition(async () => {
-      await saveIntegrationAction(businessId, agentId, type, selectedProvider);
+      const result = await saveIntegrationAction(businessId, agentId, type, selectedProvider);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Integration saved");
+        router.refresh();
+      }
     });
   }
 
   function handleAddMock() {
     setSelectedProvider("mock");
     startTransition(async () => {
-      await saveIntegrationAction(businessId, agentId, type, "mock");
+      const result = await saveIntegrationAction(businessId, agentId, type, "mock");
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Mock integration added");
+        router.refresh();
+      }
     });
   }
 
   function handleDelete() {
     if (!integration) return;
     startTransition(async () => {
-      await deleteIntegrationAction(businessId, integration.id);
+      const result = await deleteIntegrationAction(businessId, integration.id);
+      if (result.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Integration removed");
+        router.refresh();
+      }
     });
   }
 

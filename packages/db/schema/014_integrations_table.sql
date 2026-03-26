@@ -21,6 +21,9 @@ CREATE INDEX IF NOT EXISTS idx_integrations_business
 CREATE INDEX IF NOT EXISTS idx_integrations_agent
   ON public.integrations (agent_id);
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_integrations_business_agent_type
+  ON public.integrations (business_id, agent_id, type);
+
 DROP TRIGGER IF EXISTS set_integrations_updated_at ON public.integrations;
 CREATE TRIGGER set_integrations_updated_at BEFORE UPDATE ON public.integrations
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
