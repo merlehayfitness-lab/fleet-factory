@@ -13,6 +13,7 @@ import type { TaskPriority } from "../types/index";
 import { assertSandbox, validateToolAccess } from "./sandbox";
 import { getMockResult, getToolRiskLevel, getToolsForDepartment } from "./tool-catalog";
 import { estimateTokens, calculateCost, recordUsage } from "./metering";
+import { evaluateRisk } from "../approval/policy-engine";
 
 interface ToolResult {
   success: boolean;
@@ -37,6 +38,23 @@ interface AgentTaskResult {
   };
   costCents?: number;
   error?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Risk level comparison helper
+// ---------------------------------------------------------------------------
+
+const RISK_ORDER: Record<string, number> = { low: 0, medium: 1, high: 2 };
+
+/**
+ * Return the higher of two risk levels.
+ * Used to combine catalog-based risk with policy-engine risk.
+ */
+function maxRiskLevel(
+  a: "low" | "medium" | "high",
+  b: "low" | "medium" | "high",
+): "low" | "medium" | "high" {
+  return (RISK_ORDER[a] ?? 0) >= (RISK_ORDER[b] ?? 0) ? a : b;
 }
 
 // ---------------------------------------------------------------------------
@@ -166,7 +184,19 @@ export async function runAgentTask(
   const toolResults: ToolResult[] = [];
 
   for (const toolName of requestedTools) {
-    const riskLevel = getToolRiskLevel(toolName);
+    const catalogRisk = getToolRiskLevel(toolName);
+
+    // Consult database-backed policy engine for this tool's action pattern
+    let policyRisk: "low" | "medium" | "high" = catalogRisk;
+    try {
+      const policyResult = await evaluateRisk(supabase, toolName);
+      policyRisk = policyResult.riskLevel;
+    } catch {
+      // Policy engine failure: fall back to catalog risk only (fail-open to existing behavior)
+    }
+
+    // Take the higher of catalog risk and policy engine risk
+    const riskLevel = maxRiskLevel(catalogRisk, policyRisk);
 
     // High risk: always needs approval
     if (riskLevel === "high") {
@@ -176,7 +206,7 @@ export async function runAgentTask(
         status: "needs_approval",
         toolResults,
         needsApproval: true,
-        approvalAction: `Execute high-risk tool: ${toolName}`,
+        approvalAction: `Execute high-risk tool: ${toolName}${policyRisk === "high" && catalogRisk !== "high" ? " (elevated by policy)" : ""}`,
         approvalRiskLevel: riskLevel,
         approvalToolName: toolName,
       };
@@ -190,7 +220,7 @@ export async function runAgentTask(
         status: "needs_approval",
         toolResults,
         needsApproval: true,
-        approvalAction: `Execute medium-risk tool: ${toolName} (agent not trusted)`,
+        approvalAction: `Execute medium-risk tool: ${toolName} (agent not trusted)${policyRisk === "medium" && catalogRisk !== "medium" ? " (elevated by policy)" : ""}`,
         approvalRiskLevel: riskLevel,
         approvalToolName: toolName,
       };
