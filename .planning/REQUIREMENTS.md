@@ -84,7 +84,7 @@
 - [ ] **TOPS-01**: Per-tenant health dashboard showing agent status, error rates, task throughput, and deployment state
 - [ ] **TOPS-02**: All logs, metrics, and traces tagged with business_id and filterable per tenant
 - [ ] **TOPS-03**: Audit log viewer shows full action history per business (searchable, filterable by actor/event type)
-- [ ] **TOPS-04**: Internal usage metering tracks token consumption and cost per tenant per agent
+- [x] **TOPS-04**: Internal usage metering tracks token consumption and cost per tenant per agent
 - [ ] **TOPS-05**: Tenant kill switch disables business without affecting other tenants
 
 ### Dashboard & UI
@@ -229,7 +229,7 @@
 | SECR-03 | Phase 4 | Complete |
 | SECR-04 | Phase 4 | Complete |
 | SECR-05 | Phase 4 | Complete |
-| TOPS-04 | Phase 4 | Pending |
+| TOPS-04 | Phase 4 | Complete |
 | TOPS-01 | Phase 5 | Pending |
 | TOPS-02 | Phase 5 | Pending |
 | TOPS-03 | Phase 5 | Pending |

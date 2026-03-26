@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 4: Task Execution & Approvals
+**Current focus:** Phase 4 complete, ready for Phase 5
 
 ## Current Position
 
-Phase: 4 of 6 (Task Execution & Approvals)
-Plan: 3 of 4 in current phase (3 complete)
-Status: Executing Phase 4
-Last activity: 2026-03-26 -- Completed 04-03 (Approval Gates & Tasks/Approvals Pages)
+Phase: 4 of 6 (Task Execution & Approvals -- COMPLETE)
+Plan: 4 of 4 in current phase (4 complete)
+Status: Phase 4 Complete
+Last activity: 2026-03-26 -- Completed 04-04 (Usage Metering Dashboard & Security Hardening)
 
-Progress: [██████████████░] 56% (14/25 plans)
+Progress: [████████████████░] 60% (15/25 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: 6min
-- Total execution time: 1.25 hours
+- Total execution time: 1.35 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [██████████████░] 56% (14/25 plans)
 | 01 | 4 | 23min | 6min |
 | 02 | 2 | 15min | 8min |
 | 03 | 5 | 26min | 5min |
-| 04 | 3 | 20min | 7min |
+| 04 | 4 | 26min | 7min |
 
 **Recent Trend:**
-- Last 5 plans: 03-04 (4min), 03-05 (3min), 04-01 (7min), 04-02 (4min), 04-03 (9min)
+- Last 5 plans: 03-05 (3min), 04-01 (7min), 04-02 (4min), 04-03 (9min), 04-04 (6min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -51,6 +51,7 @@ Progress: [██████████████░] 56% (14/25 plans)
 | Phase 04 P01 | 7min | 2 tasks | 15 files |
 | Phase 04 P02 | 4min | 2 tasks | 10 files |
 | Phase 04 P03 | 9min | 2 tasks | 30 files |
+| Phase 04 P04 | 6min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,10 @@ Recent decisions affecting current work:
 - [04-03]: Approval polling uses 10s setInterval with Server Action fetch for near-real-time updates
 - [04-03]: Client-side task filtering with useMemo rather than server re-fetch for instant response
 - [04-03]: Native HTML checkbox for approval selection instead of shadcn Checkbox (not installed)
+- [04-04]: Usage data aggregated server-side from usage_records rather than calling getUsageSummary service
+- [04-04]: Executor creates assistance_request on routing failure instead of throwing (graceful degradation)
+- [04-04]: Bulk reject uses two-click confirmation pattern instead of modal dialog
+- [04-04]: Token usage displayed from both task-level fields and usage_records for completeness
 
 ### Pending Todos
 
@@ -130,5 +135,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-26
-Stopped at: Completed 04-03-PLAN.md (Approval Gates & Tasks/Approvals Pages)
-Resume file: .planning/phases/04-task-execution-and-approvals/04-03-SUMMARY.md
+Stopped at: Completed 04-04-PLAN.md (Usage Metering Dashboard & Security Hardening) -- Phase 4 COMPLETE
+Resume file: .planning/phases/04-task-execution-and-approvals/04-04-SUMMARY.md
