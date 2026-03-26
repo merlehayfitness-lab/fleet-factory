@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { routeTask } from "./router";
 import { decomposeTask, type DecompositionPlan } from "./decomposer";
+import { runAgentTask } from "../worker/tool-runner";
+import { createAssistanceRequest } from "../task/task-service";
 
 interface ExecutionResult {
   taskId: string;
@@ -9,6 +11,15 @@ interface ExecutionResult {
   subtasks?: string[];
   decompositionPlan?: DecompositionPlan[];
   isPreview?: boolean;
+  needsApproval?: boolean;
+  approvalAction?: string;
+  approvalRiskLevel?: string;
+  approvalToolName?: string;
+  tokenUsage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+  };
+  costCents?: number;
 }
 
 /**
@@ -20,10 +31,11 @@ interface ExecutionResult {
  *    - High priority with decomposition: return preview plan for admin confirmation
  *    - Low/medium with decomposition: auto-decompose and route subtasks
  * 3. Route task to department agent
- * 4. Transition to assigned (routing handles this)
- *
- * NOTE: Actual tool execution (worker) is wired in Plan 04-02.
- * This executor handles routing and status management only.
+ * 4. Execute task via worker (runAgentTask)
+ *    - If worker returns needsApproval: transition to 'waiting_approval'
+ *    - If worker succeeds: transition to 'completed'
+ *    - If worker fails: create assistance request
+ * 5. Record token usage and cost
  */
 export async function executeTask(
   supabase: SupabaseClient,
@@ -135,9 +147,122 @@ export async function executeTask(
     task.department_id as string,
   );
 
+  // 5. Fetch full agent record with tool_profile and is_trusted
+  const { data: agentRecord } = await supabase
+    .from("agents")
+    .select("id, name, tool_profile, is_trusted")
+    .eq("id", agent.id)
+    .single();
+
+  if (!agentRecord) {
+    throw new Error(`Agent not found after routing: ${agent.id}`);
+  }
+
+  // 6. Fetch the department type for tool catalog lookup
+  const { data: dept } = await supabase
+    .from("departments")
+    .select("type")
+    .eq("id", task.department_id)
+    .single();
+
+  const departmentType = (dept?.type as string) ?? "operations";
+
+  // 7. Transition task to in_progress before execution
+  await supabase
+    .from("tasks")
+    .update({
+      status: "in_progress",
+      started_at: new Date().toISOString(),
+    })
+    .eq("id", taskId);
+
+  // 8. Execute via worker
+  const workerResult = await runAgentTask(
+    supabase,
+    businessId,
+    {
+      id: task.id as string,
+      title: task.title as string,
+      priority: task.priority as string,
+      payload,
+    },
+    {
+      id: agentRecord.id as string,
+      name: agentRecord.name as string,
+      tool_profile: (agentRecord.tool_profile as Record<string, unknown>) ?? {},
+      is_trusted: (agentRecord.is_trusted as boolean) ?? false,
+    },
+    departmentType,
+  );
+
+  // 9. Handle worker result
+  if (workerResult.needsApproval) {
+    // Transition to waiting_approval -- approval creation happens in 04-03
+    await supabase
+      .from("tasks")
+      .update({ status: "waiting_approval" })
+      .eq("id", taskId);
+
+    return {
+      taskId: task.id as string,
+      agentId: agentRecord.id as string,
+      status: "waiting_approval",
+      needsApproval: true,
+      approvalAction: workerResult.approvalAction,
+      approvalRiskLevel: workerResult.approvalRiskLevel,
+      approvalToolName: workerResult.approvalToolName,
+    };
+  }
+
+  if (workerResult.status === "failed") {
+    // Create assistance request instead of auto-failing (per CONTEXT decisions)
+    try {
+      await createAssistanceRequest(
+        supabase,
+        businessId,
+        task.id as string,
+        agentRecord.id as string,
+        `Task "${task.title}" failed during tool execution`,
+        workerResult.error ?? "Tool execution failed",
+      );
+    } catch (err) {
+      // If assistance request also fails, transition to failed
+      console.error(
+        "Failed to create assistance request, marking task as failed:",
+        err instanceof Error ? err.message : "Unknown error",
+      );
+      await supabase
+        .from("tasks")
+        .update({
+          status: "failed",
+          completed_at: new Date().toISOString(),
+        })
+        .eq("id", taskId);
+    }
+
+    return {
+      taskId: task.id as string,
+      agentId: agentRecord.id as string,
+      status: "assistance_requested",
+      tokenUsage: workerResult.tokenUsage,
+      costCents: workerResult.costCents,
+    };
+  }
+
+  // Success: transition to completed
+  await supabase
+    .from("tasks")
+    .update({
+      status: "completed",
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", taskId);
+
   return {
     taskId: task.id as string,
-    agentId: agent.id as string,
-    status: "assigned",
+    agentId: agentRecord.id as string,
+    status: "completed",
+    tokenUsage: workerResult.tokenUsage,
+    costCents: workerResult.costCents,
   };
 }

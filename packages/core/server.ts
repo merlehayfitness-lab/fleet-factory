@@ -38,3 +38,13 @@ export { routeTask, selectAgent } from "./orchestrator/router";
 export { decomposeTask } from "./orchestrator/decomposer";
 export type { DecompositionPlan } from "./orchestrator/decomposer";
 export { executeTask } from "./orchestrator/executor";
+
+// Worker tool runner (server-only -- executes tools on behalf of agents)
+export { runTool, runAgentTask } from "./worker/tool-runner";
+
+// Worker sandbox validation (server-only operations)
+export { validateSandbox, validateToolAccess, assertSandbox } from "./worker/sandbox";
+
+// Worker metering (server-only -- records to database)
+export { recordUsage, estimateTokens, calculateCost, getUsageSummary } from "./worker/metering";
+export type { UsageSummary } from "./worker/metering";

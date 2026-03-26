@@ -97,5 +97,13 @@ export {
 export { createTaskSchema, updateTaskSchema } from "./task/task-schema";
 export type { CreateTaskInput, UpdateTaskInput } from "./task/task-schema";
 
-// NOTE: Server-only exports (crypto, deployment service, task service, orchestrator)
+// Worker sandbox (client-safe constants)
+export { BLOCKED_CAPABILITIES } from "./worker/sandbox";
+export type { BlockedCapability } from "./worker/sandbox";
+
+// Worker tool catalog (client-safe)
+export { TOOL_CATALOG, getToolsForDepartment } from "./worker/tool-catalog";
+export type { ToolDefinition } from "./worker/tool-catalog";
+
+// NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker)
 // are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.
