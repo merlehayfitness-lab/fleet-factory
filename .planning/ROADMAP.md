@@ -64,13 +64,14 @@ Plans:
   3. Failed deployments can be retried, and any deployment can be rolled back to the last working version
   4. Each deployment creates a versioned snapshot of all agent configs, and deployment history is visible in the deployment center
   5. Secrets are stored encrypted (never plaintext), integration credentials are scoped per tenant, and mock adapters exist for CRM, email, helpdesk, calendar, and messaging with a swappable adapter interface
-**Plans**: 4 plans in 3 waves
+**Plans**: 5 plans (4 original + 1 gap closure)
 
 Plans:
 - [ ] 03-01: Schema migrations (secrets, integrations), encryption helpers, integration adapters, and packages/runtime config generators
 - [ ] 03-02: Deployment state machine, deploy/retry/rollback service, config snapshots, and Server Actions
 - [ ] 03-03: Deployment center UI (split-view, stepper, artifact viewer), secrets page, and nav updates
 - [ ] 03-04: Per-agent Integrations tab on agent detail page and business-wide integrations overview page
+- [ ] 03-05: UAT gap closure — UNIQUE constraint, error handling fixes, and Supabase migration application
 
 ### Phase 4: Task Execution and Approvals
 **Goal**: Tasks flow through the orchestrator to department agents, agents execute with sandboxed tool access, and risky actions pause for human approval with risk-tiered routing
@@ -131,7 +132,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Foundation and Tenant Provisioning | 0/4 | Not started | - |
 | 2. Agent Management | 0/2 | Complete    | 2026-03-25 |
-| 3. Deployment Pipeline | 0/3 | Complete    | 2026-03-26 |
+| 3. Deployment Pipeline | 4/5 | UAT gap closure | - |
 | 4. Task Execution and Approvals | 0/4 | Not started | - |
 | 5. Observability and Command Center | 0/3 | Not started | - |
 | 6. Builder and Automation | 0/2 | Not started | - |
