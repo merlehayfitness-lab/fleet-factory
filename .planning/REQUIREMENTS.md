@@ -53,12 +53,12 @@
 
 ### Task Execution
 
-- [ ] **TASK-01**: Tasks can be created via admin panel or API with title, payload, priority, and target agent/department
-- [ ] **TASK-02**: Orchestrator service (Paperclip) routes tasks to appropriate department agent based on type and priority
+- [x] **TASK-01**: Tasks can be created via admin panel or API with title, payload, priority, and target agent/department
+- [x] **TASK-02**: Orchestrator service (Paperclip) routes tasks to appropriate department agent based on type and priority
 - [ ] **TASK-03**: Worker service (OpenClaw) executes agent tasks with allowed tools from tool_profile
-- [ ] **TASK-04**: Tasks track status (queued, assigned, in_progress, completed, failed)
+- [x] **TASK-04**: Tasks track status (queued, assigned, in_progress, completed, failed)
 - [ ] **TASK-05**: Tasks page shows work queue across all departments for a business
-- [ ] **TASK-06**: Webhook/event ingestion endpoint accepts inbound events from external systems to create tasks
+- [x] **TASK-06**: Webhook/event ingestion endpoint accepts inbound events from external systems to create tasks
 
 ### Approvals & Governance
 
@@ -212,12 +212,12 @@
 | INTG-02 | Phase 3 | Complete |
 | INTG-03 | Phase 3 | Complete |
 | INTG-04 | Phase 3 | Complete |
-| TASK-01 | Phase 4 | Pending |
-| TASK-02 | Phase 4 | Pending |
+| TASK-01 | Phase 4 | Complete |
+| TASK-02 | Phase 4 | Complete |
 | TASK-03 | Phase 4 | Pending |
-| TASK-04 | Phase 4 | Pending |
+| TASK-04 | Phase 4 | Complete |
 | TASK-05 | Phase 4 | Pending |
-| TASK-06 | Phase 4 | Pending |
+| TASK-06 | Phase 4 | Complete |
 | APRV-01 | Phase 4 | Pending |
 | APRV-02 | Phase 4 | Pending |
 | APRV-03 | Phase 4 | Pending |

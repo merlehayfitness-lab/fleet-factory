@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 3: Deployment Pipeline -- COMPLETE
+**Current focus:** Phase 4: Task Execution & Approvals
 
 ## Current Position
 
-Phase: 3 of 6 (Deployment Pipeline) -- COMPLETE
-Plan: 5 of 5 in current phase (5 complete)
-Status: Phase 3 Complete (including UAT gap closure) -- Ready for Phase 4
-Last activity: 2026-03-26 -- Completed 03-05 (UAT Gap Closure)
+Phase: 4 of 6 (Task Execution & Approvals)
+Plan: 1 of 4 in current phase (1 complete)
+Status: Executing Phase 4
+Last activity: 2026-03-26 -- Completed 04-01 (Task Schema & Orchestrator)
 
-Progress: [███████████░] 44% (11/25 plans)
+Progress: [████████████░] 48% (12/25 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 6min
-- Total execution time: 1.07 hours
+- Total execution time: 1.18 hours
 
 **By Phase:**
 
@@ -30,9 +30,10 @@ Progress: [███████████░] 44% (11/25 plans)
 | 01 | 4 | 23min | 6min |
 | 02 | 2 | 15min | 8min |
 | 03 | 5 | 26min | 5min |
+| 04 | 1 | 7min | 7min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (4min), 03-02 (8min), 03-03 (7min), 03-04 (4min), 03-05 (3min)
+- Last 5 plans: 03-02 (8min), 03-03 (7min), 03-04 (4min), 03-05 (3min), 04-01 (7min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -47,6 +48,7 @@ Progress: [███████████░] 44% (11/25 plans)
 | Phase 03 P03 | 7min | 2 tasks | 18 files |
 | Phase 03 P04 | 4min | 2 tasks | 11 files |
 | Phase 03 P05 | 3min | 2 tasks | 3 files |
+| Phase 04 P01 | 7min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -100,6 +102,11 @@ Recent decisions affecting current work:
 - [03-04]: Integration config card shows max 3 capability badges with +N more overflow
 - [03-05]: UNIQUE index added as CREATE UNIQUE INDEX IF NOT EXISTS for idempotent migration safety
 - [03-05]: router.refresh() added alongside revalidatePath for immediate client-side UI update after mutations
+- [04-01]: Zod v4 requires z.record(z.string(), z.unknown()) and z.nullable(schema) standalone form
+- [04-01]: Webhook endpoint uses service_role client (SECR-05 exception for external system auth)
+- [04-01]: High priority tasks return decomposition preview -- admin must confirm before subtask creation
+- [04-01]: Task manager role (owner/admin/manager) can create/update tasks; only owner/admin can delete
+- [04-01]: Orchestrator pipeline: router selects agent -> decomposer creates subtask DAG -> executor coordinates
 
 ### Pending Todos
 
@@ -112,5 +119,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-26
-Stopped at: Completed 03-05-PLAN.md (Phase 3 UAT gap closure complete)
-Resume file: .planning/phases/03-deployment-pipeline/03-05-SUMMARY.md
+Stopped at: Completed 04-01-PLAN.md (Task Schema & Orchestrator)
+Resume file: .planning/phases/04-task-execution-and-approvals/04-01-SUMMARY.md
