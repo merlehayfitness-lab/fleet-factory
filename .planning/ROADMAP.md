@@ -101,12 +101,12 @@ Plans:
   3. Command center chat routes messages to the appropriate agent via the orchestrator, and conversation transcripts are stored with full tool call traces
   4. Conversation log viewer shows history filterable by agent, department, and date
   5. Emergency controls (freeze agent, revoke tools, disable tenant) take effect immediately without affecting other tenants
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: Per-tenant health dashboard and observability infrastructure
-- [ ] 05-02: Audit log viewer and tenant kill switch
-- [ ] 05-03: Command center chat, conversation storage, and log viewer
+- [ ] 05-01: Schema migrations (conversations, messages), health service, enhanced dashboard with agent grid and auto-refresh polling, nav updates
+- [ ] 05-02: Emergency service, type-to-confirm dialog, audit log viewer (timeline/table), conversation log viewer, emergency controls on dashboard, tenant kill switch
+- [ ] 05-03: Chat service with stub responses, Slack-like chat UI with department channels, message routing, typing indicator, file upload
 
 ### Phase 6: Builder and Automation
 **Goal**: A Claude-powered builder service generates agent configs and deployment artifacts from templates, with version tracking, security validation, and the ability to roll improvements out to future tenants

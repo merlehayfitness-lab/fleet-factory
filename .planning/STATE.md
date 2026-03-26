@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 4 complete (including gap closure), ready for Phase 5
+**Current focus:** Phase 5 in progress -- Observability & Command Center
 
 ## Current Position
 
-Phase: 4 of 6 (Task Execution & Approvals -- COMPLETE)
-Plan: 5 of 5 in current phase (5 complete)
-Status: Phase 4 Complete (gap closure done)
-Last activity: 2026-03-26 -- Completed 04-05 (Policy Engine Wiring)
+Phase: 5 of 6 (Observability & Command Center)
+Plan: 1 of 3 in current phase (1 complete)
+Status: Executing Phase 5
+Last activity: 2026-03-26 -- Completed 05-01 (Health Dashboard & Schema)
 
-Progress: [█████████████████] 64% (16/25 plans)
+Progress: [██████████████████] 68% (17/25 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 16
 - Average duration: 6min
-- Total execution time: 1.40 hours
+- Total execution time: 1.48 hours
 
 **By Phase:**
 
@@ -31,9 +31,10 @@ Progress: [█████████████████] 64% (16/25 plans
 | 02 | 2 | 15min | 8min |
 | 03 | 5 | 26min | 5min |
 | 04 | 5 | 29min | 6min |
+| 05 | 1 | 5min | 5min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (7min), 04-02 (4min), 04-03 (9min), 04-04 (6min), 04-05 (3min)
+- Last 5 plans: 04-02 (4min), 04-03 (9min), 04-04 (6min), 04-05 (3min), 05-01 (5min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -53,6 +54,7 @@ Progress: [█████████████████] 64% (16/25 plans
 | Phase 04 P03 | 9min | 2 tasks | 30 files |
 | Phase 04 P04 | 6min | 2 tasks | 9 files |
 | Phase 04 P05 | 3min | 2 tasks | 1 files |
+| Phase 05 P01 | 5min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -127,6 +129,10 @@ Recent decisions affecting current work:
 - [04-05]: Fail-open on policy engine errors: evaluateRisk failure falls back to catalog risk only
 - [04-05]: Max-of-two risk strategy: effective risk = higher of catalog risk and policy engine risk
 - [04-05]: Approval action strings annotate when policy engine elevated the risk level
+- [05-01]: Health service uses Promise.all for parallel query execution to minimize dashboard load time
+- [05-01]: HealthDashboard replaces BusinessOverview as primary business page component
+- [05-01]: Agent health grid uses Collapsible from shadcn/ui (base-ui) for expandable card detail
+- [05-01]: Error rate color coding: green < 5%, amber 5-20%, red > 20%
 
 ### Pending Todos
 
@@ -139,5 +145,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-26
-Stopped at: Completed 04-05-PLAN.md (Policy Engine Wiring) -- Phase 4 gap closure COMPLETE
-Resume file: .planning/phases/04-task-execution-and-approvals/04-05-SUMMARY.md
+Stopped at: Completed 05-01-PLAN.md (Health Dashboard & Schema)
+Resume file: .planning/phases/05-observability-and-command-center/05-01-SUMMARY.md
