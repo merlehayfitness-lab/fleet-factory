@@ -69,6 +69,12 @@ export default async function TaskDetailPage({
     .eq("task_id", taskId)
     .order("created_at", { ascending: false });
 
+  // Fetch usage records for this task
+  const { data: usageRecords } = await supabase
+    .from("usage_records")
+    .select("*")
+    .eq("task_id", taskId);
+
   // Fetch audit logs for this task
   const { data: auditLogs } = await supabase
     .from("audit_logs")
@@ -82,6 +88,30 @@ export default async function TaskDetailPage({
   const completedSubtasks = subtaskList.filter(
     (s) => s.status === "completed",
   );
+
+  // Aggregate usage records for display
+  const usageList = usageRecords ?? [];
+  const totalPromptTokens = usageList.reduce(
+    (sum, r) => sum + (r.prompt_tokens as number),
+    0,
+  );
+  const totalCompletionTokens = usageList.reduce(
+    (sum, r) => sum + (r.completion_tokens as number),
+    0,
+  );
+  const totalCostCents = usageList.reduce(
+    (sum, r) => sum + (r.cost_cents as number),
+    0,
+  );
+  const hasUsage = totalPromptTokens > 0 || totalCompletionTokens > 0;
+
+  // Also check task-level token_usage field
+  const taskTokenUsage = task.token_usage as {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    model?: string;
+  } | null;
+  const taskCostCents = task.cost_cents as number | null;
 
   return (
     <div className="space-y-6">
@@ -172,6 +202,54 @@ export default async function TaskDetailPage({
           )}
         </CardContent>
       </Card>
+
+      {/* Token usage section */}
+      {(hasUsage || (taskTokenUsage && (taskTokenUsage.prompt_tokens ?? 0) > 0)) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Token Usage</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Prompt Tokens
+                </p>
+                <p className="mt-0.5 text-sm font-medium">
+                  {(hasUsage ? totalPromptTokens : taskTokenUsage?.prompt_tokens ?? 0).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Completion Tokens
+                </p>
+                <p className="mt-0.5 text-sm font-medium">
+                  {(hasUsage ? totalCompletionTokens : taskTokenUsage?.completion_tokens ?? 0).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Total Tokens
+                </p>
+                <p className="mt-0.5 text-sm font-medium">
+                  {(hasUsage
+                    ? totalPromptTokens + totalCompletionTokens
+                    : (taskTokenUsage?.prompt_tokens ?? 0) + (taskTokenUsage?.completion_tokens ?? 0)
+                  ).toLocaleString()}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Estimated Cost
+                </p>
+                <p className="mt-0.5 text-sm font-medium">
+                  ${((hasUsage ? totalCostCents : taskCostCents ?? 0) / 100).toFixed(2)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Subtasks section */}
       {subtaskList.length > 0 && (

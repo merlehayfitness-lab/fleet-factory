@@ -21,6 +21,12 @@ interface Task {
   completed_at: string | null;
   departments: { name: string } | null;
   agents: { name: string } | null;
+  token_usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    model?: string;
+  } | null;
+  cost_cents?: number | null;
 }
 
 interface TaskDetailPanelProps {
@@ -120,6 +126,32 @@ export function TaskDetailPanel({
               />
             )}
           </div>
+
+          {/* Token usage */}
+          {task.token_usage &&
+            (task.token_usage.prompt_tokens > 0 ||
+              task.token_usage.completion_tokens > 0) && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Usage
+                </p>
+                <div className="mt-1 grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Prompt: </span>
+                    {task.token_usage.prompt_tokens.toLocaleString()}
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Completion: </span>
+                    {task.token_usage.completion_tokens.toLocaleString()}
+                  </div>
+                </div>
+                {task.cost_cents != null && task.cost_cents > 0 && (
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Estimated cost: ${(task.cost_cents / 100).toFixed(2)}
+                  </p>
+                )}
+              </div>
+            )}
 
           {/* View full details link */}
           <Link

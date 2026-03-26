@@ -17,6 +17,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { StatusBadge } from "@/_components/status-badge";
+import { UsageSummary, type UsageSummaryData } from "@/_components/usage-summary";
 
 interface Deployment {
   id: string;
@@ -40,13 +41,16 @@ interface BusinessOverviewProps {
   departmentCount: number;
   latestDeployment: Deployment | null;
   pendingApprovalCount: number;
+  activeTaskCount: number;
+  usageSummary: UsageSummaryData;
 }
 
 /**
  * Business overview dashboard.
  *
  * Displays business name with status, stats cards (deployment, agents,
- * departments, approvals), quick links, and a recent activity placeholder.
+ * departments, approvals, active tasks), usage summary, quick links,
+ * and a recent activity placeholder.
  */
 export function BusinessOverview({
   business,
@@ -54,6 +58,8 @@ export function BusinessOverview({
   departmentCount,
   latestDeployment,
   pendingApprovalCount,
+  activeTaskCount,
+  usageSummary,
 }: BusinessOverviewProps) {
   return (
     <div className="space-y-6">
@@ -64,7 +70,7 @@ export function BusinessOverview({
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader>
             <CardDescription className="flex items-center gap-1.5">
@@ -106,12 +112,28 @@ export function BusinessOverview({
         <Card>
           <CardHeader>
             <CardDescription className="flex items-center gap-1.5">
+              <CheckSquare className="size-3.5" />
+              Active Tasks
+            </CardDescription>
+            <CardTitle>{activeTaskCount}</CardTitle>
+          </CardHeader>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardDescription className="flex items-center gap-1.5">
               <Shield className="size-3.5" />
               Pending Approvals
             </CardDescription>
             <CardTitle>{pendingApprovalCount}</CardTitle>
           </CardHeader>
         </Card>
+      </div>
+
+      {/* Usage summary */}
+      <div>
+        <h2 className="mb-3 text-lg font-semibold">Token Usage</h2>
+        <UsageSummary usageSummary={usageSummary} />
       </div>
 
       {/* Quick links */}
@@ -149,7 +171,11 @@ export function BusinessOverview({
           <QuickLinkCard
             href={`/businesses/${business.id}/tasks`}
             label="Tasks"
-            description="View task work queue"
+            description={
+              activeTaskCount > 0
+                ? `${activeTaskCount} active`
+                : "View task work queue"
+            }
             icon={CheckSquare}
             enabled
           />
