@@ -135,17 +135,55 @@ export async function executeTask(
 
   // 4. Simple task: route directly to agent
   if (!task.department_id) {
-    throw new Error(
-      "Task has no department_id. A department must be specified for routing.",
-    );
+    // No department -- create assistance request instead of throwing
+    try {
+      await createAssistanceRequest(
+        supabase,
+        businessId,
+        taskId,
+        "system",
+        `Task "${task.title}" has no department_id`,
+        "A department must be specified for routing. Please assign a department and retry.",
+      );
+    } catch {
+      // Best-effort
+    }
+    return {
+      taskId: task.id as string,
+      agentId: null,
+      status: "assistance_requested",
+    };
   }
 
-  const agent = await routeTask(
-    supabase,
-    businessId,
-    taskId,
-    task.department_id as string,
-  );
+  let agent;
+  try {
+    agent = await routeTask(
+      supabase,
+      businessId,
+      taskId,
+      task.department_id as string,
+    );
+  } catch (routeErr) {
+    // Routing failed (no active agents) -- create assistance request
+    const routeMessage = routeErr instanceof Error ? routeErr.message : "Routing failed";
+    try {
+      await createAssistanceRequest(
+        supabase,
+        businessId,
+        taskId,
+        "system",
+        `Task "${task.title}" could not be routed`,
+        routeMessage,
+      );
+    } catch {
+      // Best-effort
+    }
+    return {
+      taskId: task.id as string,
+      agentId: null,
+      status: "assistance_requested",
+    };
+  }
 
   // 5. Fetch full agent record with tool_profile and is_trusted
   const { data: agentRecord } = await supabase
@@ -155,7 +193,24 @@ export async function executeTask(
     .single();
 
   if (!agentRecord) {
-    throw new Error(`Agent not found after routing: ${agent.id}`);
+    // Agent disappeared after routing -- create assistance request
+    try {
+      await createAssistanceRequest(
+        supabase,
+        businessId,
+        taskId,
+        "system",
+        `Agent not found after routing for task "${task.title}"`,
+        `Agent ID ${agent.id} was selected but could not be fetched.`,
+      );
+    } catch {
+      // Best-effort
+    }
+    return {
+      taskId: task.id as string,
+      agentId: agent.id,
+      status: "assistance_requested",
+    };
   }
 
   // 6. Fetch the department type for tool catalog lookup

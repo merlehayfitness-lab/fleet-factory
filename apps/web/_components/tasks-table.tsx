@@ -49,6 +49,7 @@ export function TasksTable({ tasks, businessId }: TasksTableProps) {
 
   return (
     <>
+      <div className="overflow-x-auto rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -91,6 +92,7 @@ export function TasksTable({ tasks, businessId }: TasksTableProps) {
           ))}
         </TableBody>
       </Table>
+      </div>
 
       {selectedTask && (
         <TaskDetailPanel

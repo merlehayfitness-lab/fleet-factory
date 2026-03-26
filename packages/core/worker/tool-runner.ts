@@ -59,30 +59,41 @@ export function runTool(
   payload: Record<string, unknown>,
   departmentType: string,
 ): ToolResult {
-  // 1. Sandbox validation
-  assertSandbox(agentToolProfile);
+  try {
+    // 1. Sandbox validation
+    assertSandbox(agentToolProfile);
 
-  // 2. Tool access validation
-  const hasAccess = validateToolAccess(toolName, agentToolProfile, departmentType);
-  if (!hasAccess) {
+    // 2. Tool access validation
+    const hasAccess = validateToolAccess(toolName, agentToolProfile, departmentType);
+    if (!hasAccess) {
+      return {
+        success: false,
+        toolName,
+        error: `Tool '${toolName}' not allowed for agent in '${departmentType}' department`,
+        riskLevel: getToolRiskLevel(toolName),
+      };
+    }
+
+    // 3. Execute with mock result
+    const result = getMockResult(toolName, payload);
+    const riskLevel = getToolRiskLevel(toolName);
+
+    return {
+      success: true,
+      toolName,
+      result,
+      riskLevel,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Tool execution failed";
+    console.error(`Tool execution error [${toolName}]:`, message);
     return {
       success: false,
       toolName,
-      error: `Tool '${toolName}' not allowed for agent in '${departmentType}' department`,
+      error: message,
       riskLevel: getToolRiskLevel(toolName),
     };
   }
-
-  // 3. Execute with mock result
-  const result = getMockResult(toolName, payload);
-  const riskLevel = getToolRiskLevel(toolName);
-
-  return {
-    success: true,
-    toolName,
-    result,
-    riskLevel,
-  };
 }
 
 // ---------------------------------------------------------------------------

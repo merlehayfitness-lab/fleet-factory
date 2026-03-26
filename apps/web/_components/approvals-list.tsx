@@ -11,6 +11,8 @@ import {
   bulkRejectAction,
 } from "@/_actions/approval-actions";
 
+type LoadingState = "idle" | "loading" | "error";
+
 interface Approval {
   id: string;
   business_id: string;
@@ -47,12 +49,18 @@ export function ApprovalsList({
   const [approvals, setApprovals] = useState<Approval[]>(initialApprovals);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [loadingState, setLoadingState] = useState<LoadingState>("idle");
+  const [confirmReject, setConfirmReject] = useState(false);
 
   // Polling: refresh approvals every 10 seconds
   const refreshApprovals = useCallback(async () => {
+    setLoadingState("loading");
     const result = await getApprovalsAction(businessId);
     if (result.approvals) {
       setApprovals(result.approvals as Approval[]);
+      setLoadingState("idle");
+    } else {
+      setLoadingState("error");
     }
   }, [businessId]);
 
@@ -100,7 +108,12 @@ export function ApprovalsList({
   }
 
   async function handleBulkReject() {
+    if (!confirmReject) {
+      setConfirmReject(true);
+      return;
+    }
     setBulkLoading(true);
+    setConfirmReject(false);
     const ids = Array.from(selected);
     const result = await bulkRejectAction(ids, businessId);
     setBulkLoading(false);
@@ -129,6 +142,14 @@ export function ApprovalsList({
 
   return (
     <div className="space-y-4">
+      {/* Loading indicator */}
+      {loadingState === "loading" && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Loader2 className="size-3 animate-spin" />
+          Refreshing...
+        </div>
+      )}
+
       {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="flex items-center gap-3 rounded-lg border bg-muted/50 p-3">
@@ -148,14 +169,23 @@ export function ApprovalsList({
             Approve Selected
           </Button>
           <Button
-            variant="outline"
+            variant={confirmReject ? "destructive" : "outline"}
             size="sm"
             disabled={bulkLoading}
             onClick={handleBulkReject}
           >
             <XSquare className="mr-1.5 size-3.5" />
-            Reject Selected
+            {confirmReject ? "Confirm Reject?" : "Reject Selected"}
           </Button>
+          {confirmReject && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setConfirmReject(false)}
+            >
+              Cancel
+            </Button>
+          )}
           <div className="flex-1" />
           {pendingCount > 0 && selected.size < pendingCount && (
             <Button variant="ghost" size="sm" onClick={selectAll}>
