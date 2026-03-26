@@ -77,5 +77,25 @@ export {
 export { createConfigSnapshot, restoreFromSnapshot } from "./deployment/snapshot";
 export type { ConfigSnapshot } from "./deployment/snapshot";
 
-// NOTE: Server-only exports (crypto, deployment service) are in "@agency-factory/core/server"
-// to prevent node:crypto from being bundled in client components.
+// Task types
+export type {
+  TaskPriority,
+  TaskStatus,
+  TaskSource,
+  AssistanceRequestStatus,
+} from "./types/index";
+
+// Task lifecycle
+export {
+  TASK_TRANSITIONS,
+  canTransitionTask,
+  assertTaskTransition,
+  getValidTaskTransitions,
+} from "./task/task-lifecycle";
+
+// Task schema
+export { createTaskSchema, updateTaskSchema } from "./task/task-schema";
+export type { CreateTaskInput, UpdateTaskInput } from "./task/task-schema";
+
+// NOTE: Server-only exports (crypto, deployment service, task service, orchestrator)
+// are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.

@@ -21,3 +21,20 @@ export {
   deleteSecret,
   decryptSecretsForDeployment,
 } from "./secrets/service";
+
+// Task service (CRUD operations for tasks and assistance requests)
+export {
+  createTask,
+  getTasksForBusiness,
+  getTaskById,
+  updateTaskStatus,
+  getSubtasks,
+  createAssistanceRequest,
+  respondToAssistanceRequest,
+} from "./task/task-service";
+
+// Orchestrator (task routing, decomposition, execution)
+export { routeTask, selectAgent } from "./orchestrator/router";
+export { decomposeTask } from "./orchestrator/decomposer";
+export type { DecompositionPlan } from "./orchestrator/decomposer";
+export { executeTask } from "./orchestrator/executor";
