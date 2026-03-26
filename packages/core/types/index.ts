@@ -64,3 +64,15 @@ export type TaskSource = "admin" | "api" | "webhook" | "orchestrator";
 
 /** Assistance request status */
 export type AssistanceRequestStatus = "open" | "responded" | "resolved";
+
+/** Approval lifecycle status */
+export type ApprovalStatus =
+  | "pending"
+  | "auto_approved"
+  | "approved"
+  | "rejected"
+  | "retry_pending"
+  | "guidance_required";
+
+/** Risk level for approval evaluation */
+export type RiskLevel = "low" | "medium" | "high";

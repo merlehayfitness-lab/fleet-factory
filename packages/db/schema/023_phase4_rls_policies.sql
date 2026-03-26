@@ -1,0 +1,12 @@
+-- 023: Phase 4 RLS policies placeholder
+--
+-- All Phase 4 RLS policies are defined in their respective migration files:
+--   016_tasks_table.sql        -- tasks RLS (4 policies)
+--   017_subtask_dependencies.sql -- subtask_dependencies RLS (inherited via tasks FK)
+--   018_assistance_requests.sql -- assistance_requests RLS (2 policies)
+--   019_usage_records.sql      -- usage_records RLS (2 policies)
+--   021_approvals_table.sql    -- approvals RLS (3 policies)
+--   022_approval_policies.sql  -- approval_policies RLS (1 policy)
+--
+-- No additional supplemental RLS policies needed for Phase 4.
+-- This file exists for documentation and migration numbering consistency.

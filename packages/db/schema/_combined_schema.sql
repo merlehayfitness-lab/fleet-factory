@@ -608,3 +608,87 @@ CREATE POLICY "usage_insert_admin" ON public.usage_records FOR INSERT
 
 -- 020: Add is_trusted column to agents
 ALTER TABLE public.agents ADD COLUMN IF NOT EXISTS is_trusted boolean DEFAULT false;
+
+-- 021: Approvals table
+-- Stores approval requests created when agents attempt risky actions.
+CREATE TABLE IF NOT EXISTS public.approvals (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  task_id uuid NOT NULL REFERENCES public.tasks ON DELETE CASCADE,
+  agent_id uuid NOT NULL REFERENCES public.agents,
+  action_type text NOT NULL,
+  action_summary text NOT NULL,
+  agent_reasoning text,
+  risk_level text NOT NULL CHECK (risk_level IN ('low', 'medium', 'high')),
+  risk_explanation text,
+  status text NOT NULL DEFAULT 'pending'
+    CHECK (status IN ('pending', 'auto_approved', 'approved', 'rejected', 'retry_pending', 'guidance_required')),
+  decided_by uuid REFERENCES auth.users,
+  decided_at timestamptz,
+  decision_note text,
+  retry_count integer DEFAULT 0,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.approvals ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_approvals_business ON public.approvals (business_id);
+CREATE INDEX IF NOT EXISTS idx_approvals_task ON public.approvals (task_id);
+CREATE INDEX IF NOT EXISTS idx_approvals_status ON public.approvals (business_id, status);
+
+CREATE POLICY "approvals_select_member" ON public.approvals FOR SELECT
+  TO authenticated USING (public.is_business_member(business_id));
+
+CREATE POLICY "approvals_insert_admin" ON public.approvals FOR INSERT
+  TO authenticated WITH CHECK (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+    OR public.has_role_on_business(business_id, 'manager'));
+
+CREATE POLICY "approvals_update_admin" ON public.approvals FOR UPDATE
+  TO authenticated
+  USING (public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+    OR public.has_role_on_business(business_id, 'manager'))
+  WITH CHECK (public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+    OR public.has_role_on_business(business_id, 'manager'));
+
+-- 022: Approval Policies table
+-- Global approval policy rules with seed data.
+CREATE TABLE IF NOT EXISTS public.approval_policies (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  action_pattern text NOT NULL,
+  risk_level text NOT NULL CHECK (risk_level IN ('low', 'medium', 'high')),
+  description text,
+  category text NOT NULL DEFAULT 'general'
+    CHECK (category IN ('data_read', 'data_write', 'external_comm', 'config_change', 'destructive', 'financial', 'general')),
+  is_active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.approval_policies ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "policies_select_all" ON public.approval_policies FOR SELECT
+  TO authenticated USING (true);
+
+INSERT INTO public.approval_policies (action_pattern, risk_level, description, category) VALUES
+  ('search_%', 'low', 'Search and lookup operations', 'data_read'),
+  ('review_%', 'low', 'Review and read operations', 'data_read'),
+  ('check_%', 'low', 'Status checks and diagnostics', 'data_read'),
+  ('draft_%', 'medium', 'Draft creation (not sent)', 'data_write'),
+  ('create_%', 'medium', 'Record creation', 'data_write'),
+  ('generate_%', 'medium', 'Report and content generation', 'data_write'),
+  ('run_%', 'medium', 'Run diagnostics or processes', 'data_write'),
+  ('send_%', 'high', 'Send external communications', 'external_comm'),
+  ('respond_%', 'high', 'Respond to external parties', 'external_comm'),
+  ('update_%', 'high', 'Update existing records or configs', 'config_change'),
+  ('close_%', 'high', 'Close or resolve records', 'destructive'),
+  ('delete_%', 'high', 'Delete records', 'destructive'),
+  ('schedule_%', 'high', 'Schedule operations or maintenance', 'config_change')
+ON CONFLICT DO NOTHING;
+
+-- 023: Phase 4 RLS policies placeholder
+-- All Phase 4 RLS policies are defined in their respective migration files (016-022).
+-- No additional supplemental RLS policies needed.

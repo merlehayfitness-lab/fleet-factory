@@ -105,5 +105,28 @@ export type { BlockedCapability } from "./worker/sandbox";
 export { TOOL_CATALOG, getToolsForDepartment } from "./worker/tool-catalog";
 export type { ToolDefinition } from "./worker/tool-catalog";
 
-// NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker)
+// Approval types
+export type { ApprovalStatus, RiskLevel } from "./types/index";
+
+// Approval lifecycle
+export {
+  APPROVAL_TRANSITIONS,
+  canTransitionApproval,
+  assertApprovalTransition,
+  getValidApprovalTransitions,
+} from "./approval/approval-lifecycle";
+
+// Approval schema
+export {
+  approveActionSchema,
+  rejectActionSchema,
+  bulkActionSchema,
+} from "./approval/approval-schema";
+export type {
+  ApproveActionInput,
+  RejectActionInput,
+  BulkActionInput,
+} from "./approval/approval-schema";
+
+// NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker, approval service)
 // are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.

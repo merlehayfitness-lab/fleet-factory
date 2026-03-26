@@ -48,3 +48,22 @@ export { validateSandbox, validateToolAccess, assertSandbox } from "./worker/san
 // Worker metering (server-only -- records to database)
 export { recordUsage, estimateTokens, calculateCost, getUsageSummary } from "./worker/metering";
 export type { UsageSummary } from "./worker/metering";
+
+// Approval service (server-only -- database operations)
+export {
+  createApproval,
+  getApprovalsForBusiness,
+  getApprovalById,
+  approveAction,
+  rejectAction,
+  provideGuidance,
+  bulkApprove,
+  bulkReject,
+} from "./approval/approval-service";
+
+// Policy engine (server-only -- database operations)
+export {
+  evaluateRisk,
+  checkAgentTrust,
+  shouldAutoApprove,
+} from "./approval/policy-engine";
