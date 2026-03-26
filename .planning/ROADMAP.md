@@ -71,7 +71,7 @@ Plans:
 - [ ] 03-02: Deployment state machine, deploy/retry/rollback service, config snapshots, and Server Actions
 - [ ] 03-03: Deployment center UI (split-view, stepper, artifact viewer), secrets page, and nav updates
 - [ ] 03-04: Per-agent Integrations tab on agent detail page and business-wide integrations overview page
-- [ ] 03-05: UAT gap closure — UNIQUE constraint, error handling fixes, and Supabase migration application
+- [x] 03-05: UAT gap closure -- UNIQUE constraint, error handling fixes, and Supabase migration application
 
 ### Phase 4: Task Execution and Approvals
 **Goal**: Tasks flow through the orchestrator to department agents, agents execute with sandboxed tool access, and risky actions pause for human approval with risk-tiered routing
@@ -132,7 +132,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 |-------|----------------|--------|-----------|
 | 1. Foundation and Tenant Provisioning | 0/4 | Not started | - |
 | 2. Agent Management | 0/2 | Complete    | 2026-03-25 |
-| 3. Deployment Pipeline | 4/5 | UAT gap closure | - |
+| 3. Deployment Pipeline | 5/5 | Complete | 2026-03-26 |
 | 4. Task Execution and Approvals | 0/4 | Not started | - |
 | 5. Observability and Command Center | 0/3 | Not started | - |
 | 6. Builder and Automation | 0/2 | Not started | - |
