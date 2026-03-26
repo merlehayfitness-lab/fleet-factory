@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bot, AlertTriangle, ChevronDown, ExternalLink } from "lucide-react";
+import { Bot, AlertTriangle, ChevronDown, ExternalLink, MessageSquare } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -124,6 +124,7 @@ export function AgentHealthGrid({
                   key={agent.id}
                   agent={agent}
                   businessId={businessId}
+                  departmentId={dept.departmentId}
                 />
               ))}
             </div>
@@ -137,9 +138,11 @@ export function AgentHealthGrid({
 function AgentCard({
   agent,
   businessId,
+  departmentId,
 }: {
   agent: AgentHealthItem;
   businessId: string;
+  departmentId: string;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -228,13 +231,22 @@ function AgentCard({
                 )}
                 <p>Failed tasks: {agent.errorCount}</p>
               </div>
-              <Link
-                href={`/businesses/${businessId}/agents/${agent.id}`}
-                className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-              >
-                View details
-                <ExternalLink className="size-3" />
-              </Link>
+              <div className="flex flex-col gap-1 items-end">
+                <Link
+                  href={`/businesses/${businessId}/agents/${agent.id}`}
+                  className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  View details
+                  <ExternalLink className="size-3" />
+                </Link>
+                <Link
+                  href={`/businesses/${businessId}/chat?department=${departmentId}`}
+                  className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                >
+                  Open Chat
+                  <MessageSquare className="size-3" />
+                </Link>
+              </div>
             </div>
 
             {/* Emergency controls */}
