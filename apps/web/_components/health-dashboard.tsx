@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Rocket,
   Bot,
@@ -13,6 +14,9 @@ import {
   MessageSquare,
   Zap,
   Clock,
+  Settings,
+  Power,
+  RotateCcw,
 } from "lucide-react";
 import {
   Card,
@@ -21,10 +25,25 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/_components/status-badge";
 import { UsageSummary, type UsageSummaryData } from "@/_components/usage-summary";
 import { AgentHealthGrid } from "@/_components/agent-health-grid";
+import { TypeToConfirmDialog } from "@/_components/type-to-confirm-dialog";
 import { getHealthDashboard } from "@/_actions/health-actions";
+import {
+  disableTenantAction,
+  restoreTenantAction,
+} from "@/_actions/emergency-actions";
+import { toast } from "sonner";
 import type { SystemHealth } from "@agency-factory/core/server";
 
 interface HealthDashboardProps {
@@ -78,6 +97,9 @@ export function HealthDashboard({
   usageSummary,
 }: HealthDashboardProps) {
   const [health, setHealth] = useState<SystemHealth>(initialHealth);
+  const [showDisableTenant, setShowDisableTenant] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const router = useRouter();
 
   // Poll for fresh health data every 30 seconds
   useEffect(() => {
@@ -91,19 +113,101 @@ export function HealthDashboard({
     return () => clearInterval(interval);
   }, [business.id]);
 
+  const handleDisableTenant = useCallback(
+    async (reason: string) => {
+      setIsPending(true);
+      const result = await disableTenantAction(business.id, reason);
+      setIsPending(false);
+      setShowDisableTenant(false);
+
+      if ("error" in result) {
+        toast.error(result.error);
+      } else {
+        toast.success("Tenant disabled. All agents have been frozen.");
+        router.refresh();
+      }
+    },
+    [business.id, router],
+  );
+
+  const handleRestoreTenant = useCallback(async () => {
+    setIsPending(true);
+    const result = await restoreTenantAction(business.id);
+    setIsPending(false);
+
+    if ("error" in result) {
+      toast.error(result.error);
+    } else {
+      toast.success(
+        "Tenant restored. Agents remain frozen for manual review.",
+      );
+      router.refresh();
+    }
+  }, [business.id, router]);
+
   const errorRatePercent = Math.round(health.errorRate.rate * 100);
   const totalAgents = health.agentHealth.departments.reduce(
     (sum, dept) => sum + dept.agents.length,
     0,
   );
 
+  const isDisabled = business.status === "disabled";
+
   return (
     <div className="space-y-6">
-      {/* Page header */}
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">{business.name}</h1>
-        <StatusBadge status={business.status} />
+      {/* Page header with settings dropdown */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight">{business.name}</h1>
+          <StatusBadge status={business.status} />
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button variant="outline" size="sm" className="gap-1.5">
+                <Settings className="size-4" />
+                Settings
+              </Button>
+            }
+          />
+          <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
+            <DropdownMenuLabel>Emergency Controls</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {isDisabled ? (
+              <DropdownMenuItem
+                onClick={handleRestoreTenant}
+                disabled={isPending}
+              >
+                <RotateCcw className="size-4 text-emerald-600" />
+                <span>Restore Tenant</span>
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => setShowDisableTenant(true)}
+                disabled={isPending}
+              >
+                <Power className="size-4" />
+                <span>Disable Tenant</span>
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+
+      {/* Tenant disable confirmation dialog */}
+      <TypeToConfirmDialog
+        open={showDisableTenant}
+        onOpenChange={setShowDisableTenant}
+        title="Disable Tenant"
+        description={`This will disable the entire "${business.name}" business and freeze all active agents. Users will lose access until the tenant is restored. Agents will remain frozen for manual review after restoration.`}
+        confirmPhrase="DISABLE ALL"
+        actionLabel="Disable Tenant"
+        variant="destructive"
+        onConfirm={handleDisableTenant}
+        isPending={isPending}
+      />
 
       {/* Row 1: Stats cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">

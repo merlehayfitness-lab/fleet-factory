@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Bot, AlertTriangle, ChevronDown, ExternalLink } from "lucide-react";
 import {
   Card,
@@ -16,6 +17,7 @@ import {
   CollapsibleContent,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import { EmergencyControls } from "@/_components/emergency-controls";
 import type { DepartmentHealth, AgentHealthItem } from "@agency-factory/core/server";
 
 interface AgentHealthGridProps {
@@ -47,6 +49,10 @@ const AGENT_STATUS_MAP: Record<
   frozen: {
     label: "Frozen",
     className: "bg-slate-200 text-slate-600 ring-1 ring-red-300 dark:bg-slate-800 dark:text-slate-400 dark:ring-red-800",
+  },
+  retired: {
+    label: "Disabled",
+    className: "bg-red-200 text-red-800 dark:bg-red-900/30 dark:text-red-400",
   },
   provisioning: {
     label: "Deploying",
@@ -80,7 +86,8 @@ function relativeTime(iso: string): string {
  *
  * Each department section shows its name and type badge.
  * Agent cards show name, status badge (5-state), last task time, and error count.
- * Clicking a card expands to show quick link to agent detail page.
+ * Frozen/disabled agents show a red overlay with status banner.
+ * Expanded cards show emergency controls and detail link.
  */
 export function AgentHealthGrid({
   departments,
@@ -135,15 +142,48 @@ function AgentCard({
   businessId: string;
 }) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const statusConfig = AGENT_STATUS_MAP[agent.status] ?? {
     label: agent.status,
     className: "bg-gray-100 text-gray-600",
   };
 
+  const isFrozen = agent.status === "frozen";
+  const isRetired = agent.status === "retired";
+  const isEmergencyState = isFrozen || isRetired;
+
+  const handleActionComplete = useCallback(() => {
+    router.refresh();
+  }, [router]);
+
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <Card className="overflow-hidden">
-        <CollapsibleTrigger className="w-full text-left">
+      <Card
+        className={cn(
+          "overflow-hidden relative",
+          isEmergencyState && "border-red-400 dark:border-red-800",
+        )}
+      >
+        {/* Red overlay tint for frozen/disabled agents */}
+        {isEmergencyState && (
+          <div className="absolute inset-0 bg-red-500/5 pointer-events-none z-0" />
+        )}
+
+        {/* Emergency status banner */}
+        {isEmergencyState && (
+          <div
+            className={cn(
+              "relative z-10 text-center text-[10px] font-bold tracking-wider py-0.5",
+              isFrozen
+                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+            )}
+          >
+            {isFrozen ? "FROZEN" : "DISABLED"}
+          </div>
+        )}
+
+        <CollapsibleTrigger className="relative z-10 w-full text-left">
           <CardHeader className="p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 min-w-0">
@@ -179,7 +219,7 @@ function AgentCard({
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="border-t bg-muted/20 px-3 py-2.5">
+          <CardContent className="relative z-10 border-t bg-muted/20 px-3 py-2.5 space-y-3">
             <div className="flex items-center justify-between text-xs">
               <div className="space-y-1 text-muted-foreground">
                 <p>Status: {statusConfig.label}</p>
@@ -196,6 +236,15 @@ function AgentCard({
                 <ExternalLink className="size-3" />
               </Link>
             </div>
+
+            {/* Emergency controls */}
+            <EmergencyControls
+              agentId={agent.id}
+              businessId={businessId}
+              agentName={agent.name}
+              agentStatus={agent.status}
+              onActionComplete={handleActionComplete}
+            />
           </CardContent>
         </CollapsibleContent>
       </Card>
