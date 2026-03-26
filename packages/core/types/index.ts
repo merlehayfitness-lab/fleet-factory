@@ -76,3 +76,9 @@ export type ApprovalStatus =
 
 /** Risk level for approval evaluation */
 export type RiskLevel = "low" | "medium" | "high";
+
+/** Conversation status */
+export type ConversationStatus = "active" | "archived";
+
+/** Message role in a conversation */
+export type MessageRole = "user" | "agent" | "system";

@@ -692,3 +692,83 @@ ON CONFLICT DO NOTHING;
 -- 023: Phase 4 RLS policies placeholder
 -- All Phase 4 RLS policies are defined in their respective migration files (016-022).
 -- No additional supplemental RLS policies needed.
+
+-- ====== 024: Conversations Table ======
+CREATE TABLE IF NOT EXISTS public.conversations (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  department_id uuid NOT NULL REFERENCES public.departments ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES auth.users,
+  title text,
+  status text NOT NULL DEFAULT 'active'
+    CHECK (status IN ('active', 'archived')),
+  last_message_at timestamptz DEFAULT now(),
+  message_count integer DEFAULT 0,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_conversations_business ON public.conversations (business_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_department ON public.conversations (business_id, department_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_user ON public.conversations (business_id, user_id);
+
+CREATE POLICY "conversations_select_member" ON public.conversations FOR SELECT
+  TO authenticated USING (public.is_business_member(business_id));
+
+CREATE POLICY "conversations_insert_admin" ON public.conversations FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+    OR public.has_role_on_business(business_id, 'manager')
+  );
+
+CREATE POLICY "conversations_update_admin" ON public.conversations FOR UPDATE
+  TO authenticated
+  USING (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+    OR public.has_role_on_business(business_id, 'manager')
+  )
+  WITH CHECK (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+    OR public.has_role_on_business(business_id, 'manager')
+  );
+
+-- ====== 025: Messages Table ======
+CREATE TABLE IF NOT EXISTS public.messages (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  conversation_id uuid NOT NULL REFERENCES public.conversations ON DELETE CASCADE,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  role text NOT NULL CHECK (role IN ('user', 'agent', 'system')),
+  agent_id uuid REFERENCES public.agents,
+  content text NOT NULL,
+  tool_calls jsonb DEFAULT '[]',
+  metadata jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON public.messages (conversation_id, created_at ASC);
+CREATE INDEX IF NOT EXISTS idx_messages_business ON public.messages (business_id);
+
+CREATE POLICY "messages_select_member" ON public.messages FOR SELECT
+  TO authenticated USING (public.is_business_member(business_id));
+
+CREATE POLICY "messages_insert_admin" ON public.messages FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+    OR public.has_role_on_business(business_id, 'manager')
+  );
+
+-- ====== 026: Phase 5 Performance Indexes ======
+CREATE INDEX IF NOT EXISTS idx_agents_business_status ON public.agents (business_id, status);
+CREATE INDEX IF NOT EXISTS idx_tasks_business_completed ON public.tasks (business_id, completed_at DESC) WHERE completed_at IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tasks_business_failed ON public.tasks (business_id, status) WHERE status = 'failed';
+CREATE INDEX IF NOT EXISTS idx_audit_logs_business_recent ON public.audit_logs (business_id, created_at DESC);
