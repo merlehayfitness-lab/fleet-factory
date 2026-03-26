@@ -105,6 +105,9 @@ export type { BlockedCapability } from "./worker/sandbox";
 export { TOOL_CATALOG, getToolsForDepartment } from "./worker/tool-catalog";
 export type { ToolDefinition } from "./worker/tool-catalog";
 
+// Conversation / Message types
+export type { ConversationStatus, MessageRole } from "./types/index";
+
 // Approval types
 export type { ApprovalStatus, RiskLevel } from "./types/index";
 

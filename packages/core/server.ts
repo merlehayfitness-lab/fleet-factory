@@ -67,3 +67,21 @@ export {
   checkAgentTrust,
   shouldAutoApprove,
 } from "./approval/policy-engine";
+
+// Health service (server-only -- database aggregation)
+export {
+  getAgentHealthSummary,
+  getErrorRate,
+  getTaskThroughput,
+  getRecentActivity,
+  getSystemHealth,
+} from "./health/health-service";
+export type {
+  AgentHealthSummary,
+  DepartmentHealth,
+  AgentHealthItem,
+  ErrorRate,
+  TaskThroughput,
+  ActivityEntry,
+  SystemHealth,
+} from "./health/health-service";

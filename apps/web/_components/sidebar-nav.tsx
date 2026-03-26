@@ -13,6 +13,7 @@ import {
   Shield,
   CheckSquare,
   ScrollText,
+  MessageSquare,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -108,10 +109,16 @@ function getBusinessSubNav(businessId: string) {
       enabled: true,
     },
     {
+      href: `/businesses/${businessId}/chat`,
+      label: "Chat",
+      icon: MessageSquare,
+      enabled: true,
+    },
+    {
       href: `/businesses/${businessId}/logs`,
       label: "Logs",
       icon: ScrollText,
-      enabled: false,
+      enabled: true,
     },
   ] as const;
 }

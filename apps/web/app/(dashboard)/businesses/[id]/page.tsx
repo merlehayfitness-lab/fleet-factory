@@ -1,14 +1,15 @@
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/_lib/supabase/server";
-import { BusinessOverview } from "@/_components/business-overview";
+import { HealthDashboard } from "@/_components/health-dashboard";
+import { getSystemHealth } from "@agency-factory/core/server";
 import type { UsageSummaryData } from "@/_components/usage-summary";
 
 /**
  * Business overview dashboard page.
  *
- * Server Component that fetches business details, agent count,
- * department count, latest deployment, usage summary, and live counts.
- * All queries use RLS-scoped Supabase client.
+ * Server Component that fetches business details and system health,
+ * then passes data to the HealthDashboard client component which
+ * handles auto-refresh polling.
  */
 export default async function BusinessPage({
   params,
@@ -29,40 +30,8 @@ export default async function BusinessPage({
     notFound();
   }
 
-  // Fetch agent count
-  const { count: agentCount } = await supabase
-    .from("agents")
-    .select("id", { count: "exact", head: true })
-    .eq("business_id", id);
-
-  // Fetch department count
-  const { count: departmentCount } = await supabase
-    .from("departments")
-    .select("id", { count: "exact", head: true })
-    .eq("business_id", id);
-
-  // Fetch latest deployment
-  const { data: latestDeployment } = await supabase
-    .from("deployments")
-    .select("*")
-    .eq("business_id", id)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  // Fetch pending approval count
-  const { count: pendingApprovalCount } = await supabase
-    .from("approvals")
-    .select("id", { count: "exact", head: true })
-    .eq("business_id", id)
-    .eq("status", "pending");
-
-  // Fetch active task count (queued, assigned, in_progress, waiting_approval)
-  const { count: activeTaskCount } = await supabase
-    .from("tasks")
-    .select("id", { count: "exact", head: true })
-    .eq("business_id", id)
-    .in("status", ["queued", "assigned", "in_progress", "waiting_approval"]);
+  // Fetch combined health payload via the health service
+  const health = await getSystemHealth(supabase, id);
 
   // Fetch usage summary: aggregate from usage_records grouped by agent
   const { data: usageRecords } = await supabase
@@ -125,13 +94,9 @@ export default async function BusinessPage({
   };
 
   return (
-    <BusinessOverview
+    <HealthDashboard
       business={business}
-      agentCount={agentCount ?? 0}
-      departmentCount={departmentCount ?? 0}
-      latestDeployment={latestDeployment}
-      pendingApprovalCount={pendingApprovalCount ?? 0}
-      activeTaskCount={activeTaskCount ?? 0}
+      initialHealth={health}
       usageSummary={usageSummary}
     />
   );
