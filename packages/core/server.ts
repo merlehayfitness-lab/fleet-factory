@@ -85,3 +85,13 @@ export type {
   ActivityEntry,
   SystemHealth,
 } from "./health/health-service";
+
+// Emergency service (server-only -- emergency actions with audit logging)
+export {
+  freezeAgentWithReason,
+  revokeToolAccess,
+  disableAgent,
+  restoreAgent,
+  disableTenant,
+  restoreTenant,
+} from "./emergency/emergency-service";
