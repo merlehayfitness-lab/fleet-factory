@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 5 in progress -- Observability & Command Center
+**Current focus:** Phase 5 complete -- Observability & Command Center
 
 ## Current Position
 
 Phase: 5 of 6 (Observability & Command Center)
-Plan: 2 of 3 in current phase (2 complete)
-Status: Executing Phase 5
-Last activity: 2026-03-26 -- Completed 05-02 (Audit Logs, Emergency Controls & Tenant Kill Switch)
+Plan: 3 of 3 in current phase (3 complete)
+Status: Phase 5 Complete
+Last activity: 2026-03-26 -- Completed 05-03 (Agent Chat Interface)
 
-Progress: [███████████████████] 72% (18/25 plans)
+Progress: [████████████████████] 76% (19/25 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
+- Total plans completed: 19
 - Average duration: 6min
-- Total execution time: 1.63 hours
+- Total execution time: 1.75 hours
 
 **By Phase:**
 
@@ -31,10 +31,10 @@ Progress: [███████████████████] 72% (18/25
 | 02 | 2 | 15min | 8min |
 | 03 | 5 | 26min | 5min |
 | 04 | 5 | 29min | 6min |
-| 05 | 2 | 14min | 7min |
+| 05 | 3 | 21min | 7min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (9min), 04-04 (6min), 04-05 (3min), 05-01 (5min), 05-02 (9min)
+- Last 5 plans: 04-04 (6min), 04-05 (3min), 05-01 (5min), 05-02 (9min), 05-03 (7min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -56,6 +56,7 @@ Progress: [███████████████████] 72% (18/25
 | Phase 04 P05 | 3min | 2 tasks | 1 files |
 | Phase 05 P01 | 5min | 2 tasks | 14 files |
 | Phase 05 P02 | 9min | 2 tasks | 14 files |
+| Phase 05 P03 | 7min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -139,6 +140,12 @@ Recent decisions affecting current work:
 - [05-02]: Audit log live tail polls every 5 seconds via setInterval with Server Action
 - [05-02]: CSV/JSON export converts client-side via Blob URL and anchor click
 - [05-02]: Tenant restore does NOT auto-unfreeze agents -- admin must manually review each
+- [05-03]: Stub response generator uses keyword matching with random fallback for department-appropriate responses
+- [05-03]: Conversation counter update uses direct UPDATE instead of RPC for PromiseLike type compatibility
+- [05-03]: Message polling uses 10s setInterval with deduplication by message ID
+- [05-03]: Typing indicator delays agent response display by 1.5s client-side (server call is immediate)
+- [05-03]: File upload stores metadata only in message metadata field (storage upload deferred)
+- [05-03]: Frozen agent detection checks both agentFrozen flag and absence of hasActiveAgent
 
 ### Pending Todos
 
@@ -151,5 +158,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-26
-Stopped at: Completed 05-02-PLAN.md (Audit Logs, Emergency Controls & Tenant Kill Switch)
-Resume file: .planning/phases/05-observability-and-command-center/05-02-SUMMARY.md
+Stopped at: Completed 05-03-PLAN.md (Agent Chat Interface) -- Phase 05 complete
+Resume file: .planning/phases/05-observability-and-command-center/05-03-SUMMARY.md

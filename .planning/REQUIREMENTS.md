@@ -98,14 +98,14 @@
 - [x] **DASH-07**: Agent detail page (config, status, activity, conversations)
 - [x] **DASH-08**: Deployment center page per business
 - [x] **DASH-09**: Tasks and approvals page per business
-- [ ] **DASH-10**: Command center chat interface with routing to agents via orchestrator
-- [ ] **DASH-11**: Conversation log viewer with transcript history and tool call traces
+- [x] **DASH-10**: Command center chat interface with routing to agents via orchestrator
+- [x] **DASH-11**: Conversation log viewer with transcript history and tool call traces
 
 ### Communication
 
-- [ ] **COMM-01**: Command center chat routes messages to appropriate agent via orchestrator
-- [ ] **COMM-02**: Conversation transcripts stored per agent with full tool call traces
-- [ ] **COMM-03**: Conversation log viewer shows history filterable by agent, department, and date
+- [x] **COMM-01**: Command center chat routes messages to appropriate agent via orchestrator
+- [x] **COMM-02**: Conversation transcripts stored per agent with full tool call traces
+- [x] **COMM-03**: Conversation log viewer shows history filterable by agent, department, and date
 
 ### Builder & Automation
 
@@ -234,11 +234,11 @@
 | TOPS-02 | Phase 5 | Complete |
 | TOPS-03 | Phase 5 | Complete |
 | TOPS-05 | Phase 5 | Complete |
-| COMM-01 | Phase 5 | Pending |
-| COMM-02 | Phase 5 | Pending |
-| COMM-03 | Phase 5 | Pending |
-| DASH-10 | Phase 5 | Pending |
-| DASH-11 | Phase 5 | Pending |
+| COMM-01 | Phase 5 | Complete |
+| COMM-02 | Phase 5 | Complete |
+| COMM-03 | Phase 5 | Complete |
+| DASH-10 | Phase 5 | Complete |
+| DASH-11 | Phase 5 | Complete |
 | SECR-06 | Phase 5 | Complete |
 | BLDR-01 | Phase 6 | Pending |
 | BLDR-02 | Phase 6 | Pending |
