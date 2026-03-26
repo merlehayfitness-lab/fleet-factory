@@ -99,13 +99,13 @@ function getBusinessSubNav(businessId: string) {
       href: `/businesses/${businessId}/approvals`,
       label: "Approvals",
       icon: Shield,
-      enabled: false,
+      enabled: true,
     },
     {
       href: `/businesses/${businessId}/tasks`,
       label: "Tasks",
       icon: CheckSquare,
-      enabled: false,
+      enabled: true,
     },
     {
       href: `/businesses/${businessId}/logs`,

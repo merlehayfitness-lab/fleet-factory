@@ -49,13 +49,20 @@ export default async function BusinessPage({
     .limit(1)
     .single();
 
+  // Fetch pending approval count
+  const { count: pendingApprovalCount } = await supabase
+    .from("approvals")
+    .select("id", { count: "exact", head: true })
+    .eq("business_id", id)
+    .eq("status", "pending");
+
   return (
     <BusinessOverview
       business={business}
       agentCount={agentCount ?? 0}
       departmentCount={departmentCount ?? 0}
       latestDeployment={latestDeployment}
-      pendingApprovalCount={0}
+      pendingApprovalCount={pendingApprovalCount ?? 0}
     />
   );
 }

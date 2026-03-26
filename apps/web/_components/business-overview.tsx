@@ -149,9 +149,20 @@ export function BusinessOverview({
           <QuickLinkCard
             href={`/businesses/${business.id}/tasks`}
             label="Tasks"
-            description="Coming in Phase 4"
+            description="View task work queue"
             icon={CheckSquare}
-            enabled={false}
+            enabled
+          />
+          <QuickLinkCard
+            href={`/businesses/${business.id}/approvals`}
+            label="Approvals"
+            description={
+              pendingApprovalCount > 0
+                ? `${pendingApprovalCount} pending`
+                : "Review agent actions"
+            }
+            icon={Shield}
+            enabled
           />
           <QuickLinkCard
             href={`/businesses/${business.id}/logs`}

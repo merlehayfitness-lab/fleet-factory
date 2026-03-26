@@ -144,6 +144,58 @@ export async function updateTaskStatusAction(
 }
 
 /**
+ * Quick-add a task with minimal fields (title, department, priority).
+ * Lightweight alternative to the full createTaskAction for the inline form.
+ */
+export async function quickAddTaskAction(
+  businessId: string,
+  title: string,
+  departmentId: string,
+  priority: string,
+) {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const input = {
+    title,
+    department_id: departmentId,
+    priority: priority as "low" | "medium" | "high",
+  };
+
+  const parsed = createTaskSchema.safeParse(input);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  try {
+    const task = await createTask(
+      supabase,
+      businessId,
+      parsed.data,
+      user.id,
+      "admin",
+    );
+
+    // Route through orchestrator
+    const result = await executeTask(supabase, businessId, task.id);
+
+    revalidatePath(`/businesses/${businessId}/tasks`);
+    revalidatePath(`/businesses/${businessId}`);
+    return { task, execution: result };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to create task",
+    };
+  }
+}
+
+/**
  * Respond to an assistance request, unblocking the agent.
  */
 export async function respondToAssistanceAction(
