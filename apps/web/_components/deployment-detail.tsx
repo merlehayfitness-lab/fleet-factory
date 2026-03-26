@@ -285,38 +285,39 @@ export function DeploymentDetail({
       {artifacts && Object.keys(artifacts).length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold">Generated Artifacts</h3>
-          {artifacts["tenant-config"] && (
+          {artifacts.tenant_config && (
             <ArtifactViewer
               title="Tenant Config"
-              content={artifacts["tenant-config"]}
+              content={artifacts.tenant_config}
               filename="tenant-config.json"
             />
           )}
-          {artifacts["docker-compose"] && (
+          {artifacts.docker_compose && (
             <ArtifactViewer
               title="Docker Compose"
-              content={artifacts["docker-compose"]}
+              content={artifacts.docker_compose}
               filename="docker-compose.generated.yml"
             />
           )}
-          {artifacts["env-file"] && (
+          {artifacts.env_file && (
             <ArtifactViewer
               title="Environment File"
-              content={artifacts["env-file"]}
+              content={artifacts.env_file}
               filename=".env.generated"
             />
           )}
           {/* Per-agent runtime configs */}
-          {Object.entries(artifacts)
-            .filter(([key]) => key.startsWith("agent-"))
-            .map(([key, content]) => (
-              <ArtifactViewer
-                key={key}
-                title={`Agent Runtime: ${key.replace("agent-", "")}`}
-                content={content}
-                filename={`${key}.json`}
-              />
-            ))}
+          {Array.isArray(artifacts.agent_configs) &&
+            artifacts.agent_configs.map(
+              (ac: { agent_id: string; filename: string; content: string }) => (
+                <ArtifactViewer
+                  key={ac.agent_id}
+                  title={`Agent Runtime: ${ac.filename}`}
+                  content={ac.content}
+                  filename={ac.filename}
+                />
+              ),
+            )}
         </div>
       )}
 
