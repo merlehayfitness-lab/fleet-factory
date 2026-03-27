@@ -10,6 +10,9 @@ import type {
 } from "./chat-types";
 import { selectAgent } from "../orchestrator/router";
 import { generateStubResponse } from "./chat-stub";
+import { isVpsConfigured } from "../vps/vps-config";
+import { checkVpsHealth } from "../vps/vps-health";
+import { getVpsAgentId, sendChatToVps } from "../vps/vps-chat";
 
 /**
  * Get or create a conversation for a business + department + user.
@@ -44,7 +47,7 @@ export async function getOrCreateConversation(
     // Fetch department info for the response
     const { data: dept } = await supabase
       .from("departments")
-      .select("name, department_type")
+      .select("name, type")
       .eq("id", departmentId)
       .single();
 
@@ -53,7 +56,7 @@ export async function getOrCreateConversation(
       businessId: conv.business_id as string,
       departmentId: conv.department_id as string,
       departmentName: (dept?.name as string) ?? "Unknown",
-      departmentType: (dept?.department_type as string) ?? "custom",
+      departmentType: (dept?.type as string) ?? "custom",
       userId: conv.user_id as string,
       title: conv.title as string | null,
       status: conv.status as "active" | "archived",
@@ -86,7 +89,7 @@ export async function getOrCreateConversation(
   // Fetch department info
   const { data: dept } = await supabase
     .from("departments")
-    .select("name, department_type")
+    .select("name, type")
     .eq("id", departmentId)
     .single();
 
@@ -95,7 +98,7 @@ export async function getOrCreateConversation(
     businessId: newConv.business_id as string,
     departmentId: newConv.department_id as string,
     departmentName: (dept?.name as string) ?? "Unknown",
-    departmentType: (dept?.department_type as string) ?? "custom",
+    departmentType: (dept?.type as string) ?? "custom",
     userId: newConv.user_id as string,
     title: newConv.title as string | null,
     status: newConv.status as "active" | "archived",
@@ -140,14 +143,28 @@ export async function sendMessage(
     );
   }
 
-  // Update conversation counters (direct update, no RPC dependency)
+  // Update conversation counters and auto-title from first user message
   try {
+    const update: Record<string, unknown> = {
+      last_message_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    // Auto-set title from first user message if untitled
+    if (role === "user") {
+      const { data: conv } = await supabase
+        .from("conversations")
+        .select("title")
+        .eq("id", conversationId)
+        .single();
+      if (!conv?.title) {
+        update.title = content.length > 60 ? `${content.slice(0, 57)}...` : content;
+      }
+    }
+
     await supabase
       .from("conversations")
-      .update({
-        last_message_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
+      .update(update)
       .eq("id", conversationId);
   } catch {
     // Best-effort counter update -- message is already saved
@@ -282,12 +299,12 @@ export async function getConversationsForBusiness(
   if (deptIds.length > 0) {
     const { data: depts } = await supabase
       .from("departments")
-      .select("id, name, department_type")
+      .select("id, name, type")
       .in("id", deptIds);
     for (const dept of depts ?? []) {
       deptMap.set(dept.id as string, {
         name: dept.name as string,
-        type: dept.department_type as string,
+        type: dept.type as string,
       });
     }
   }
@@ -365,7 +382,7 @@ export async function getDepartmentChannels(
   // Fetch all departments for this business
   const { data: departments, error: deptError } = await supabase
     .from("departments")
-    .select("id, name, department_type")
+    .select("id, name, type")
     .eq("business_id", businessId)
     .order("name");
 
@@ -456,7 +473,7 @@ export async function getDepartmentChannels(
     channels.push({
       departmentId: deptId,
       departmentName: dept.name as string,
-      departmentType: dept.department_type as string,
+      departmentType: dept.type as string,
       lastMessageAt: conv?.lastMessageAt ?? null,
       unreadCount,
       hasActiveAgent: agentStatus.hasActive,
@@ -484,10 +501,10 @@ export async function routeAndRespond(
   // Get department type for stub response
   const { data: dept } = await supabase
     .from("departments")
-    .select("department_type")
+    .select("type")
     .eq("id", departmentId)
     .single();
-  const departmentType = (dept?.department_type as string) ?? "owner";
+  const departmentType = (dept?.type as string) ?? "owner";
 
   // Check for frozen agents in the department
   const { data: frozenAgents } = await supabase
@@ -498,12 +515,26 @@ export async function routeAndRespond(
     .eq("status", "frozen")
     .limit(1);
 
-  // Try to select an active agent
+  // Try to select an agent (active first, then provisioning for stub responses)
   let agent: { id: string; name: string; status: string } | null = null;
   try {
     agent = await selectAgent(supabase, departmentId, businessId);
   } catch {
     // No active agent found
+  }
+
+  // Fallback: try provisioning agents for stub chat (they exist but haven't deployed yet)
+  if (!agent) {
+    const { data: provAgents } = await supabase
+      .from("agents")
+      .select("id, name, status")
+      .eq("department_id", departmentId)
+      .eq("business_id", businessId)
+      .eq("status", "provisioning")
+      .limit(1);
+    if (provAgents && provAgents.length > 0) {
+      agent = provAgents[0] as { id: string; name: string; status: string };
+    }
   }
 
   // If no active agent but frozen agents exist, return frozen message
@@ -528,7 +559,71 @@ export async function routeAndRespond(
     );
   }
 
-  // Generate stub response
+  // Check if VPS is configured and healthy -- route to real agent if possible
+  if (isVpsConfigured()) {
+    try {
+      const vpsHealth = await checkVpsHealth();
+      if (vpsHealth.status === "online" || vpsHealth.status === "degraded") {
+        // Route to real VPS agent
+        const vpsAgentId = await getVpsAgentId(supabase, agent.id);
+        if (vpsAgentId) {
+          const vpsResponse = await sendChatToVps(
+            businessId,
+            agent.id,
+            vpsAgentId,
+            conversationId,
+            userMessage,
+          );
+
+          // Store agent message from VPS response
+          const agentMessage = await sendMessage(
+            supabase,
+            businessId,
+            conversationId,
+            vpsResponse.content,
+            "agent",
+            agent.id,
+            vpsResponse.toolCalls?.map((tc) => ({
+              toolName: tc.toolName,
+              summary: tc.summary,
+              inputs: tc.inputs,
+              outputs: tc.outputs,
+            })),
+          );
+
+          // Audit log (best-effort)
+          try {
+            await supabase.from("audit_logs").insert({
+              business_id: businessId,
+              action: "chat.vps_routed",
+              entity_type: "conversation",
+              entity_id: conversationId,
+              metadata: { agentId: agent.id, vpsAgentId, departmentType },
+            });
+          } catch {
+            /* best-effort */
+          }
+
+          return agentMessage;
+        }
+      }
+
+      // VPS offline: send system message and fall through to stub
+      if (vpsHealth.status === "offline") {
+        await sendMessage(
+          supabase,
+          businessId,
+          conversationId,
+          "Agent is offline -- your message has been saved and will be delivered when the agent is back online.",
+          "system",
+        );
+      }
+    } catch {
+      // VPS check failed, fall through to stub response
+    }
+  }
+
+  // Existing stub response path (preserved as fallback)
   const stub = generateStubResponse(departmentType, userMessage);
 
   // Create agent message

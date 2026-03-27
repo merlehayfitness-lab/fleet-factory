@@ -3,6 +3,10 @@ import { routeTask } from "./router";
 import { decomposeTask, type DecompositionPlan } from "./decomposer";
 import { runAgentTask } from "../worker/tool-runner";
 import { createAssistanceRequest } from "../task/task-service";
+import { isVpsConfigured } from "../vps/vps-config";
+import { checkVpsHealth } from "../vps/vps-health";
+import { getVpsAgentId } from "../vps/vps-chat";
+import { sendTaskToVps } from "../vps/vps-task";
 
 interface ExecutionResult {
   taskId: string;
@@ -231,7 +235,88 @@ export async function executeTask(
     })
     .eq("id", taskId);
 
-  // 8. Execute via worker
+  // 7b. Check if VPS is available for real execution
+  if (isVpsConfigured()) {
+    try {
+      const vpsHealth = await checkVpsHealth();
+      if (vpsHealth.status === "online" || vpsHealth.status === "degraded") {
+        const vpsAgentId = await getVpsAgentId(supabase, agentRecord.id as string);
+        if (vpsAgentId) {
+          const vpsResult = await sendTaskToVps(
+            businessId,
+            agentRecord.id as string,
+            vpsAgentId,
+            {
+              id: task.id as string,
+              title: task.title as string,
+              priority: task.priority as string,
+              payload,
+            },
+          );
+
+          if (vpsResult.success) {
+            // Update task with VPS execution result
+            await supabase
+              .from("tasks")
+              .update({
+                status: "completed",
+                completed_at: new Date().toISOString(),
+                result: vpsResult.result ?? {
+                  vps_execution: true,
+                  tools_used: vpsResult.toolsUsed,
+                },
+                token_usage: vpsResult.tokenUsage ?? null,
+              })
+              .eq("id", taskId);
+
+            return {
+              taskId: task.id as string,
+              agentId: agentRecord.id as string,
+              status: "completed",
+              tokenUsage: vpsResult.tokenUsage,
+            };
+          }
+
+          // VPS execution failed -- fall through to local mock
+          console.warn(
+            `VPS task execution failed for ${taskId}: ${vpsResult.error}`,
+          );
+        }
+      }
+
+      // VPS offline -- queue task, create assistance request
+      if (vpsHealth.status === "offline") {
+        try {
+          await createAssistanceRequest(
+            supabase,
+            businessId,
+            taskId,
+            "system",
+            `VPS offline -- task "${task.title}" queued for when agents come back online`,
+            "The VPS is currently unreachable. This task will be processed when connectivity is restored.",
+          );
+        } catch {
+          /* best-effort */
+        }
+
+        // Keep task in queued state (revert from in_progress)
+        await supabase
+          .from("tasks")
+          .update({ status: "queued" })
+          .eq("id", taskId);
+
+        return {
+          taskId: task.id as string,
+          agentId: agentRecord.id as string,
+          status: "queued",
+        };
+      }
+    } catch {
+      // VPS check failed, fall through to mock execution
+    }
+  }
+
+  // 8. Execute via worker (mock execution fallback)
   const workerResult = await runAgentTask(
     supabase,
     businessId,

@@ -121,6 +121,12 @@ export {
 } from "./vps/vps-health";
 export { getVpsConfig, isVpsConfigured } from "./vps/vps-config";
 
+// VPS chat routing (server-only -- sends messages to VPS agents)
+export { sendChatToVps, getVpsAgentId, getVpsChatWsUrl } from "./vps/vps-chat";
+
+// VPS task routing (server-only -- sends tasks to VPS agents)
+export { sendTaskToVps } from "./vps/vps-task";
+
 // VPS deploy service (server-only -- pushes deployment packages to VPS)
 export {
   pushDeploymentToVps,
