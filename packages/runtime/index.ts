@@ -8,3 +8,13 @@ export {
   generateAgentRuntimeConfig,
   generateAllAgentConfigs,
 } from "./generators/agent-runtime";
+
+// OpenClaw workspace generators
+export { generateAgentsMd } from "./generators/openclaw-agents-md";
+export { generateSoulMd } from "./generators/openclaw-soul-md";
+export { generateIdentityMd } from "./generators/openclaw-identity-md";
+export { generateToolsMd } from "./generators/openclaw-tools-md";
+export { generateUserMd } from "./generators/openclaw-user-md";
+export { generateOpenClawConfig } from "./generators/openclaw-config";
+export { generateOpenClawWorkspace } from "./generators/openclaw-workspace";
+export type { WorkspaceFile } from "./generators/openclaw-workspace";
