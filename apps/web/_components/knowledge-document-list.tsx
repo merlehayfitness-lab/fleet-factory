@@ -18,7 +18,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -196,7 +195,7 @@ export function KnowledgeDocumentList({
 
   return (
     <>
-      <Table>
+      <Table className="table-fixed">
         <TableHeader>
           <TableRow>
             <TableHead>Title</TableHead>
@@ -299,10 +298,8 @@ function DocumentRow({
         </TableCell>
         <TableCell>
           <DropdownMenu>
-            <DropdownMenuTrigger>
-              <Button variant="ghost" size="sm" className="size-8 p-0">
-                <MoreHorizontal className="size-4" />
-              </Button>
+            <DropdownMenuTrigger className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground">
+              <MoreHorizontal className="size-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {doc.status === "ready" && (
@@ -349,7 +346,7 @@ function DocumentRow({
       {/* Expandable chunk preview */}
       {isExpanded && doc.status === "ready" && (
         <TableRow>
-          <TableCell colSpan={6} className="bg-muted/30 p-0">
+          <TableCell colSpan={6} className="max-w-0 bg-muted/30 p-0">
             <KnowledgeChunkPreview
               documentId={doc.id}
               isExpanded={isExpanded}

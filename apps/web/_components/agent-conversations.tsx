@@ -3,8 +3,8 @@ import { MessageSquare } from "lucide-react";
 /**
  * Conversations tab placeholder.
  *
- * The conversations table does not exist yet -- this will be implemented
- * in Phase 5 alongside the command center chat feature.
+ * Agent-level conversation history. Use the Chat page in the sidebar
+ * to interact with agents via department channels.
  */
 export function AgentConversations() {
   return (
@@ -14,7 +14,7 @@ export function AgentConversations() {
         Conversations will appear here
       </p>
       <p className="mt-1 text-xs text-muted-foreground">
-        The command center chat will be available in Phase 5
+        Use the Chat page to interact with this agent
       </p>
     </div>
   );

@@ -30,8 +30,13 @@ export default async function KnowledgePage({
     notFound();
   }
 
-  // Fetch global documents
-  const globalDocs = await listDocuments(supabase, id, "global");
+  // Fetch global documents (gracefully handle missing table before schema is applied)
+  let globalDocs: Awaited<ReturnType<typeof listDocuments>> = [];
+  try {
+    globalDocs = await listDocuments(supabase, id, "global");
+  } catch {
+    // Table may not exist yet — show empty state
+  }
 
   return (
     <div className="space-y-6">

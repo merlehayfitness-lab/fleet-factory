@@ -28,7 +28,7 @@ export async function retrieveKnowledgeContext(
 ): Promise<RetrievedContext> {
   const startTime = Date.now();
 
-  const matchThreshold = options?.matchThreshold ?? 0.7;
+  const matchThreshold = options?.matchThreshold ?? 0.3;
   const matchCount = options?.matchCount ?? 3;
 
   // If OPENAI_API_KEY is not set, return empty context gracefully
@@ -43,6 +43,8 @@ export async function retrieveKnowledgeContext(
   try {
     // Generate embedding for the query
     const queryEmbedding = await generateEmbedding(queryText);
+    console.log(`[RAG] Query: "${queryText.slice(0, 60)}...", businessId: ${businessId}, agentId: ${agentId}`);
+    console.log(`[RAG] Embedding generated: ${queryEmbedding.length} dimensions`);
 
     // Call the match_knowledge_chunks RPC
     const { data: chunks, error } = await supabase.rpc(
@@ -50,11 +52,13 @@ export async function retrieveKnowledgeContext(
       {
         p_business_id: businessId,
         p_agent_id: agentId,
-        p_query_embedding: JSON.stringify(queryEmbedding),
+        p_query_embedding: queryEmbedding,
         p_match_threshold: matchThreshold,
         p_match_count: matchCount,
       }
     );
+
+    console.log(`[RAG] RPC result: ${chunks?.length ?? 0} chunks, error: ${error?.message ?? "none"}`);
 
     if (error) {
       console.error("Knowledge retrieval RPC error:", error.message);

@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION public.match_knowledge_chunks(
   p_business_id uuid,
   p_agent_id uuid DEFAULT NULL,
   p_query_embedding vector(1536) DEFAULT NULL,
-  p_match_threshold float DEFAULT 0.7,
+  p_match_threshold float DEFAULT 0.3,
   p_match_count int DEFAULT 3
 )
 RETURNS TABLE (
@@ -14,7 +14,7 @@ RETURNS TABLE (
   agent_id uuid,
   similarity float
 )
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = ''
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = 'public'
 AS $$
 BEGIN
   RETURN QUERY

@@ -79,14 +79,14 @@ export function KnowledgeChunkPreview({
   }
 
   return (
-    <div className="space-y-2 p-4">
+    <div className="w-full overflow-hidden space-y-2 p-4">
       <p className="mb-3 text-xs font-medium text-muted-foreground">
         {chunks.length} chunk{chunks.length !== 1 ? "s" : ""}
       </p>
       {chunks.map((chunk) => (
         <div
           key={chunk.id}
-          className="rounded-md border bg-background p-3"
+          className="overflow-hidden rounded-md border bg-background p-3"
         >
           <div className="mb-1.5 flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
@@ -98,7 +98,7 @@ export function KnowledgeChunkPreview({
               </Badge>
             )}
           </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">
+          <p className="whitespace-pre-wrap break-all text-xs leading-relaxed text-muted-foreground">
             {chunk.content.length > 300
               ? `${chunk.content.slice(0, 300)}...`
               : chunk.content}
