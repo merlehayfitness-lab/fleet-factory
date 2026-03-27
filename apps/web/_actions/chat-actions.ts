@@ -11,6 +11,10 @@ import {
   archiveConversation,
   getDepartmentChannels,
   routeAndRespond,
+  getVpsAgentId,
+  getVpsChatWsUrl,
+  isVpsConfigured,
+  selectAgent,
 } from "@agency-factory/core/server";
 import type { ChatMessage, ChatConversation, DepartmentChannel } from "@agency-factory/core";
 
@@ -202,4 +206,54 @@ export async function archiveConversationAction(
 
   revalidatePath(`/businesses/${businessId}/chat`);
   return { success: true };
+}
+
+/**
+ * Get the WebSocket URL for streaming chat from a VPS agent.
+ * Returns { wsUrl } if VPS is configured and agent has a VPS mapping,
+ * or { wsUrl: null } if VPS is not configured or agent is not mapped.
+ */
+export async function getVpsChatStreamUrl(
+  businessId: string,
+  departmentId: string,
+): Promise<{ wsUrl: string | null }> {
+  if (!isVpsConfigured()) {
+    return { wsUrl: null };
+  }
+
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { wsUrl: null };
+  }
+
+  try {
+    // Find active agent for this department
+    const agent = await selectAgent(supabase, departmentId, businessId);
+    if (!agent) {
+      return { wsUrl: null };
+    }
+
+    // Look up VPS agent ID
+    const vpsAgentId = await getVpsAgentId(supabase, agent.id);
+    if (!vpsAgentId) {
+      return { wsUrl: null };
+    }
+
+    // Get or create conversation to get the conversation ID
+    const conversation = await getOrCreateConversation(
+      supabase,
+      businessId,
+      departmentId,
+      user.id,
+    );
+
+    const wsUrl = getVpsChatWsUrl(vpsAgentId, conversation.id);
+    return { wsUrl };
+  } catch {
+    return { wsUrl: null };
+  }
 }

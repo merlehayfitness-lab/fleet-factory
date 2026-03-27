@@ -74,6 +74,9 @@ export function generateOpenClawConfig(
     };
   });
 
+  // Build allow list for inter-agent messaging (all agents within this business)
+  const allAgentIds = agentList.map((a) => a.id);
+
   const config = {
     version: "1.0",
     business: {
@@ -85,6 +88,13 @@ export function generateOpenClawConfig(
         enabled: true,
         scope: "business",
         protocol: "internal-message",
+      },
+    },
+    tools: {
+      agentToAgent: {
+        enabled: true,
+        allow: allAgentIds,
+        capabilities: ["sessions_send", "sessions_list", "sessions_history"],
       },
     },
     runtime: {

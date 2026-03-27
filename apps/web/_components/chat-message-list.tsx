@@ -13,6 +13,8 @@ interface ChatMessageListProps {
   departmentName: string;
   onLoadMore: () => void;
   hasMoreMessages: boolean;
+  streamingContent?: string | null;
+  streamingAgentName?: string | null;
 }
 
 /**
@@ -30,6 +32,8 @@ export function ChatMessageList({
   departmentName,
   onLoadMore,
   hasMoreMessages,
+  streamingContent = null,
+  streamingAgentName = null,
 }: ChatMessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const prevCountRef = useRef(messages.length);
@@ -42,12 +46,12 @@ export function ChatMessageList({
     prevCountRef.current = messages.length;
   }, [messages.length]);
 
-  // Scroll to bottom on typing indicator
+  // Scroll to bottom on typing indicator or streaming content
   useEffect(() => {
-    if (isAgentTyping) {
+    if (isAgentTyping || streamingContent !== null) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [isAgentTyping]);
+  }, [isAgentTyping, streamingContent]);
 
   return (
     <ScrollArea className="flex-1 overflow-hidden">
@@ -82,8 +86,28 @@ export function ChatMessageList({
           <ChatMessageBubble key={msg.id} message={msg} />
         ))}
 
+        {/* Streaming message from VPS WebSocket */}
+        {streamingContent !== null && (
+          <div className="flex flex-col gap-0.5 py-1 pl-2">
+            {streamingAgentName && (
+              <span className="pl-7 text-[10px] font-medium text-muted-foreground">
+                {streamingAgentName}
+              </span>
+            )}
+            <div className="flex items-start gap-2">
+              <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                AI
+              </div>
+              <div className="max-w-[75%] rounded-lg bg-muted/60 px-3 py-2 text-sm">
+                {streamingContent}
+                <span className="inline-block w-1.5 h-4 ml-0.5 bg-primary/60 animate-pulse" />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Typing indicator */}
-        {isAgentTyping && (
+        {isAgentTyping && streamingContent === null && (
           <div className="flex items-center gap-2 py-2 pl-9">
             <div className="flex items-center gap-1.5 rounded-lg bg-muted/60 px-3 py-2">
               <Loader2 className="size-3 animate-spin text-muted-foreground" />

@@ -1,6 +1,7 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/_lib/supabase/server";
-import { getDepartmentChannels } from "@agency-factory/core/server";
+import { getDepartmentChannels, getVpsStatus } from "@agency-factory/core/server";
 import { ChatLayout } from "@/_components/chat-layout";
 
 /**
@@ -37,14 +38,24 @@ export default async function ChatPage({
     notFound();
   }
 
-  // Fetch department channels
-  const channels = await getDepartmentChannels(supabase, id, user.id);
+  // Fetch department channels and VPS status in parallel
+  const [channels, vpsStatusResult] = await Promise.all([
+    getDepartmentChannels(supabase, id, user.id),
+    getVpsStatus(supabase).catch(() => null),
+  ]);
+
+  const vpsStatus = vpsStatusResult
+    ? { status: vpsStatusResult.status as string, lastCheckedAt: vpsStatusResult.last_checked_at as string }
+    : null;
 
   return (
-    <ChatLayout
-      businessId={business.id as string}
-      businessName={business.name as string}
-      channels={channels}
-    />
+    <Suspense fallback={<div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">Loading chat...</div>}>
+      <ChatLayout
+        businessId={business.id as string}
+        businessName={business.name as string}
+        channels={channels}
+        vpsStatus={vpsStatus}
+      />
+    </Suspense>
   );
 }

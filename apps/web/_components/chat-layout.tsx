@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { Snowflake, Bot } from "lucide-react";
+import { Snowflake, Bot, WifiOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ChatChannelList } from "./chat-channel-list";
 import { ChatMessageList } from "./chat-message-list";
@@ -11,6 +11,7 @@ import {
   sendMessageAction,
   getMessagesAction,
   getDepartmentChannelsAction,
+  getVpsChatStreamUrl,
 } from "@/_actions/chat-actions";
 import type { ChatMessage, DepartmentChannel } from "@agency-factory/core";
 
@@ -18,6 +19,7 @@ interface ChatLayoutProps {
   businessId: string;
   businessName: string;
   channels: DepartmentChannel[];
+  vpsStatus: { status: string; lastCheckedAt: string } | null;
 }
 
 /**
@@ -35,6 +37,7 @@ export function ChatLayout({
   businessId,
   businessName,
   channels: initialChannels,
+  vpsStatus,
 }: ChatLayoutProps) {
   const searchParams = useSearchParams();
   const departmentParam = searchParams.get("department");
@@ -51,7 +54,15 @@ export function ChatLayout({
   const [isSending, setIsSending] = useState(false);
   const [isAgentTyping, setIsAgentTyping] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [wsUrl, setWsUrl] = useState<string | null>(null);
+  const [streamingContent, setStreamingContent] = useState<string | null>(null);
+  const [streamingAgentName, setStreamingAgentName] = useState<string | null>(
+    null,
+  );
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wsRef = useRef<WebSocket | null>(null);
+
+  const isVpsOffline = vpsStatus?.status === "offline";
 
   // Get selected channel info
   const selectedChannel = channels.find(
@@ -147,6 +158,39 @@ export function ChatLayout({
     };
   }, [conversationId]);
 
+  // Fetch WebSocket URL when department changes
+  useEffect(() => {
+    if (!selectedDepartmentId) return;
+    let cancelled = false;
+
+    async function fetchWsUrl() {
+      try {
+        const result = await getVpsChatStreamUrl(
+          businessId,
+          selectedDepartmentId!,
+        );
+        if (!cancelled) {
+          setWsUrl(result.wsUrl);
+        }
+      } catch {
+        if (!cancelled) setWsUrl(null);
+      }
+    }
+
+    void fetchWsUrl();
+
+    return () => {
+      cancelled = true;
+      // Close any existing WebSocket on department change
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      setStreamingContent(null);
+      setStreamingAgentName(null);
+    };
+  }, [selectedDepartmentId, businessId]);
+
   // Handle department selection
   const handleSelectDepartment = useCallback((departmentId: string) => {
     setSelectedDepartmentId(departmentId);
@@ -184,14 +228,92 @@ export function ChatLayout({
 
       setIsSending(false);
 
-      // Show typing indicator for 1.5 seconds then reveal agent response
-      setIsAgentTyping(true);
-      setTimeout(() => {
-        setIsAgentTyping(false);
-        setMessages((prev) => [...prev, result.agentMessage]);
-      }, 1500);
+      // If WebSocket URL is available, connect for streaming response tokens
+      if (wsUrl) {
+        setStreamingContent("");
+        setStreamingAgentName(selectedChannel?.departmentName ?? "Agent");
+
+        try {
+          const ws = new WebSocket(wsUrl);
+          wsRef.current = ws;
+
+          ws.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data as string) as {
+                type?: string;
+                token?: string;
+                content?: string;
+              };
+              if (data.type === "token" && data.token) {
+                setStreamingContent((prev) => (prev ?? "") + data.token);
+              } else if (data.type === "complete") {
+                // Stream complete -- full message already stored server-side
+                setStreamingContent(null);
+                setStreamingAgentName(null);
+                // Add the agent message from the server response
+                setMessages((prev) => [...prev, result.agentMessage]);
+                ws.close();
+                wsRef.current = null;
+              } else if (data.type === "error") {
+                setStreamingContent(null);
+                setStreamingAgentName(null);
+                setMessages((prev) => [...prev, result.agentMessage]);
+                ws.close();
+                wsRef.current = null;
+              }
+            } catch {
+              // Non-JSON token data -- treat as raw token
+              setStreamingContent(
+                (prev) => (prev ?? "") + (event.data as string),
+              );
+            }
+          };
+
+          ws.onerror = () => {
+            setStreamingContent(null);
+            setStreamingAgentName(null);
+            // Fall back to showing the server response
+            setMessages((prev) => [...prev, result.agentMessage]);
+            wsRef.current = null;
+          };
+
+          ws.onclose = () => {
+            // If streaming was in progress, finish it
+            if (streamingContent !== null) {
+              setStreamingContent(null);
+              setStreamingAgentName(null);
+              setMessages((prev) => [...prev, result.agentMessage]);
+            }
+            wsRef.current = null;
+          };
+        } catch {
+          // WebSocket connection failed -- fall back to stub display
+          setStreamingContent(null);
+          setStreamingAgentName(null);
+          setIsAgentTyping(true);
+          setTimeout(() => {
+            setIsAgentTyping(false);
+            setMessages((prev) => [...prev, result.agentMessage]);
+          }, 1500);
+        }
+      } else {
+        // No WebSocket URL: use existing stub response flow with typing indicator delay
+        setIsAgentTyping(true);
+        setTimeout(() => {
+          setIsAgentTyping(false);
+          setMessages((prev) => [...prev, result.agentMessage]);
+        }, 1500);
+      }
     },
-    [businessId, selectedDepartmentId, isSending, conversationId],
+    [
+      businessId,
+      selectedDepartmentId,
+      isSending,
+      conversationId,
+      wsUrl,
+      selectedChannel,
+      streamingContent,
+    ],
   );
 
   // Handle load more messages
@@ -255,6 +377,17 @@ export function ChatLayout({
           </div>
         )}
 
+        {/* VPS offline banner */}
+        {isVpsOffline && selectedChannel && (
+          <div className="flex items-center gap-2 border-b bg-amber-50 px-4 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-400">
+            <WifiOff className="size-3.5 shrink-0" />
+            <span>
+              Agents are offline -- messages will be saved and delivered
+              when agents come back online
+            </span>
+          </div>
+        )}
+
         {/* No channel selected */}
         {!selectedChannel && (
           <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
@@ -276,6 +409,8 @@ export function ChatLayout({
                 departmentName={selectedChannel.departmentName}
                 onLoadMore={handleLoadMore}
                 hasMoreMessages={hasMoreMessages}
+                streamingContent={streamingContent}
+                streamingAgentName={streamingAgentName}
               />
             )}
 
