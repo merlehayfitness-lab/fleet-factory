@@ -33,6 +33,7 @@ export type DeploymentStatus =
   | "queued"
   | "building"
   | "deploying"
+  | "verifying"
   | "live"
   | "failed"
   | "rolled_back";
@@ -82,3 +83,12 @@ export type ConversationStatus = "active" | "archived";
 
 /** Message role in a conversation */
 export type MessageRole = "user" | "agent" | "system";
+
+/** VPS health status */
+export type VpsStatus = "online" | "offline" | "degraded" | "unknown";
+
+/** VPS agent container status */
+export type VpsContainerStatus = "running" | "stopped" | "error" | "unknown";
+
+/** Deployment target */
+export type DeployTarget = "local" | "vps";

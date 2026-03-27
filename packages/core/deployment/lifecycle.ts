@@ -6,7 +6,7 @@ import type { DeploymentStatus } from "../types/index";
  * Defines all valid status transitions for deployments.
  * Every transition must be explicitly allowed here -- unlisted transitions are rejected.
  *
- * Flow: queued -> building -> deploying -> live | failed
+ * Flow: queued -> building -> deploying -> verifying -> live | failed
  * Recovery: failed -> queued (retry creates new record)
  * Rollback: live -> rolled_back
  * Terminal states: rolled_back (no outgoing transitions)
@@ -14,7 +14,8 @@ import type { DeploymentStatus } from "../types/index";
 export const DEPLOYMENT_TRANSITIONS: Record<DeploymentStatus, DeploymentStatus[]> = {
   queued: ["building"],
   building: ["deploying", "failed"],
-  deploying: ["live", "failed"],
+  deploying: ["verifying", "live", "failed"],
+  verifying: ["live", "failed"],
   live: ["rolled_back"],
   failed: ["queued"], // retry creates new record, but failed can transition to queued conceptually
   rolled_back: [], // terminal for this deployment record

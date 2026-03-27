@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS public.deployments (
   business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
   version integer NOT NULL DEFAULT 1,
   status text NOT NULL DEFAULT 'queued'
-    CHECK (status IN ('queued', 'building', 'deploying', 'live', 'failed', 'rolled_back')),
+    CHECK (status IN ('queued', 'building', 'deploying', 'verifying', 'live', 'failed', 'rolled_back')),
   config_snapshot jsonb,
   error_message text,
   started_at timestamptz,
@@ -772,3 +772,77 @@ CREATE INDEX IF NOT EXISTS idx_agents_business_status ON public.agents (business
 CREATE INDEX IF NOT EXISTS idx_tasks_business_completed ON public.tasks (business_id, completed_at DESC) WHERE completed_at IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_tasks_business_failed ON public.tasks (business_id, status) WHERE status = 'failed';
 CREATE INDEX IF NOT EXISTS idx_audit_logs_business_recent ON public.audit_logs (business_id, created_at DESC);
+
+-- ====== 027: VPS Status Table ======
+CREATE TABLE IF NOT EXISTS public.vps_status (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  status text NOT NULL DEFAULT 'unknown'
+    CHECK (status IN ('online', 'offline', 'degraded', 'unknown')),
+  last_checked_at timestamptz DEFAULT now(),
+  details jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.vps_status ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "vps_status_select" ON public.vps_status FOR SELECT
+  TO authenticated USING (true);
+
+CREATE POLICY "vps_status_update" ON public.vps_status FOR UPDATE
+  TO authenticated USING (true) WITH CHECK (true);
+
+CREATE POLICY "vps_status_insert" ON public.vps_status FOR INSERT
+  TO authenticated WITH CHECK (true);
+
+INSERT INTO public.vps_status (status, details)
+VALUES ('unknown', '{"message": "VPS status not yet checked"}')
+ON CONFLICT DO NOTHING;
+
+-- ====== 028: Agent VPS Status Table ======
+CREATE TABLE IF NOT EXISTS public.agent_vps_status (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  agent_id uuid NOT NULL REFERENCES public.agents ON DELETE CASCADE,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  vps_agent_id text NOT NULL,
+  container_status text DEFAULT 'unknown'
+    CHECK (container_status IN ('running', 'stopped', 'error', 'unknown')),
+  last_health_check_at timestamptz,
+  last_response_at timestamptz,
+  metadata jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.agent_vps_status ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_agent_vps_status_business ON public.agent_vps_status (business_id);
+CREATE INDEX IF NOT EXISTS idx_agent_vps_status_agent ON public.agent_vps_status (agent_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_vps_status_unique ON public.agent_vps_status (agent_id);
+
+CREATE POLICY "agent_vps_status_select" ON public.agent_vps_status FOR SELECT
+  TO authenticated USING (public.is_business_member(business_id));
+
+CREATE POLICY "agent_vps_status_insert" ON public.agent_vps_status FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+  );
+
+CREATE POLICY "agent_vps_status_update" ON public.agent_vps_status FOR UPDATE
+  TO authenticated
+  USING (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+  )
+  WITH CHECK (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+  );
+
+-- ====== 029: Deployments VPS Columns ======
+ALTER TABLE public.deployments
+  ADD COLUMN IF NOT EXISTS optimization_report jsonb,
+  ADD COLUMN IF NOT EXISTS deploy_target text DEFAULT 'local'
+    CHECK (deploy_target IN ('local', 'vps')),
+  ADD COLUMN IF NOT EXISTS vps_deploy_id text;

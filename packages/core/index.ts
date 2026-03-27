@@ -11,6 +11,9 @@ export type {
   IntegrationType,
   IntegrationStatus,
   SecretCategory,
+  VpsStatus,
+  VpsContainerStatus,
+  DeployTarget,
 } from "./types/index";
 
 // Tenant provisioning
