@@ -3,6 +3,7 @@
 import { Wrench, FileText, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@agency-factory/core";
+import { KnowledgeSourceFootnotes } from "./knowledge-source-footnotes";
 
 interface ChatMessageBubbleProps {
   message: ChatMessage;
@@ -132,6 +133,15 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
             ))}
           </div>
         )}
+
+        {/* Knowledge source footnotes */}
+        {isAgent &&
+          Array.isArray(message.metadata?.knowledgeSources) &&
+          (message.metadata.knowledgeSources as Array<{ chunkId: string; documentId: string; documentTitle: string; chunkPreview: string; similarity: number }>).length > 0 && (
+            <KnowledgeSourceFootnotes
+              sources={message.metadata.knowledgeSources as Array<{ chunkId: string; documentId: string; documentTitle: string; chunkPreview: string; similarity: number }>}
+            />
+          )}
 
         {/* Timestamp */}
         <p
