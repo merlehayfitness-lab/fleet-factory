@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 6 of 6 (Builder & Automation)
-Plan: 1 of 4 in current phase (1 complete)
+Plan: 2 of 4 in current phase (2 complete)
 Status: Executing Phase 6
-Last activity: 2026-03-27 -- Completed 06-01 (VPS Foundations)
+Last activity: 2026-03-27 -- Completed 06-02 (Deployment Pipeline VPS Integration)
 
-Progress: [████████████████████] 80% (20/25 plans)
+Progress: [█████████████████████] 84% (21/25 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
+- Total plans completed: 21
 - Average duration: 6min
-- Total execution time: 1.9 hours
+- Total execution time: 2.1 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [████████████████████] 80% (20
 | 03 | 5 | 26min | 5min |
 | 04 | 5 | 29min | 6min |
 | 05 | 3 | 21min | 7min |
-| 06 | 1 | 9min | 9min |
+| 06 | 2 | 19min | 10min |
 
 **Recent Trend:**
-- Last 5 plans: 04-05 (3min), 05-01 (5min), 05-02 (9min), 05-03 (7min), 06-01 (9min)
+- Last 5 plans: 05-01 (5min), 05-02 (9min), 05-03 (7min), 06-01 (9min), 06-02 (10min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -59,6 +59,7 @@ Progress: [████████████████████] 80% (20
 | Phase 05 P02 | 9min | 2 tasks | 14 files |
 | Phase 05 P03 | 7min | 2 tasks | 13 files |
 | Phase 06 P01 | 9min | 3 tasks | 22 files |
+| Phase 06 P02 | 10min | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -153,6 +154,10 @@ Recent decisions affecting current work:
 - [06-01]: isVpsConfigured() enables graceful degradation when VPS env vars are missing
 - [06-01]: OpenClaw generators are pure functions with no Supabase dependency for testability
 - [06-01]: Each generator enforces character budget (AGENTS.md 8000, SOUL.md 4000, TOOLS.md 4000, USER.md 3000, IDENTITY.md 500)
+- [06-02]: Re-exported generateOpenClawWorkspace through core/server.ts to avoid direct runtime import from web app
+- [06-02]: Serial deployment guard checks for active deployments with building/deploying/verifying status, excluding self
+- [06-02]: VPS push integrated as conditional branch within existing deployment pipeline, preserving local-only fallback
+- [06-02]: WebSocket URL generated server-side and passed through component chain as string prop
 
 ### Pending Todos
 
@@ -165,5 +170,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-27
-Stopped at: Completed 06-01-PLAN.md (VPS Foundations)
-Resume file: .planning/phases/06-builder-and-automation/06-01-SUMMARY.md
+Stopped at: Completed 06-02-PLAN.md (Deployment Pipeline VPS Integration)
+Resume file: .planning/phases/06-builder-and-automation/06-02-SUMMARY.md
