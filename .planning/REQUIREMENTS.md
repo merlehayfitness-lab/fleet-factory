@@ -134,7 +134,7 @@
 - [x] **RAG-02**: Document upload pipeline: file upload → chunking → embedding → storage in Supabase
 - [x] **RAG-03**: Two-tier knowledge scoping: global (business-wide) + per-agent, with RLS isolation
 - [x] **RAG-04**: Semantic similarity retrieval function scoped by business_id and optional agent_id
-- [ ] **RAG-05**: Knowledge Base UI on agent config tab with global inherited docs + agent-specific upload zones
+- [x] **RAG-05**: Knowledge Base UI on agent config tab with global inherited docs + agent-specific upload zones
 - [ ] **RAG-06**: Knowledge synced to VPS for fast local retrieval by agents at runtime
 - [ ] **RAG-07**: Retrieved context prepended to agent system prompt automatically before model call
 
@@ -289,7 +289,7 @@
 | RAG-02 | Phase 7 | Complete |
 | RAG-03 | Phase 7 | Complete |
 | RAG-04 | Phase 7 | Complete |
-| RAG-05 | Phase 7 | Pending |
+| RAG-05 | Phase 7 | Complete |
 | RAG-06 | Phase 7 | Pending |
 | RAG-07 | Phase 7 | Pending |
 | ROLE-01 | Phase 8 | Pending |
