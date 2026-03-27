@@ -28,6 +28,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { retryDeploymentAction } from "@/_actions/deployment-actions";
+import { DeploymentProgressStream } from "@/_components/deployment-progress-stream";
+import { DeploymentDiffViewer } from "@/_components/deployment-diff-viewer";
 import type { DeploymentStatus } from "@agency-factory/core";
 
 interface Deployment {
@@ -45,6 +47,8 @@ interface Deployment {
 interface DeploymentDetailProps {
   deployment: Deployment | null;
   businessId: string;
+  vpsWsUrl: string | null;
+  vpsConfigured: boolean;
 }
 
 const STAGES = ["Queued", "Building", "Deploying", "Live"] as const;
@@ -139,6 +143,8 @@ function formatRelativeTime(dateStr: string): string {
 export function DeploymentDetail({
   deployment,
   businessId,
+  vpsWsUrl,
+  vpsConfigured,
 }: DeploymentDetailProps) {
   const [isRetrying, setIsRetrying] = useState(false);
   const [snapshotOpen, setSnapshotOpen] = useState(false);
@@ -281,6 +287,15 @@ export function DeploymentDetail({
         </CardContent>
       </Card>
 
+      {/* VPS Deployment Progress (live streaming) */}
+      {vpsConfigured && (
+        <DeploymentProgressStream
+          deploymentId={deployment.id}
+          vpsWsUrl={vpsWsUrl}
+          isActive={["deploying", "verifying"].includes(deployment.status)}
+        />
+      )}
+
       {/* Artifacts Section */}
       {artifacts && Object.keys(artifacts).length > 0 && (
         <div className="space-y-3">
@@ -320,6 +335,15 @@ export function DeploymentDetail({
             )}
         </div>
       )}
+
+      {/* Claude Code Optimization Report */}
+      <DeploymentDiffViewer
+        optimizationReport={
+          (snapshot?.optimization_report as
+            | { changes: Array<{ file: string; description: string }>; summary: string }
+            | undefined) ?? null
+        }
+      />
 
       {/* Config Snapshot Section */}
       {snapshot && (

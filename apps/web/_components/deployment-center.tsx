@@ -19,6 +19,9 @@ interface Deployment {
 interface DeploymentCenterProps {
   deployments: Deployment[];
   businessId: string;
+  vpsWsUrl: string | null;
+  vpsConfigured: boolean;
+  activeDeploymentId: string | null;
 }
 
 /**
@@ -28,6 +31,9 @@ interface DeploymentCenterProps {
 export function DeploymentCenter({
   deployments,
   businessId,
+  vpsWsUrl,
+  vpsConfigured,
+  activeDeploymentId,
 }: DeploymentCenterProps) {
   const [selectedId, setSelectedId] = useState<string | null>(
     deployments[0]?.id ?? null
@@ -52,6 +58,8 @@ export function DeploymentCenter({
         <DeploymentDetail
           deployment={selectedDeployment}
           businessId={businessId}
+          vpsWsUrl={selectedDeployment?.id === activeDeploymentId ? vpsWsUrl : null}
+          vpsConfigured={vpsConfigured}
         />
       </div>
     </div>

@@ -30,6 +30,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
@@ -38,6 +39,7 @@ import { StatusBadge } from "@/_components/status-badge";
 import { UsageSummary, type UsageSummaryData } from "@/_components/usage-summary";
 import { AgentHealthGrid } from "@/_components/agent-health-grid";
 import { TypeToConfirmDialog } from "@/_components/type-to-confirm-dialog";
+import { VpsStatusIndicator } from "@/_components/vps-status-indicator";
 import { getHealthDashboard } from "@/_actions/health-actions";
 import {
   disableTenantAction,
@@ -57,6 +59,7 @@ interface HealthDashboardProps {
   };
   initialHealth: SystemHealth;
   usageSummary: UsageSummaryData;
+  vpsStatus: { status: string; lastCheckedAt: string; details?: Record<string, unknown> } | null;
 }
 
 /** Humanize audit log action strings: "agent.frozen" -> "Agent frozen" */
@@ -95,6 +98,7 @@ export function HealthDashboard({
   business,
   initialHealth,
   usageSummary,
+  vpsStatus,
 }: HealthDashboardProps) {
   const [health, setHealth] = useState<SystemHealth>(initialHealth);
   const [showDisableTenant, setShowDisableTenant] = useState(false);
@@ -160,19 +164,18 @@ export function HealthDashboard({
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight">{business.name}</h1>
           <StatusBadge status={business.status} />
+          <VpsStatusIndicator initialStatus={vpsStatus} />
         </div>
 
         <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Settings className="size-4" />
-                Settings
-              </Button>
-            }
-          />
+          <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1 text-sm font-medium hover:bg-muted transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
+            <Settings className="size-4" />
+            Settings
+          </DropdownMenuTrigger>
           <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
-            <DropdownMenuLabel>Emergency Controls</DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>Emergency Controls</DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             {isDisabled ? (
               <DropdownMenuItem
@@ -208,6 +211,20 @@ export function HealthDashboard({
         onConfirm={handleDisableTenant}
         isPending={isPending}
       />
+
+      {/* VPS warning banner */}
+      {vpsStatus?.status === "offline" && (
+        <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+          <AlertTriangle className="size-4 shrink-0" />
+          VPS is offline -- agents cannot process tasks or chat. Deployments will queue.
+        </div>
+      )}
+      {vpsStatus?.status === "degraded" && (
+        <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
+          <AlertTriangle className="size-4 shrink-0" />
+          VPS is degraded -- some agents may not respond.
+        </div>
+      )}
 
       {/* Row 1: Stats cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">

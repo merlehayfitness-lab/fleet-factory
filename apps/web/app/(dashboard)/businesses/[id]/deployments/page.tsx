@@ -4,6 +4,7 @@ import { createServerClient } from "@/_lib/supabase/server";
 import { DeploymentCenter } from "@/_components/deployment-center";
 import { DeployButton } from "@/_components/deploy-button";
 import { RollbackDialog } from "@/_components/rollback-dialog";
+import { isVpsConfigured, createVpsWebSocket } from "@agency-factory/core/server";
 
 /**
  * Deployment center page (Server Component).
@@ -54,6 +55,19 @@ export default async function DeploymentsPage({
 
   const deploymentsList = deployments ?? [];
   const hasLiveDeployment = deploymentsList.some((d) => d.status === "live");
+
+  // Generate VPS context for active deployments
+  const activeDeployment = deploymentsList.find((d) =>
+    ["deploying", "verifying"].includes(d.status),
+  );
+  let vpsWsUrl: string | null = null;
+  let vpsConfigured = false;
+  if (isVpsConfigured()) {
+    vpsConfigured = true;
+    if (activeDeployment) {
+      vpsWsUrl = createVpsWebSocket(`/deploy/${activeDeployment.id}`);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -110,6 +124,9 @@ export default async function DeploymentsPage({
             config_snapshot: d.config_snapshot as Record<string, unknown> | null,
           }))}
           businessId={businessId}
+          vpsWsUrl={vpsWsUrl}
+          vpsConfigured={vpsConfigured}
+          activeDeploymentId={activeDeployment?.id ?? null}
         />
       )}
     </div>

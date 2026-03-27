@@ -98,6 +98,7 @@ export default async function BusinessPage({
       business={business}
       initialHealth={health}
       usageSummary={usageSummary}
+      vpsStatus={health.vpsStatus}
     />
   );
 }
