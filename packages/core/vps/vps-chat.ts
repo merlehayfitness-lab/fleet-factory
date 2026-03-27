@@ -82,17 +82,22 @@ export async function sendChatToVps(
   vpsAgentId: string,
   conversationId: string,
   message: string,
+  knowledgeContext?: string,
 ): Promise<VpsChatResponse> {
   try {
+    const payload: Record<string, unknown> = {
+      businessId,
+      agentId,
+      vpsAgentId,
+      conversationId,
+      message,
+    };
+    if (knowledgeContext) {
+      payload.knowledgeContext = knowledgeContext;
+    }
     const result = await vpsPost<VpsChatResponse>(
       `/api/agents/${encodeURIComponent(vpsAgentId)}/chat`,
-      {
-        businessId,
-        agentId,
-        vpsAgentId,
-        conversationId,
-        message,
-      },
+      payload,
     );
 
     if (result.error) {

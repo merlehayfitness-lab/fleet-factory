@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { RetrievedContext } from "../knowledge/knowledge-types";
 import { routeTask } from "./router";
 import { decomposeTask, type DecompositionPlan } from "./decomposer";
 import { runAgentTask } from "../worker/tool-runner";
@@ -235,6 +236,21 @@ export async function executeTask(
     })
     .eq("id", taskId);
 
+  // 7a. RAG Knowledge Injection
+  let knowledgeContext: RetrievedContext | null = null;
+  try {
+    const { retrieveKnowledgeContext } = await import("../knowledge/retriever");
+    knowledgeContext = await retrieveKnowledgeContext(
+      supabase,
+      businessId,
+      agentRecord.id as string,
+      (task.title as string) + " " + JSON.stringify(payload),
+      { taskId: task.id as string },
+    );
+  } catch (err) {
+    console.error("Knowledge retrieval failed for task, proceeding without context:", err);
+  }
+
   // 7b. Check if VPS is available for real execution
   if (isVpsConfigured()) {
     try {
@@ -252,19 +268,26 @@ export async function executeTask(
               priority: task.priority as string,
               payload,
             },
+            knowledgeContext?.contextString || undefined,
           );
 
           if (vpsResult.success) {
+            // Build task result with knowledge sources if available
+            const taskResult: Record<string, unknown> = vpsResult.result ?? {
+              vps_execution: true,
+              tools_used: vpsResult.toolsUsed,
+            };
+            if (knowledgeContext?.sources && knowledgeContext.sources.length > 0) {
+              taskResult.knowledgeSources = knowledgeContext.sources;
+            }
+
             // Update task with VPS execution result
             await supabase
               .from("tasks")
               .update({
                 status: "completed",
                 completed_at: new Date().toISOString(),
-                result: vpsResult.result ?? {
-                  vps_execution: true,
-                  tools_used: vpsResult.toolsUsed,
-                },
+                result: taskResult,
                 token_usage: vpsResult.tokenUsage ?? null,
               })
               .eq("id", taskId);

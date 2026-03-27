@@ -24,19 +24,24 @@ export async function sendTaskToVps(
     priority: string;
     payload: Record<string, unknown>;
   },
+  knowledgeContext?: string,
 ): Promise<VpsTaskResult> {
   try {
+    const payload: Record<string, unknown> = {
+      businessId,
+      agentId,
+      vpsAgentId,
+      taskId: task.id,
+      title: task.title,
+      priority: task.priority,
+      payload: task.payload,
+    };
+    if (knowledgeContext) {
+      payload.knowledgeContext = knowledgeContext;
+    }
     const result = await vpsPost<VpsTaskResult>(
       `/api/agents/${encodeURIComponent(vpsAgentId)}/task`,
-      {
-        businessId,
-        agentId,
-        vpsAgentId,
-        taskId: task.id,
-        title: task.title,
-        priority: task.priority,
-        payload: task.payload,
-      },
+      payload,
     );
 
     if (result.error) {

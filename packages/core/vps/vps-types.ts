@@ -71,6 +71,7 @@ export interface VpsChatRequest {
   vpsAgentId: string;
   conversationId: string;
   message: string;
+  knowledgeContext?: string; // RAG context from knowledge base retrieval
   metadata?: Record<string, unknown>;
 }
 
@@ -94,6 +95,7 @@ export interface VpsTaskRequest {
   taskId: string;
   title: string;
   payload: Record<string, unknown>;
+  knowledgeContext?: string; // RAG context from knowledge base retrieval
 }
 
 /** Task execution result from VPS */

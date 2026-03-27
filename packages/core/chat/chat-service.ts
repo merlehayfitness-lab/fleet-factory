@@ -8,6 +8,7 @@ import type {
   DepartmentChannel,
   ToolCallTrace,
 } from "./chat-types";
+import type { RetrievedContext } from "../knowledge/knowledge-types";
 import { selectAgent } from "../orchestrator/router";
 import { generateStubResponse } from "./chat-stub";
 import { isVpsConfigured } from "../vps/vps-config";
@@ -559,6 +560,23 @@ export async function routeAndRespond(
     );
   }
 
+  // --- RAG Knowledge Injection ---
+  // Retrieve relevant knowledge context before routing to agent
+  let knowledgeContext: RetrievedContext | null = null;
+  try {
+    const { retrieveKnowledgeContext } = await import("../knowledge/retriever");
+    knowledgeContext = await retrieveKnowledgeContext(
+      supabase,
+      businessId,
+      agent.id,
+      userMessage,
+      { conversationId },
+    );
+  } catch (err) {
+    // Best-effort: if retrieval fails (e.g., no OPENAI_API_KEY), continue without context
+    console.error("Knowledge retrieval failed, proceeding without context:", err);
+  }
+
   // Check if VPS is configured and healthy -- route to real agent if possible
   if (isVpsConfigured()) {
     try {
@@ -573,7 +591,14 @@ export async function routeAndRespond(
             vpsAgentId,
             conversationId,
             userMessage,
+            knowledgeContext?.contextString || undefined,
           );
+
+          // Build message metadata with knowledge sources if available
+          const vpsMessageMetadata: Record<string, unknown> = {};
+          if (knowledgeContext?.sources && knowledgeContext.sources.length > 0) {
+            vpsMessageMetadata.knowledgeSources = knowledgeContext.sources;
+          }
 
           // Store agent message from VPS response
           const agentMessage = await sendMessage(
@@ -589,6 +614,7 @@ export async function routeAndRespond(
               inputs: tc.inputs,
               outputs: tc.outputs,
             })),
+            Object.keys(vpsMessageMetadata).length > 0 ? vpsMessageMetadata : undefined,
           );
 
           // Audit log (best-effort)
@@ -626,6 +652,12 @@ export async function routeAndRespond(
   // Existing stub response path (preserved as fallback)
   const stub = generateStubResponse(departmentType, userMessage);
 
+  // Build message metadata with knowledge sources if available
+  const stubMessageMetadata: Record<string, unknown> = {};
+  if (knowledgeContext?.sources && knowledgeContext.sources.length > 0) {
+    stubMessageMetadata.knowledgeSources = knowledgeContext.sources;
+  }
+
   // Create agent message
   const agentMessage = await sendMessage(
     supabase,
@@ -635,6 +667,7 @@ export async function routeAndRespond(
     "agent",
     agent.id,
     stub.toolCalls,
+    Object.keys(stubMessageMetadata).length > 0 ? stubMessageMetadata : undefined,
   );
 
   // Audit log (best-effort)
