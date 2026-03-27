@@ -1,0 +1,80 @@
+# Agency Factory VPS Docker Compose
+#
+# This is a REFERENCE SCAFFOLD for the VPS service architecture.
+# The actual OpenClaw gateway may run natively (not in Docker) depending
+# on installation method. Adjust according to your VPS setup.
+#
+# Required service: api-proxy (the Express API server)
+# Optional service: openclaw-gateway (may run as native daemon instead)
+
+version: "3.8"
+
+services:
+  # ---------------------------------------------------------------------------
+  # API Proxy Server
+  # ---------------------------------------------------------------------------
+  # Receives requests from the admin app (Vercel) and routes them to
+  # OpenClaw agents. This service is REQUIRED.
+  api-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3100:3100"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+    volumes:
+      # Tenant workspace files -- shared with OpenClaw gateway
+      - /data/tenants:/data/tenants
+      # Docker socket for container management (future: agent containers)
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: always
+    depends_on:
+      - openclaw-gateway
+    networks:
+      - agency-factory
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3100/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # OpenClaw Gateway
+  # ---------------------------------------------------------------------------
+  # NOTE: This is a reference definition. The OpenClaw gateway may run as a
+  # native systemd service installed via `openclaw onboard --install-daemon`.
+  # If running natively, remove this service and update api-proxy to not
+  # depend on it.
+  openclaw-gateway:
+    image: openclaw-gateway:latest
+    ports:
+      # WebSocket gateway (default)
+      - "18789:18789"
+      # HTTP API endpoint (enabled via config)
+      - "18790:18790"
+    volumes:
+      # OpenClaw state and configuration
+      - openclaw-data:/root/.openclaw
+      # Tenant workspace files -- shared with API proxy
+      - /data/tenants:/data/tenants
+    restart: always
+    networks:
+      - agency-factory
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:18790/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  openclaw-data:
+    driver: local
+
+networks:
+  agency-factory:
+    driver: bridge
