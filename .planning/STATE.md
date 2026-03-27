@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 6 COMPLETE -- Builder & Automation
+**Current focus:** Phase 7 -- RAG Knowledge Base
 
 ## Current Position
 
-Phase: 6 of 6 (Builder & Automation)
-Plan: 4 of 4 in current phase (4 complete)
-Status: Phase 6 Complete
-Last activity: 2026-03-27 -- Completed 06-04 (VPS API Proxy & Infrastructure)
+Phase: 7 of 7 (RAG Knowledge Base)
+Plan: 1 of 3 in current phase (1 complete)
+Status: Executing Phase 7
+Last activity: 2026-03-27 -- Completed 07-01 (Schema & Core Pipeline)
 
-Progress: [█████████████████████████] 100% (23/23 plans)
+Progress: [████████████████████████░] 96% (24/26 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
+- Total plans completed: 24
 - Average duration: 6min
-- Total execution time: 2.3 hours
+- Total execution time: 2.4 hours
 
 **By Phase:**
 
@@ -35,7 +35,7 @@ Progress: [███████████████████████
 | 06 | 4 | 33min | 8min |
 
 **Recent Trend:**
-- Last 5 plans: 05-03 (7min), 06-01 (9min), 06-02 (10min), 06-03 (7min), 06-04 (7min)
+- Last 5 plans: 06-01 (9min), 06-02 (10min), 06-03 (7min), 06-04 (7min), 07-01 (4min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -62,6 +62,7 @@ Progress: [███████████████████████
 | Phase 06 P02 | 10min | 2 tasks | 15 files |
 | Phase 06 P03 | 7min | 2 tasks | 10 files |
 | Phase 06 P04 | 7min | 2 tasks | 10 files |
+| Phase 07 P01 | 4min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -168,6 +169,10 @@ Recent decisions affecting current work:
 - [06-04]: API types duplicated locally in api-types.ts to avoid monorepo dependency -- must stay in sync with packages/core/vps/vps-types.ts
 - [06-04]: All OpenClaw integration points stubbed with TODO markers for MVP activation when Claude Code is bootstrapped
 - [06-04]: Bootstrap prompt enforces memory preservation (NEVER overwrite memory/ or MEMORY.md) and character budgets per workspace file
+- [07-01]: pdf-parse v2 uses class-based PDFParse API instead of v1 default function -- updated import pattern accordingly
+- [07-01]: Embeddings stored as JSON-stringified arrays in INSERT (Supabase handles vector casting)
+- [07-01]: Retriever returns empty context gracefully when OPENAI_API_KEY is missing -- no hard failure
+- [07-01]: Two-tier scoping: agent_id NULL = global business-wide, agent_id NOT NULL = per-agent
 
 ### Pending Todos
 
@@ -180,5 +185,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-27
-Stopped at: Completed 06-04-PLAN.md (VPS API Proxy & Infrastructure) -- Phase 6 COMPLETE
-Resume file: .planning/phases/06-builder-and-automation/06-04-SUMMARY.md
+Stopped at: Completed 07-01-PLAN.md (Schema & Core Pipeline)
+Resume file: .planning/phases/07-rag-knowledge-base/07-01-SUMMARY.md

@@ -130,10 +130,10 @@
 
 ### RAG Knowledge Base
 
-- [ ] **RAG-01**: pgvector extension enabled with knowledge_documents, knowledge_chunks, and knowledge_retrievals tables
-- [ ] **RAG-02**: Document upload pipeline: file upload → chunking → embedding → storage in Supabase
-- [ ] **RAG-03**: Two-tier knowledge scoping: global (business-wide) + per-agent, with RLS isolation
-- [ ] **RAG-04**: Semantic similarity retrieval function scoped by business_id and optional agent_id
+- [x] **RAG-01**: pgvector extension enabled with knowledge_documents, knowledge_chunks, and knowledge_retrievals tables
+- [x] **RAG-02**: Document upload pipeline: file upload → chunking → embedding → storage in Supabase
+- [x] **RAG-03**: Two-tier knowledge scoping: global (business-wide) + per-agent, with RLS isolation
+- [x] **RAG-04**: Semantic similarity retrieval function scoped by business_id and optional agent_id
 - [ ] **RAG-05**: Knowledge Base UI on agent config tab with global inherited docs + agent-specific upload zones
 - [ ] **RAG-06**: Knowledge synced to VPS for fast local retrieval by agents at runtime
 - [ ] **RAG-07**: Retrieved context prepended to agent system prompt automatically before model call
@@ -285,10 +285,10 @@
 | LIVE-03 | Phase 6 | Complete |
 | LIVE-04 | Phase 6 | Complete |
 | LIVE-05 | Phase 6 | Complete |
-| RAG-01 | Phase 7 | Pending |
-| RAG-02 | Phase 7 | Pending |
-| RAG-03 | Phase 7 | Pending |
-| RAG-04 | Phase 7 | Pending |
+| RAG-01 | Phase 7 | Complete |
+| RAG-02 | Phase 7 | Complete |
+| RAG-03 | Phase 7 | Complete |
+| RAG-04 | Phase 7 | Complete |
 | RAG-05 | Phase 7 | Pending |
 | RAG-06 | Phase 7 | Pending |
 | RAG-07 | Phase 7 | Pending |
