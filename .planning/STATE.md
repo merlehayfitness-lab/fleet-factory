@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 5 complete -- Observability & Command Center
+**Current focus:** Phase 6 in progress -- Builder & Automation
 
 ## Current Position
 
-Phase: 5 of 6 (Observability & Command Center)
-Plan: 3 of 3 in current phase (3 complete)
-Status: Phase 5 Complete
-Last activity: 2026-03-26 -- Completed 05-03 (Agent Chat Interface)
+Phase: 6 of 6 (Builder & Automation)
+Plan: 1 of 4 in current phase (1 complete)
+Status: Executing Phase 6
+Last activity: 2026-03-27 -- Completed 06-01 (VPS Foundations)
 
-Progress: [████████████████████] 76% (19/25 plans)
+Progress: [████████████████████] 80% (20/25 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
+- Total plans completed: 20
 - Average duration: 6min
-- Total execution time: 1.75 hours
+- Total execution time: 1.9 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [████████████████████] 76% (19
 | 03 | 5 | 26min | 5min |
 | 04 | 5 | 29min | 6min |
 | 05 | 3 | 21min | 7min |
+| 06 | 1 | 9min | 9min |
 
 **Recent Trend:**
-- Last 5 plans: 04-04 (6min), 04-05 (3min), 05-01 (5min), 05-02 (9min), 05-03 (7min)
+- Last 5 plans: 04-05 (3min), 05-01 (5min), 05-02 (9min), 05-03 (7min), 06-01 (9min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -57,6 +58,7 @@ Progress: [████████████████████] 76% (19
 | Phase 05 P01 | 5min | 2 tasks | 14 files |
 | Phase 05 P02 | 9min | 2 tasks | 14 files |
 | Phase 05 P03 | 7min | 2 tasks | 13 files |
+| Phase 06 P01 | 9min | 3 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -146,6 +148,11 @@ Recent decisions affecting current work:
 - [05-03]: Typing indicator delays agent response display by 1.5s client-side (server call is immediate)
 - [05-03]: File upload stores metadata only in message metadata field (storage upload deferred)
 - [05-03]: Frozen agent detection checks both agentFrozen flag and absence of hasActiveAgent
+- [06-01]: Duplicated deriveVpsAgentId in runtime generators to avoid circular dependency (core -> runtime -> core)
+- [06-01]: VPS client uses native fetch with AbortController timeout instead of external HTTP library
+- [06-01]: isVpsConfigured() enables graceful degradation when VPS env vars are missing
+- [06-01]: OpenClaw generators are pure functions with no Supabase dependency for testability
+- [06-01]: Each generator enforces character budget (AGENTS.md 8000, SOUL.md 4000, TOOLS.md 4000, USER.md 3000, IDENTITY.md 500)
 
 ### Pending Todos
 
@@ -157,6 +164,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26
-Stopped at: Completed 05-03-PLAN.md (Agent Chat Interface) -- Phase 05 complete
-Resume file: .planning/phases/05-observability-and-command-center/05-03-SUMMARY.md
+Last session: 2026-03-27
+Stopped at: Completed 06-01-PLAN.md (VPS Foundations)
+Resume file: .planning/phases/06-builder-and-automation/06-01-SUMMARY.md

@@ -121,12 +121,13 @@ Plans:
   4. Tasks created in admin app execute on real VPS agents and results flow back to Supabase
   5. Chat messages from admin app reach real VPS agents and responses flow back in real-time
   6. VPS health check visible in admin dashboard, graceful degradation when VPS unreachable
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 06-01: OpenClaw workspace artifact generators (AGENTS.md, SOUL.md, openclaw.json, per-agent workspaces)
-- [ ] 06-02: VPS communication layer (REST API client, WebSocket streaming, health check, deployment push)
-- [ ] 06-03: Live task/chat routing bridge (replace mock execution and stub responses with real VPS agent calls)
+- [ ] 06-01: OpenClaw workspace generators, VPS client module, and database schema (AGENTS.md, SOUL.md, openclaw.json, VPS types, HTTP client, health check, vps_status + agent_vps_status tables)
+- [ ] 06-02: VPS deployment pipeline, health checks, and deployment UI (push to VPS, post-deploy verification, rollback, per-agent deploy, status indicator, progress stream, diff viewer)
+- [ ] 06-03: Live task/chat routing to VPS agents (replace mock execution and stub responses, WebSocket chat streaming, graceful degradation, inter-agent messaging)
+- [ ] 06-04: VPS API proxy server, bootstrap prompt, and infrastructure scripts (Express proxy, route handlers, Claude Code bootstrap, setup script, Docker Compose)
 
 ### Phase 7: RAG Knowledge Base
 **Goal**: Agents become business-specific domain experts through two-tier knowledge: global business-wide docs and per-agent role-specific docs, with document upload, embedding, and automatic retrieval at runtime
@@ -160,6 +161,46 @@ Plans:
 Plans:
 - [ ] 08-01: Role Definition card, Claude prompt generator, and wizard update
 
+---
+
+## Milestone 2 (v2): Scale & Self-Serve
+
+**Prerequisite**: Phases 1-8 (MVP) complete and deployed.
+
+These are post-MVP capabilities identified during the Phase 1-8 build. They are listed here for planning purposes — scoping and phase breakdown will happen when v2 begins.
+
+### v2 Themes
+
+**Theme A: Client-Facing Portal**
+- Self-serve business onboarding wizard (business owners sign up and provision their own workspace)
+- Simplified business owner view (read-only dashboard, task submission, conversation access — not the full admin panel)
+- Per-business branding/white-label options
+
+**Theme B: Billing & Monetization**
+- Stripe integration for subscription billing
+- Usage-based billing tied to existing metering (Phase 4)
+- Plan tiers (free trial, starter, pro, enterprise)
+- Per-tenant API key provisioning and rotation UI
+
+**Theme C: Hardening & Governance**
+- OAuth/social login + MFA/2FA
+- SSO/SAML for enterprise tenants
+- Advanced SLOs, regression testing, and compliance tooling
+- Per-business role overrides for approval risk policies
+
+**Theme D: Horizontal Scaling**
+- Multi-VPS strategy (what happens when one Hostinger VPS hits capacity)
+- Tenant-to-VPS assignment and migration
+- Load balancing across VPS fleet
+- Per-tenant dedicated VPS option for enterprise
+
+**Theme E: Vertical Expansion**
+- Industry-specific template packs (lawn care, real estate, e-commerce, etc.)
+- Deep third-party integrations (replace mock adapters with real CRM, email, helpdesk connectors)
+- Marketplace for community-contributed agent templates
+
+---
+
 ## Progress
 
 **Execution Order:**
@@ -172,6 +213,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 3. Deployment Pipeline | 5/5 | Complete | 2026-03-26 |
 | 4. Task Execution and Approvals | 0/4 | Not started | - |
 | 5. Observability and Command Center | 0/3 | Not started | - |
-| 6. OpenClaw Deployment & Live VPS Runtime | 0/3 | Not started | - |
+| 6. OpenClaw Deployment & Live VPS Runtime | 0/4 | Not started | - |
 | 7. RAG Knowledge Base | 0/3 | Not started | - |
 | 8. Role Definition & Prompt Generation | 0/1 | Not started | - |

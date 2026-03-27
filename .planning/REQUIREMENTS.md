@@ -109,8 +109,8 @@
 
 ### OpenClaw Deployment & VPS Runtime
 
-- [ ] **DEPL-VPS-01**: Deployment pipeline generates OpenClaw-native workspace artifacts (AGENTS.md, SOUL.md, openclaw.json, per-agent workspace directories)
-- [ ] **DEPL-VPS-02**: Admin app communicates with VPS via OpenClaw REST gateway API over HTTPS with API key auth
+- [x] **DEPL-VPS-01**: Deployment pipeline generates OpenClaw-native workspace artifacts (AGENTS.md, SOUL.md, openclaw.json, per-agent workspace directories)
+- [x] **DEPL-VPS-02**: Admin app communicates with VPS via OpenClaw REST gateway API over HTTPS with API key auth
 - [ ] **DEPL-VPS-03**: Claude Code on VPS receives deployment packages, reviews/optimizes workspace files, and deploys agent containers
 - [ ] **DEPL-VPS-04**: Real-time deployment progress streamed to admin app via WebSocket with expandable detail log
 - [ ] **DEPL-VPS-05**: Each agent runs in its own isolated Docker container with persistent always-on runtime
@@ -118,7 +118,7 @@
 - [ ] **DEPL-VPS-07**: Rollback restores exact workspace snapshot from previous successful deployment
 - [ ] **DEPL-VPS-08**: Both full-tenant and per-agent deployment supported
 - [ ] **DEPL-VPS-09**: Automated post-deploy health check verifies each agent is responding
-- [ ] **DEPL-VPS-10**: Deployment artifacts stored in both Supabase (history/audit) and VPS (runtime)
+- [x] **DEPL-VPS-10**: Deployment artifacts stored in both Supabase (history/audit) and VPS (runtime)
 
 ### Live VPS Routing
 
@@ -270,8 +270,8 @@
 | DASH-10 | Phase 5 | Complete |
 | DASH-11 | Phase 5 | Complete |
 | SECR-06 | Phase 5 | Complete |
-| DEPL-VPS-01 | Phase 6 | Pending |
-| DEPL-VPS-02 | Phase 6 | Pending |
+| DEPL-VPS-01 | Phase 6 | Complete |
+| DEPL-VPS-02 | Phase 6 | Complete |
 | DEPL-VPS-03 | Phase 6 | Pending |
 | DEPL-VPS-04 | Phase 6 | Pending |
 | DEPL-VPS-05 | Phase 6 | Pending |
@@ -279,7 +279,7 @@
 | DEPL-VPS-07 | Phase 6 | Pending |
 | DEPL-VPS-08 | Phase 6 | Pending |
 | DEPL-VPS-09 | Phase 6 | Pending |
-| DEPL-VPS-10 | Phase 6 | Pending |
+| DEPL-VPS-10 | Phase 6 | Complete |
 | LIVE-01 | Phase 6 | Pending |
 | LIVE-02 | Phase 6 | Pending |
 | LIVE-03 | Phase 6 | Pending |
