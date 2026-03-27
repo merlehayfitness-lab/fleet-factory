@@ -109,3 +109,14 @@ export {
 
 // Chat stub (server-only -- simulated responses)
 export { generateStubResponse } from "./chat/chat-stub";
+
+// VPS client (server-only -- HTTP calls to VPS)
+export { vpsPost, vpsGet, createVpsWebSocket } from "./vps/vps-client";
+export {
+  checkVpsHealth,
+  checkAgentHealth,
+  updateVpsStatus,
+  updateAgentVpsStatus,
+  getVpsStatus,
+} from "./vps/vps-health";
+export { getVpsConfig, isVpsConfigured } from "./vps/vps-config";

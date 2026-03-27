@@ -143,5 +143,23 @@ export type {
   DepartmentChannel,
 } from "./chat/chat-types";
 
+// VPS types (client-safe)
+export type {
+  VpsDeployPayload,
+  VpsDeployResult,
+  VpsHealthStatus,
+  VpsAgentHealthStatus,
+  VpsDeployProgressEvent,
+  VpsChatRequest,
+  VpsChatResponse,
+  VpsTaskRequest,
+  VpsTaskResult,
+  WorkspaceFile,
+} from "./vps/vps-types";
+export type { VpsConfig } from "./vps/vps-config";
+
+// VPS naming convention (client-safe, used by runtime generators)
+export { deriveVpsAgentId } from "./vps/vps-naming";
+
 // NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker, approval service)
 // are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.
