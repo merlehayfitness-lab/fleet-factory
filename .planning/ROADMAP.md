@@ -2,7 +2,7 @@
 
 ## Overview
 
-Agency Factory delivers a multi-tenant SaaS platform for deploying and managing AI agent stacks for client businesses. The roadmap follows a strict dependency chain: tenant isolation and provisioning first (the foundation everything builds on), then agent management (what gets deployed), then the deployment pipeline (how it gets deployed), then live operations with task execution and approvals (agents doing real work), then observability and the command center (seeing and directing what agents do), and finally the builder service (automating agent configuration at scale). Each phase delivers a complete, verifiable capability that unlocks the next.
+Agency Factory delivers a multi-tenant SaaS platform for deploying and managing AI agent stacks for client businesses. The admin web app deploys to Vercel; agent runtime runs on a Hostinger VPS via Claude Code + OpenClaw. The roadmap follows a strict dependency chain: tenant isolation and provisioning first (the foundation everything builds on), then agent management (what gets deployed), then the deployment pipeline (how it gets deployed), then live operations with task execution and approvals (agents doing real work), then observability and the command center (seeing and directing what agents do), then OpenClaw-native VPS deployment with live routing (making agents real), then RAG knowledge bases (making agents smart), and finally role definition and prompt generation (making agent setup easy). Each phase delivers a complete, verifiable capability that unlocks the next.
 
 ## Phases
 
@@ -17,7 +17,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Deployment Pipeline** - Config generation, deployment execution, secrets, and integration adapters (completed 2026-03-26)
 - [ ] **Phase 4: Task Execution and Approvals** - Orchestrator routing, worker execution, approval gates, and security controls
 - [ ] **Phase 5: Observability and Command Center** - Tenant health monitoring, audit viewer, chat interface, and emergency controls
-- [ ] **Phase 6: Builder and Automation** - Claude-powered config generation, cross-tenant template rollout, and versioning
+- [ ] **Phase 6: OpenClaw Deployment & Live VPS Runtime** - OpenClaw-native artifacts, VPS deployment via Claude Code, live task/chat routing to real agents
+- [ ] **Phase 7: RAG Knowledge Base** - pgvector, document upload/embedding, two-tier knowledge (global + per-agent), runtime retrieval
+- [ ] **Phase 8: Role Definition & Prompt Generation** - Plain-language role definition, Claude-powered prompt generation, wizard update
 
 ## Phase Details
 
@@ -108,25 +110,60 @@ Plans:
 - [ ] 05-02: Emergency service, type-to-confirm dialog, audit log viewer (timeline/table), conversation log viewer, emergency controls on dashboard, tenant kill switch
 - [ ] 05-03: Chat service with stub responses, Slack-like chat UI with department channels, message routing, typing indicator, file upload
 
-### Phase 6: Builder and Automation
-**Goal**: A Claude-powered builder service generates agent configs and deployment artifacts from templates, with version tracking, security validation, and the ability to roll improvements out to future tenants
-**Depends on**: Phase 3, Phase 4
-**Requirements**: BLDR-01, BLDR-02, BLDR-03, BLDR-04, BLDR-05
+### Phase 6: OpenClaw Deployment & Live VPS Runtime
+**Goal**: Admin app deploys OpenClaw-native agent workspaces to a Hostinger VPS via Claude Code, and all tasks/chat from the admin app route to real agents running on the VPS
+**Depends on**: Phase 3, Phase 4, Phase 5
+**Requirements**: DEPL-VPS-01, DEPL-VPS-02, DEPL-VPS-03, DEPL-VPS-04, DEPL-VPS-05, DEPL-VPS-06, DEPL-VPS-07, DEPL-VPS-08, DEPL-VPS-09, DEPL-VPS-10, LIVE-01, LIVE-02, LIVE-03, LIVE-04, LIVE-05
 **Success Criteria** (what must be TRUE):
-  1. Builder service generates agent configs (system prompt, tool profile, model profile) from templates via Claude API
-  2. Builder service generates deployment artifacts (docker-compose, env, runtime configs) from tenant state
-  3. Template improvements roll out to future tenants automatically, with prompt/config versioning tracking changes across deployments with diff capability
-  4. All generated configs are validated against security allowlists before deployment
+  1. Deployment pipeline generates OpenClaw-native workspace artifacts and pushes them to VPS via REST API
+  2. Claude Code on VPS receives packages, optimizes workspace files, deploys agent containers, and reports back a diff of what it changed
+  3. Each agent runs in its own isolated always-on Docker container with persistent memory across redeployments
+  4. Tasks created in admin app execute on real VPS agents and results flow back to Supabase
+  5. Chat messages from admin app reach real VPS agents and responses flow back in real-time
+  6. VPS health check visible in admin dashboard, graceful degradation when VPS unreachable
 **Plans**: TBD
 
 Plans:
-- [ ] 06-01: Builder service with Claude-powered config and artifact generation
-- [ ] 06-02: Template versioning, cross-tenant rollout, and security validation
+- [ ] 06-01: OpenClaw workspace artifact generators (AGENTS.md, SOUL.md, openclaw.json, per-agent workspaces)
+- [ ] 06-02: VPS communication layer (REST API client, WebSocket streaming, health check, deployment push)
+- [ ] 06-03: Live task/chat routing bridge (replace mock execution and stub responses with real VPS agent calls)
+
+### Phase 7: RAG Knowledge Base
+**Goal**: Agents become business-specific domain experts through two-tier knowledge: global business-wide docs and per-agent role-specific docs, with document upload, embedding, and automatic retrieval at runtime
+**Depends on**: Phase 6
+**Requirements**: RAG-01, RAG-02, RAG-03, RAG-04, RAG-05, RAG-06, RAG-07
+**Success Criteria** (what must be TRUE):
+  1. pgvector enabled with knowledge_documents, knowledge_chunks, and knowledge_retrievals tables with RLS
+  2. Admin can upload documents globally (business-wide) or per-agent, with async chunking and embedding pipeline
+  3. Semantic similarity search retrieves relevant chunks scoped by business_id and agent_id
+  4. Knowledge synced from Supabase to VPS for fast local retrieval
+  5. Retrieved context automatically prepended to agent system prompt before model call
+  6. Knowledge Base UI on agent config tab shows global inherited docs + agent-specific upload zones with indexing status
+**Plans**: TBD
+
+Plans:
+- [ ] 07-01: pgvector schema, embedding pipeline, and retrieval service
+- [ ] 07-02: Knowledge Base UI (upload zones, indexing status, agent config integration)
+- [ ] 07-03: VPS knowledge sync and runtime injection
+
+### Phase 8: Role Definition & Prompt Generation
+**Goal**: Admin describes agent roles in plain language and Claude generates production-quality system prompts, with an updated setup wizard that includes knowledge upload
+**Depends on**: Phase 7
+**Requirements**: ROLE-01, ROLE-02, ROLE-03, ROLE-04
+**Success Criteria** (what must be TRUE):
+  1. Role Definition card on agent config accepts plain-language description, tone, and focus
+  2. Claude generates system prompt from role definition and previews it before saving
+  3. Agent setup wizard includes knowledge upload step with global + per-agent zones
+  4. Role Definition and System Prompt cards work together (generate → preview → edit → save)
+**Plans**: TBD
+
+Plans:
+- [ ] 08-01: Role Definition card, Claude prompt generator, and wizard update
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -135,4 +172,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. Deployment Pipeline | 5/5 | Complete | 2026-03-26 |
 | 4. Task Execution and Approvals | 0/4 | Not started | - |
 | 5. Observability and Command Center | 0/3 | Not started | - |
-| 6. Builder and Automation | 0/2 | Not started | - |
+| 6. OpenClaw Deployment & Live VPS Runtime | 0/3 | Not started | - |
+| 7. RAG Knowledge Base | 0/3 | Not started | - |
+| 8. Role Definition & Prompt Generation | 0/1 | Not started | - |

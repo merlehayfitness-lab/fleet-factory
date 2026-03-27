@@ -107,13 +107,43 @@
 - [x] **COMM-02**: Conversation transcripts stored per agent with full tool call traces
 - [x] **COMM-03**: Conversation log viewer shows history filterable by agent, department, and date
 
-### Builder & Automation
+### OpenClaw Deployment & VPS Runtime
 
-- [ ] **BLDR-01**: Builder service generates agent configs (system prompt, tool profile, model profile) from templates via Claude API
-- [ ] **BLDR-02**: Builder service generates deployment artifacts (docker-compose, .env, runtime configs) from tenant state
-- [ ] **BLDR-03**: Template improvements can be rolled out to future tenants automatically
-- [ ] **BLDR-04**: Prompt/config versioning tracks changes across deployments with diff capability
-- [ ] **BLDR-05**: Generated configs validated against security allowlists before deployment
+- [ ] **DEPL-VPS-01**: Deployment pipeline generates OpenClaw-native workspace artifacts (AGENTS.md, SOUL.md, openclaw.json, per-agent workspace directories)
+- [ ] **DEPL-VPS-02**: Admin app communicates with VPS via OpenClaw REST gateway API over HTTPS with API key auth
+- [ ] **DEPL-VPS-03**: Claude Code on VPS receives deployment packages, reviews/optimizes workspace files, and deploys agent containers
+- [ ] **DEPL-VPS-04**: Real-time deployment progress streamed to admin app via WebSocket with expandable detail log
+- [ ] **DEPL-VPS-05**: Each agent runs in its own isolated Docker container with persistent always-on runtime
+- [ ] **DEPL-VPS-06**: VPS health check endpoint visible in admin dashboard (online/offline/degraded)
+- [ ] **DEPL-VPS-07**: Rollback restores exact workspace snapshot from previous successful deployment
+- [ ] **DEPL-VPS-08**: Both full-tenant and per-agent deployment supported
+- [ ] **DEPL-VPS-09**: Automated post-deploy health check verifies each agent is responding
+- [ ] **DEPL-VPS-10**: Deployment artifacts stored in both Supabase (history/audit) and VPS (runtime)
+
+### Live VPS Routing
+
+- [ ] **LIVE-01**: Tasks created in admin app are routed to real OpenClaw agents on VPS for execution (replaces mock tool execution)
+- [ ] **LIVE-02**: Chat messages from admin app are routed to real OpenClaw agents on VPS (replaces stub responses)
+- [ ] **LIVE-03**: Agent responses from VPS flow back to admin app and update tasks/messages in Supabase
+- [ ] **LIVE-04**: Graceful degradation when VPS is unreachable (tasks queue, chat shows "Agent offline")
+- [ ] **LIVE-05**: Inter-agent messaging enabled within the same business tenant on VPS
+
+### RAG Knowledge Base
+
+- [ ] **RAG-01**: pgvector extension enabled with knowledge_documents, knowledge_chunks, and knowledge_retrievals tables
+- [ ] **RAG-02**: Document upload pipeline: file upload → chunking → embedding → storage in Supabase
+- [ ] **RAG-03**: Two-tier knowledge scoping: global (business-wide) + per-agent, with RLS isolation
+- [ ] **RAG-04**: Semantic similarity retrieval function scoped by business_id and optional agent_id
+- [ ] **RAG-05**: Knowledge Base UI on agent config tab with global inherited docs + agent-specific upload zones
+- [ ] **RAG-06**: Knowledge synced to VPS for fast local retrieval by agents at runtime
+- [ ] **RAG-07**: Retrieved context prepended to agent system prompt automatically before model call
+
+### Role Definition & Prompt Generation
+
+- [ ] **ROLE-01**: Role Definition card on agent config with plain-language description, tone, and focus inputs
+- [ ] **ROLE-02**: Claude-powered system prompt generation from role definition
+- [ ] **ROLE-03**: Generated prompt previews in System Prompt card before saving
+- [ ] **ROLE-04**: Agent setup wizard updated with knowledge upload step (Step 4)
 
 ### Integrations
 
@@ -141,14 +171,14 @@
 
 - **AGNT-V2-01**: Dynamic agent spawning by end users (after permissions/rollback mature)
 - **AGNT-V2-02**: Custom department creation by end users
-- **AGNT-V2-03**: Agent-to-agent communication within a department
-- **AGNT-V2-04**: Agent memory/context persistence across conversations
+- **AGNT-V2-03**: ~~Agent-to-agent communication within a department~~ → Moved to v1 as LIVE-05 (Phase 6)
+- **AGNT-V2-04**: ~~Agent memory/context persistence across conversations~~ → Covered by Phase 6 OpenClaw workspace (memory persists across deploys)
 
 ### Advanced Integrations
 
 - **INTG-V2-01**: Real OAuth2-based integration connectors (CRM, email, helpdesk, calendar)
 - **INTG-V2-02**: Webhook outbound notifications for external system events
-- **INTG-V2-03**: Knowledge base management per department
+- **INTG-V2-03**: ~~Knowledge base management per department~~ → Moved to v1 as RAG-03/RAG-05 (Phase 7)
 
 ## Out of Scope
 
@@ -240,15 +270,36 @@
 | DASH-10 | Phase 5 | Complete |
 | DASH-11 | Phase 5 | Complete |
 | SECR-06 | Phase 5 | Complete |
-| BLDR-01 | Phase 6 | Pending |
-| BLDR-02 | Phase 6 | Pending |
-| BLDR-03 | Phase 6 | Pending |
-| BLDR-04 | Phase 6 | Pending |
-| BLDR-05 | Phase 6 | Pending |
+| DEPL-VPS-01 | Phase 6 | Pending |
+| DEPL-VPS-02 | Phase 6 | Pending |
+| DEPL-VPS-03 | Phase 6 | Pending |
+| DEPL-VPS-04 | Phase 6 | Pending |
+| DEPL-VPS-05 | Phase 6 | Pending |
+| DEPL-VPS-06 | Phase 6 | Pending |
+| DEPL-VPS-07 | Phase 6 | Pending |
+| DEPL-VPS-08 | Phase 6 | Pending |
+| DEPL-VPS-09 | Phase 6 | Pending |
+| DEPL-VPS-10 | Phase 6 | Pending |
+| LIVE-01 | Phase 6 | Pending |
+| LIVE-02 | Phase 6 | Pending |
+| LIVE-03 | Phase 6 | Pending |
+| LIVE-04 | Phase 6 | Pending |
+| LIVE-05 | Phase 6 | Pending |
+| RAG-01 | Phase 7 | Pending |
+| RAG-02 | Phase 7 | Pending |
+| RAG-03 | Phase 7 | Pending |
+| RAG-04 | Phase 7 | Pending |
+| RAG-05 | Phase 7 | Pending |
+| RAG-06 | Phase 7 | Pending |
+| RAG-07 | Phase 7 | Pending |
+| ROLE-01 | Phase 8 | Pending |
+| ROLE-02 | Phase 8 | Pending |
+| ROLE-03 | Phase 8 | Pending |
+| ROLE-04 | Phase 8 | Pending |
 
 **Coverage:**
-- v1 requirements: 78 total
-- Mapped to phases: 78
+- v1 requirements: 99 total
+- Mapped to phases: 99
 - Unmapped: 0
 
 ---

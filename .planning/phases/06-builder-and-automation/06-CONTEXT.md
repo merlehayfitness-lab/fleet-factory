@@ -6,7 +6,7 @@
 <domain>
 ## Phase Boundary
 
-Rewrite the deployment pipeline to generate OpenClaw-native workspace artifacts, push them to a Hostinger VPS via OpenClaw's REST API, and have Claude Code on the VPS review/optimize and deploy the agent stack. The admin web app (Vercel) becomes the control plane; Claude Code + OpenClaw on the VPS is the runtime. This phase does NOT add new agent capabilities, task routing, or observability features — it makes the existing deployment pipeline actually deploy to real infrastructure.
+Rewrite the deployment pipeline to generate OpenClaw-native workspace artifacts, push them to a Hostinger VPS via OpenClaw's REST API, and have Claude Code on the VPS review/optimize and deploy the agent stack. Wire up live task execution and chat routing so admin actions flow through to real agents on the VPS. The admin web app (Vercel) becomes the control plane; Claude Code + OpenClaw on the VPS is the runtime. This phase does NOT add RAG/knowledge base infrastructure (Phase 7) or role definition/prompt generation UX (Phase 8) — it makes the existing deployment pipeline actually deploy to real infrastructure and connects the admin app to live agents.
 
 </domain>
 
@@ -46,6 +46,14 @@ Rewrite the deployment pipeline to generate OpenClaw-native workspace artifacts,
 - Automated post-deploy health check — admin app pings each agent through OpenClaw gateway after deploy, marks deployment as verified/degraded
 - Artifacts stored in both Supabase + VPS — Supabase for history/rollback/audit, VPS for runtime
 
+### Live task/chat routing to VPS
+- Tasks created in admin app → sent to VPS via OpenClaw REST API → real agent executes → result flows back to admin app and updates task status
+- Chat messages from admin app → routed to correct agent on VPS → real agent responds → message flows back to conversation in admin app
+- Replace Phase 4's mock tool execution and Phase 5's stub chat responses with real VPS agent calls
+- The orchestrator (Paperclip) on the admin app side decides WHICH agent handles a task/message; the VPS side handles HOW the agent executes
+- Agent responses from VPS are stored in Supabase (existing messages/tasks tables) for history and audit
+- If VPS is unreachable, tasks queue and chat shows "Agent offline" — graceful degradation, not crash
+
 ### Claude Code bootstrap
 - Shared VPS for MVP — all tenants on one Hostinger VPS, option to move high-value tenants to dedicated VPS later
 - One-time manual VPS setup — you SSH in, install Claude Code + OpenClaw, run bootstrap prompt to teach Claude Code the system
@@ -84,6 +92,11 @@ Rewrite the deployment pipeline to generate OpenClaw-native workspace artifacts,
 - Dedicated VPS per tenant (scale-out) — future capability when tenant count or revenue justifies it
 - Automated VPS provisioning (spin up new Hostinger VPS programmatically) — future phase
 - Client-facing app for business owners — separate project, out of scope entirely
+- RAG knowledge base (pgvector, document upload, chunking, embeddings, retrieval) — Phase 7
+- Role Definition card + Claude-powered system prompt generator — Phase 8
+- Agent setup wizard Step 4 (knowledge upload) — Phase 7
+- Knowledge Base section on agent config tab (global + per-agent two-zone) — Phase 7
+- Runtime knowledge injection (prepend retrieved context to system prompt) — Phase 7
 
 </deferred>
 
