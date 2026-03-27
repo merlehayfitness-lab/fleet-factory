@@ -14,6 +14,7 @@ import {
   CheckSquare,
   ScrollText,
   MessageSquare,
+  BookOpen,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -113,6 +114,12 @@ function getBusinessSubNav(businessId: string) {
       href: `/businesses/${businessId}/chat`,
       label: "Chat",
       icon: MessageSquare,
+      enabled: true,
+    },
+    {
+      href: `/businesses/${businessId}/knowledge`,
+      label: "Knowledge Base",
+      icon: BookOpen,
       enabled: true,
     },
     {
