@@ -97,7 +97,10 @@ export function AgentDetailTabs({
       </TabsContent>
 
       <TabsContent value="conversations">
-        <AgentConversations />
+        <AgentConversations
+          businessId={businessId}
+          departmentId={agent.departments?.id ?? ""}
+        />
       </TabsContent>
 
       <TabsContent value="integrations">
