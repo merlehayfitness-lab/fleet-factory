@@ -3,18 +3,11 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { createServerClient } from "@/_lib/supabase/server";
 import { BusinessList } from "@/_components/business-list";
-import { buttonVariants } from "@/components/ui/button";
 
 export const metadata = {
   title: "Businesses | Agency Factory",
 };
 
-/**
- * Businesses list page.
- *
- * Server Component that fetches all businesses the user has access to.
- * RLS automatically scopes results -- no manual business_id filtering needed.
- */
 export default async function BusinessesPage() {
   const supabase = await createServerClient();
   const {
@@ -31,9 +24,11 @@ export default async function BusinessesPage() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    // RLS ensures we only get our businesses; an error here is unexpected
     throw new Error(`Failed to load businesses: ${error.message}`);
   }
+
+  const btnClasses =
+    "inline-flex shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium h-8 gap-1.5 px-2.5 transition-all hover:bg-primary/80";
 
   return (
     <div className="space-y-6">
@@ -44,7 +39,7 @@ export default async function BusinessesPage() {
             Manage your business workspaces and agent deployments.
           </p>
         </div>
-        <Link href="/businesses/new" className={buttonVariants()}>
+        <Link href="/businesses/new" className={btnClasses}>
           <Plus className="mr-2 size-4" />
           New Business
         </Link>
@@ -56,7 +51,7 @@ export default async function BusinessesPage() {
           <p className="mb-4 mt-1 text-sm text-muted-foreground">
             Create your first business to get started with agent deployment.
           </p>
-          <Link href="/businesses/new" className={buttonVariants()}>
+          <Link href="/businesses/new" className={btnClasses}>
             <Plus className="mr-2 size-4" />
             Create your first business
           </Link>

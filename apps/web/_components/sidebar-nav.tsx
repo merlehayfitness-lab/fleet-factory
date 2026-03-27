@@ -22,6 +22,7 @@ import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuLabel,
@@ -220,7 +221,9 @@ export function SidebarNav({ user }: SidebarNavProps) {
             </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent side="top" align="start">
-            <DropdownMenuLabel>{user.full_name ?? user.email}</DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>{user.full_name ?? user.email}</DropdownMenuLabel>
+            </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {

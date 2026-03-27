@@ -33,12 +33,14 @@ export async function createBusiness(formData: FormData) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
+  let businessId: string;
   try {
-    const businessId = await provisionBusinessTenant(supabase, parsed.data);
-    redirect(`/businesses/${businessId}`);
+    businessId = await provisionBusinessTenant(supabase, parsed.data);
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Provisioning failed",
     };
   }
+
+  redirect(`/businesses/${businessId}`);
 }
