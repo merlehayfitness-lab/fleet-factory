@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 6 of 6 (Builder & Automation)
-Plan: 2 of 4 in current phase (2 complete)
+Plan: 3 of 4 in current phase (3 complete)
 Status: Executing Phase 6
-Last activity: 2026-03-27 -- Completed 06-02 (Deployment Pipeline VPS Integration)
+Last activity: 2026-03-27 -- Completed 06-03 (VPS Chat & Task Routing)
 
-Progress: [█████████████████████] 84% (21/25 plans)
+Progress: [██████████████████████] 88% (22/25 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
+- Total plans completed: 22
 - Average duration: 6min
-- Total execution time: 2.1 hours
+- Total execution time: 2.2 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [█████████████████████] 84% 
 | 03 | 5 | 26min | 5min |
 | 04 | 5 | 29min | 6min |
 | 05 | 3 | 21min | 7min |
-| 06 | 2 | 19min | 10min |
+| 06 | 3 | 26min | 9min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (5min), 05-02 (9min), 05-03 (7min), 06-01 (9min), 06-02 (10min)
+- Last 5 plans: 05-02 (9min), 05-03 (7min), 06-01 (9min), 06-02 (10min), 06-03 (7min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -60,6 +60,7 @@ Progress: [█████████████████████] 84% 
 | Phase 05 P03 | 7min | 2 tasks | 13 files |
 | Phase 06 P01 | 9min | 3 tasks | 22 files |
 | Phase 06 P02 | 10min | 2 tasks | 15 files |
+| Phase 06 P03 | 7min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -158,6 +159,10 @@ Recent decisions affecting current work:
 - [06-02]: Serial deployment guard checks for active deployments with building/deploying/verifying status, excluding self
 - [06-02]: VPS push integrated as conditional branch within existing deployment pipeline, preserving local-only fallback
 - [06-02]: WebSocket URL generated server-side and passed through component chain as string prop
+- [06-03]: Chat service checks VPS health before stub -- routes to real VPS agent when online, falls back to stub when offline/unconfigured
+- [06-03]: Executor checks VPS health before mock execution -- sends to real VPS agent when online, queues with assistance request when offline
+- [06-03]: WebSocket streaming wraps connection in try/catch with fallback to stub typing indicator
+- [06-03]: Inter-agent messaging uses tools.agentToAgent config block with explicit allow list of all business agent IDs
 
 ### Pending Todos
 
@@ -170,5 +175,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-27
-Stopped at: Completed 06-02-PLAN.md (Deployment Pipeline VPS Integration)
-Resume file: .planning/phases/06-builder-and-automation/06-02-SUMMARY.md
+Stopped at: Completed 06-03-PLAN.md (VPS Chat & Task Routing)
+Resume file: .planning/phases/06-builder-and-automation/06-03-SUMMARY.md

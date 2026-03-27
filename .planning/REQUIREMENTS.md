@@ -122,11 +122,11 @@
 
 ### Live VPS Routing
 
-- [ ] **LIVE-01**: Tasks created in admin app are routed to real OpenClaw agents on VPS for execution (replaces mock tool execution)
-- [ ] **LIVE-02**: Chat messages from admin app are routed to real OpenClaw agents on VPS (replaces stub responses)
-- [ ] **LIVE-03**: Agent responses from VPS flow back to admin app and update tasks/messages in Supabase
-- [ ] **LIVE-04**: Graceful degradation when VPS is unreachable (tasks queue, chat shows "Agent offline")
-- [ ] **LIVE-05**: Inter-agent messaging enabled within the same business tenant on VPS
+- [x] **LIVE-01**: Tasks created in admin app are routed to real OpenClaw agents on VPS for execution (replaces mock tool execution)
+- [x] **LIVE-02**: Chat messages from admin app are routed to real OpenClaw agents on VPS (replaces stub responses)
+- [x] **LIVE-03**: Agent responses from VPS flow back to admin app and update tasks/messages in Supabase
+- [x] **LIVE-04**: Graceful degradation when VPS is unreachable (tasks queue, chat shows "Agent offline")
+- [x] **LIVE-05**: Inter-agent messaging enabled within the same business tenant on VPS
 
 ### RAG Knowledge Base
 
@@ -280,11 +280,11 @@
 | DEPL-VPS-08 | Phase 6 | Complete |
 | DEPL-VPS-09 | Phase 6 | Complete |
 | DEPL-VPS-10 | Phase 6 | Complete |
-| LIVE-01 | Phase 6 | Pending |
-| LIVE-02 | Phase 6 | Pending |
-| LIVE-03 | Phase 6 | Pending |
-| LIVE-04 | Phase 6 | Pending |
-| LIVE-05 | Phase 6 | Pending |
+| LIVE-01 | Phase 6 | Complete |
+| LIVE-02 | Phase 6 | Complete |
+| LIVE-03 | Phase 6 | Complete |
+| LIVE-04 | Phase 6 | Complete |
+| LIVE-05 | Phase 6 | Complete |
 | RAG-01 | Phase 7 | Pending |
 | RAG-02 | Phase 7 | Pending |
 | RAG-03 | Phase 7 | Pending |
