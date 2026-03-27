@@ -138,5 +138,20 @@ export {
 // Health types
 export type { VpsHealthData } from "./health/health-service";
 
+// Knowledge service (server-only -- database + OpenAI operations)
+export {
+  createDocument,
+  listDocuments,
+  deleteDocument,
+  updateDocumentStatus,
+  getDocumentChunks,
+  processDocument,
+  reIndexDocument,
+} from "./knowledge/knowledge-service";
+export { retrieveKnowledgeContext } from "./knowledge/retriever";
+export { extractText } from "./knowledge/text-extractor";
+export { chunkText } from "./knowledge/chunker";
+export { generateEmbedding, generateEmbeddings } from "./knowledge/embedder";
+
 // OpenClaw workspace generator (re-exported for server-only use in web app)
 export { generateOpenClawWorkspace } from "@agency-factory/runtime";
