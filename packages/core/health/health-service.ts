@@ -56,6 +56,13 @@ export interface ActivityEntry {
   actorId: string | null;
 }
 
+/** VPS status data */
+export interface VpsHealthData {
+  status: string;
+  lastCheckedAt: string;
+  details?: Record<string, unknown>;
+}
+
 /** Combined system health payload */
 export interface SystemHealth {
   agentHealth: AgentHealthSummary;
@@ -70,6 +77,7 @@ export interface SystemHealth {
   } | null;
   pendingApprovals: number;
   activeTasks: number;
+  vpsStatus: VpsHealthData | null;
 }
 
 /**
@@ -306,6 +314,7 @@ export async function getSystemHealth(
     deploymentResult,
     approvalResult,
     taskResult,
+    vpsStatusResult,
   ] = await Promise.all([
     getAgentHealthSummary(supabase, businessId),
     getErrorRate(supabase, businessId),
@@ -328,7 +337,23 @@ export async function getSystemHealth(
       .select("id", { count: "exact", head: true })
       .eq("business_id", businessId)
       .in("status", ["queued", "assigned", "in_progress", "waiting_approval"]),
+    // Fetch VPS status from database (returns null if no row exists)
+    supabase
+      .from("vps_status")
+      .select("status, last_checked_at, details")
+      .limit(1)
+      .single(),
   ]);
+
+  // Map VPS status to health data
+  let vpsStatus: VpsHealthData | null = null;
+  if (vpsStatusResult.data) {
+    vpsStatus = {
+      status: vpsStatusResult.data.status as string,
+      lastCheckedAt: vpsStatusResult.data.last_checked_at as string,
+      details: (vpsStatusResult.data.details as Record<string, unknown>) ?? undefined,
+    };
+  }
 
   return {
     agentHealth,
@@ -338,5 +363,6 @@ export async function getSystemHealth(
     latestDeployment: deploymentResult.data ?? null,
     pendingApprovals: approvalResult.count ?? 0,
     activeTasks: taskResult.count ?? 0,
+    vpsStatus,
   };
 }

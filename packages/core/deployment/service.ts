@@ -7,7 +7,11 @@ import {
   generateDockerCompose,
   generateEnvFile,
   generateAllAgentConfigs,
+  generateOpenClawWorkspace,
 } from "@agency-factory/runtime";
+import { isVpsConfigured } from "../vps/vps-config";
+import { deriveVpsAgentId } from "../vps/vps-naming";
+import { pushDeploymentToVps, pushRollbackToVps, runPostDeployHealthCheck } from "../vps/vps-deploy";
 
 /**
  * Trigger a new deployment for a business.
@@ -138,6 +142,37 @@ export async function triggerDeployment(
 
   // Execute the pipeline with error handling
   try {
+    // 7b. SERIAL DEPLOYMENT GUARD -- Per locked decision: "Deployments processed serially (queued)"
+    // Check for any active VPS deployment for this business before proceeding.
+    const { data: activeDeployments } = await supabase
+      .from("deployments")
+      .select("id, status")
+      .eq("business_id", businessId)
+      .eq("deploy_target", "vps")
+      .in("status", ["building", "deploying", "verifying"])
+      .neq("id", deploymentId)
+      .limit(1);
+
+    if (activeDeployments && activeDeployments.length > 0) {
+      // Another deployment is in progress -- keep this one queued
+      await supabase
+        .from("deployments")
+        .update({
+          status: "queued",
+          config_snapshot: {
+            ...(snapshot as unknown as Record<string, unknown>),
+            queue_reason: `Waiting for deployment ${activeDeployments[0].id} to complete`,
+          },
+        })
+        .eq("id", deploymentId);
+
+      return {
+        id: deploymentId,
+        status: "queued",
+        message: `Deployment queued -- waiting for active deployment ${activeDeployments[0].id} to finish`,
+      };
+    }
+
     // 8. Transition to 'building'
     assertDeploymentTransition("queued", "building");
     await updateDeploymentStatus(supabase, deploymentId, "building");
@@ -256,6 +291,37 @@ export async function triggerDeployment(
       },
     };
 
+    // 9b. Generate OpenClaw workspace artifacts
+    const openclawWorkspace = generateOpenClawWorkspace(
+      {
+        id: business.id,
+        name: business.name,
+        slug: business.slug,
+        industry: (business.industry as string) ?? "general",
+      },
+      (agents ?? []).map((a) => ({
+        id: a.id as string,
+        name: a.name as string,
+        department_id: a.department_id as string,
+        system_prompt: (a.system_prompt as string) ?? "",
+        tool_profile: (a.tool_profile as Record<string, unknown>) ?? {},
+        model_profile: (a.model_profile as Record<string, unknown>) ?? {},
+        status: a.status as string,
+      })),
+      (departments ?? []).map((d) => ({
+        id: d.id as string,
+        type: d.type as string,
+        name: d.name as string,
+      })),
+      integrationsByAgent,
+    );
+
+    // Store OpenClaw artifacts in snapshot alongside legacy artifacts
+    snapshotWithArtifacts.openclaw_workspace = {
+      files: openclawWorkspace.files,
+      config: openclawWorkspace.config,
+    };
+
     // Update deployment with artifacts
     await supabase
       .from("deployments")
@@ -270,11 +336,83 @@ export async function triggerDeployment(
       started_at: new Date().toISOString(),
     });
 
-    // 11. For MVP: no actual Docker deployment. Transition to 'live'.
-    assertDeploymentTransition("deploying", "live");
-    await updateDeploymentStatus(supabase, deploymentId, "live", {
-      completed_at: new Date().toISOString(),
-    });
+    // 10b. If VPS is configured, push to VPS
+    if (isVpsConfigured()) {
+      // Update deploy_target to 'vps'
+      await supabase.from("deployments").update({ deploy_target: "vps" }).eq("id", deploymentId);
+
+      // Build agent metadata for VPS payload
+      const deptById = new Map<string, { type: string }>();
+      for (const d of departments ?? []) {
+        deptById.set(d.id as string, { type: d.type as string });
+      }
+
+      const vpsAgents = (agents ?? [])
+        .filter((a) => (a.status as string) !== "frozen" && (a.status as string) !== "retired")
+        .map((a) => {
+          const dept = deptById.get(a.department_id as string);
+          const deptType = dept?.type ?? "general";
+          return {
+            agentId: a.id as string,
+            vpsAgentId: deriveVpsAgentId(business.slug, deptType, a.id as string),
+            departmentType: deptType,
+            model: ((a.model_profile as Record<string, unknown>)?.model as string) ?? "default",
+          };
+        });
+
+      const vpsPayload = {
+        businessId,
+        businessSlug: business.slug,
+        deploymentId,
+        version: nextVersion,
+        isRollback: false,
+        skipOptimization: false,
+        agents: vpsAgents,
+        workspaceFiles: openclawWorkspace.files,
+        openclawConfig: openclawWorkspace.config,
+      };
+
+      const vpsResult = await pushDeploymentToVps(supabase, deploymentId, vpsPayload);
+
+      if (!vpsResult.success) {
+        // VPS push failed but artifacts are generated -- mark as failed
+        throw new Error(`VPS deployment failed: ${vpsResult.error}`);
+      }
+
+      // 10c. Transition to 'verifying' and run post-deploy health check
+      assertDeploymentTransition("deploying", "verifying");
+      await updateDeploymentStatus(supabase, deploymentId, "verifying");
+
+      const healthAgents = vpsAgents.map((a) => ({
+        id: a.agentId,
+        vpsAgentId: a.vpsAgentId,
+      }));
+
+      const healthResult = await runPostDeployHealthCheck(supabase, businessId, healthAgents);
+
+      if (healthResult.healthy.length === 0) {
+        throw new Error("Post-deploy health check failed: no agents responding");
+      }
+
+      // If some agents are unhealthy, log but continue (partial failure)
+      if (healthResult.unhealthy.length > 0 && healthResult.healthy.length > 0) {
+        console.warn(
+          `Partial deployment: ${healthResult.unhealthy.length} unhealthy agents out of ${healthAgents.length}`,
+        );
+      }
+
+      // Transition verifying -> live
+      assertDeploymentTransition("verifying", "live");
+      await updateDeploymentStatus(supabase, deploymentId, "live", {
+        completed_at: new Date().toISOString(),
+      });
+    } else {
+      // If VPS not configured, continue with existing local-only path
+      assertDeploymentTransition("deploying", "live");
+      await updateDeploymentStatus(supabase, deploymentId, "live", {
+        completed_at: new Date().toISOString(),
+      });
+    }
 
     // 12. Update agents to 'active' if provisioning
     await supabase
@@ -460,7 +598,7 @@ export async function rollbackDeployment(
   const deploymentId = newDeployment.id as string;
 
   try {
-    // 4. Transition through building -> deploying -> live
+    // 4. Transition through building -> deploying -> (verifying) -> live
     assertDeploymentTransition("queued", "building");
     await updateDeploymentStatus(supabase, deploymentId, "building");
 
@@ -469,10 +607,70 @@ export async function rollbackDeployment(
       started_at: new Date().toISOString(),
     });
 
-    assertDeploymentTransition("deploying", "live");
-    await updateDeploymentStatus(supabase, deploymentId, "live", {
-      completed_at: new Date().toISOString(),
-    });
+    // 4b. If VPS is configured, push rollback to VPS with skipOptimization=true
+    if (isVpsConfigured() && oldSnapshot.openclaw_workspace) {
+      await supabase.from("deployments").update({ deploy_target: "vps" }).eq("id", deploymentId);
+
+      // Build agent metadata from snapshot
+      const deptById = new Map<string, { type: string }>();
+      for (const d of oldSnapshot.departments ?? []) {
+        deptById.set(d.id, { type: d.type });
+      }
+
+      const rollbackAgents = (oldSnapshot.agents ?? [])
+        .filter((a) => a.status !== "frozen" && a.status !== "retired")
+        .map((a) => {
+          const dept = deptById.get(a.department_id);
+          const deptType = dept?.type ?? "general";
+          return {
+            agentId: a.id,
+            vpsAgentId: deriveVpsAgentId(oldSnapshot.business.slug, deptType, a.id),
+            departmentType: deptType,
+            model: ((a.model_profile as Record<string, unknown>)?.model as string) ?? "default",
+          };
+        });
+
+      const vpsResult = await pushRollbackToVps(
+        supabase,
+        deploymentId,
+        businessId,
+        oldSnapshot.business.slug,
+        nextVersion,
+        rollbackAgents,
+        oldSnapshot.openclaw_workspace.files,
+        oldSnapshot.openclaw_workspace.config,
+      );
+
+      if (!vpsResult.success) {
+        throw new Error(`VPS rollback failed: ${vpsResult.error}`);
+      }
+
+      // Run post-deploy health check
+      assertDeploymentTransition("deploying", "verifying");
+      await updateDeploymentStatus(supabase, deploymentId, "verifying");
+
+      const healthAgents = rollbackAgents.map((a) => ({
+        id: a.agentId,
+        vpsAgentId: a.vpsAgentId,
+      }));
+
+      const healthResult = await runPostDeployHealthCheck(supabase, businessId, healthAgents);
+
+      if (healthResult.healthy.length === 0) {
+        throw new Error("Post-rollback health check failed: no agents responding");
+      }
+
+      assertDeploymentTransition("verifying", "live");
+      await updateDeploymentStatus(supabase, deploymentId, "live", {
+        completed_at: new Date().toISOString(),
+      });
+    } else {
+      // Local-only fallback
+      assertDeploymentTransition("deploying", "live");
+      await updateDeploymentStatus(supabase, deploymentId, "live", {
+        completed_at: new Date().toISOString(),
+      });
+    }
 
     // 5. Mark the currently-live deployment as 'rolled_back'
     const { data: currentLive } = await supabase

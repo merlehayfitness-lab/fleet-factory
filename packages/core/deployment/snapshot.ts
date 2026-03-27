@@ -35,6 +35,10 @@ export interface ConfigSnapshot {
     env_file: string;
     agent_configs: Array<{ agent_id: string; filename: string; content: string }>;
   };
+  openclaw_workspace?: {
+    files: Array<{ path: string; content: string }>;
+    config: string;
+  };
 }
 
 /**

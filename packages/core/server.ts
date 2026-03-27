@@ -120,3 +120,17 @@ export {
   getVpsStatus,
 } from "./vps/vps-health";
 export { getVpsConfig, isVpsConfigured } from "./vps/vps-config";
+
+// VPS deploy service (server-only -- pushes deployment packages to VPS)
+export {
+  pushDeploymentToVps,
+  pushAgentToVps,
+  pushRollbackToVps,
+  runPostDeployHealthCheck,
+} from "./vps/vps-deploy";
+
+// Health types
+export type { VpsHealthData } from "./health/health-service";
+
+// OpenClaw workspace generator (re-exported for server-only use in web app)
+export { generateOpenClawWorkspace } from "@agency-factory/runtime";
