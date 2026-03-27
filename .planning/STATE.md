@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 6 in progress -- Builder & Automation
+**Current focus:** Phase 6 COMPLETE -- Builder & Automation
 
 ## Current Position
 
 Phase: 6 of 6 (Builder & Automation)
-Plan: 3 of 4 in current phase (3 complete)
-Status: Executing Phase 6
-Last activity: 2026-03-27 -- Completed 06-03 (VPS Chat & Task Routing)
+Plan: 4 of 4 in current phase (4 complete)
+Status: Phase 6 Complete
+Last activity: 2026-03-27 -- Completed 06-04 (VPS API Proxy & Infrastructure)
 
-Progress: [██████████████████████] 88% (22/25 plans)
+Progress: [█████████████████████████] 100% (23/23 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
+- Total plans completed: 23
 - Average duration: 6min
-- Total execution time: 2.2 hours
+- Total execution time: 2.3 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [██████████████████████] 8
 | 03 | 5 | 26min | 5min |
 | 04 | 5 | 29min | 6min |
 | 05 | 3 | 21min | 7min |
-| 06 | 3 | 26min | 9min |
+| 06 | 4 | 33min | 8min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (9min), 05-03 (7min), 06-01 (9min), 06-02 (10min), 06-03 (7min)
+- Last 5 plans: 05-03 (7min), 06-01 (9min), 06-02 (10min), 06-03 (7min), 06-04 (7min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -61,6 +61,7 @@ Progress: [██████████████████████] 8
 | Phase 06 P01 | 9min | 3 tasks | 22 files |
 | Phase 06 P02 | 10min | 2 tasks | 15 files |
 | Phase 06 P03 | 7min | 2 tasks | 10 files |
+| Phase 06 P04 | 7min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,10 @@ Recent decisions affecting current work:
 - [06-03]: Executor checks VPS health before mock execution -- sends to real VPS agent when online, queues with assistance request when offline
 - [06-03]: WebSocket streaming wraps connection in try/catch with fallback to stub typing indicator
 - [06-03]: Inter-agent messaging uses tools.agentToAgent config block with explicit allow list of all business agent IDs
+- [06-04]: VPS proxy is standalone npm project (not monorepo) with its own package.json for deployment independence
+- [06-04]: API types duplicated locally in api-types.ts to avoid monorepo dependency -- must stay in sync with packages/core/vps/vps-types.ts
+- [06-04]: All OpenClaw integration points stubbed with TODO markers for MVP activation when Claude Code is bootstrapped
+- [06-04]: Bootstrap prompt enforces memory preservation (NEVER overwrite memory/ or MEMORY.md) and character budgets per workspace file
 
 ### Pending Todos
 
@@ -175,5 +180,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-27
-Stopped at: Completed 06-03-PLAN.md (VPS Chat & Task Routing)
-Resume file: .planning/phases/06-builder-and-automation/06-03-SUMMARY.md
+Stopped at: Completed 06-04-PLAN.md (VPS API Proxy & Infrastructure) -- Phase 6 COMPLETE
+Resume file: .planning/phases/06-builder-and-automation/06-04-SUMMARY.md

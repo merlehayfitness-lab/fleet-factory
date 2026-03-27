@@ -124,10 +124,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 06-01: OpenClaw workspace generators, VPS client module, and database schema (AGENTS.md, SOUL.md, openclaw.json, VPS types, HTTP client, health check, vps_status + agent_vps_status tables)
-- [ ] 06-02: VPS deployment pipeline, health checks, and deployment UI (push to VPS, post-deploy verification, rollback, per-agent deploy, status indicator, progress stream, diff viewer)
-- [ ] 06-03: Live task/chat routing to VPS agents (replace mock execution and stub responses, WebSocket chat streaming, graceful degradation, inter-agent messaging)
-- [ ] 06-04: VPS API proxy server, bootstrap prompt, and infrastructure scripts (Express proxy, route handlers, Claude Code bootstrap, setup script, Docker Compose)
+- [x] 06-01: OpenClaw workspace generators, VPS client module, and database schema (AGENTS.md, SOUL.md, openclaw.json, VPS types, HTTP client, health check, vps_status + agent_vps_status tables)
+- [x] 06-02: VPS deployment pipeline, health checks, and deployment UI (push to VPS, post-deploy verification, rollback, per-agent deploy, status indicator, progress stream, diff viewer)
+- [x] 06-03: Live task/chat routing to VPS agents (replace mock execution and stub responses, WebSocket chat streaming, graceful degradation, inter-agent messaging)
+- [x] 06-04: VPS API proxy server, bootstrap prompt, and infrastructure scripts (Express proxy, route handlers, Claude Code bootstrap, setup script, Docker Compose)
 
 ### Phase 7: RAG Knowledge Base
 **Goal**: Agents become business-specific domain experts through two-tier knowledge: global business-wide docs and per-agent role-specific docs, with document upload, embedding, and automatic retrieval at runtime
@@ -171,6 +171,13 @@ These are post-MVP capabilities identified during the Phase 1-8 build. They are 
 
 ### v2 Themes
 
+**Theme 0: VPS Activation (Phase 6 Intentional Gap)**
+- Remove TODO stubs in `infra/vps/api-routes.ts` — Claude Code optimization (Step 3), container management (Step 4), real chat/task routing
+- Run `infra/vps/setup.sh` on Hostinger VPS, configure OpenClaw, start systemd service
+- Bootstrap Claude Code with `infra/vps/bootstrap-prompt.md` so agents run in real Docker containers
+- Sync `infra/vps/api-types.ts` with `packages/core/vps/vps-types.ts` if either has drifted
+- End state: admin app deploys to real VPS agents, chat/tasks hit live OpenClaw containers instead of stubs
+
 **Theme A: Client-Facing Portal**
 - Self-serve business onboarding wizard (business owners sign up and provision their own workspace)
 - Simplified business owner view (read-only dashboard, task submission, conversation access — not the full admin panel)
@@ -213,6 +220,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 3. Deployment Pipeline | 5/5 | Complete | 2026-03-26 |
 | 4. Task Execution and Approvals | 5/5 | Complete | 2026-03-26 |
 | 5. Observability and Command Center | 3/3 | Complete | 2026-03-27 |
-| 6. OpenClaw Deployment & Live VPS Runtime | 2/4 | In progress | - |
+| 6. OpenClaw Deployment & Live VPS Runtime | 4/4 | Complete | 2026-03-27 |
 | 7. RAG Knowledge Base | 0/3 | Not started | - |
 | 8. Role Definition & Prompt Generation | 0/1 | Not started | - |
