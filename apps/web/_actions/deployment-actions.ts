@@ -129,6 +129,33 @@ export async function getDeploymentsAction(businessId: string) {
 }
 
 /**
+ * Get a single deployment's current status.
+ * Used by the polling fallback when WebSocket is unavailable.
+ */
+export async function getDeploymentStatusAction(deploymentId: string) {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const { data, error } = await supabase
+    .from("deployments")
+    .select("id, status, version, config_snapshot, created_at, updated_at")
+    .eq("id", deploymentId)
+    .single();
+
+  if (error || !data) {
+    return { error: "Deployment not found" };
+  }
+
+  return { deployment: data };
+}
+
+/**
  * Deploy a single agent to the VPS.
  * Generates workspace for just this agent and pushes to VPS.
  */

@@ -5,6 +5,7 @@ import { Check, X, Loader2, Circle, ChevronDown, ChevronRight } from "lucide-rea
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { VpsDeployProgressEvent } from "@agency-factory/core";
+import { getDeploymentStatusAction } from "@/_actions/deployment-actions";
 
 interface DeploymentProgressStreamProps {
   deploymentId: string;
@@ -39,6 +40,52 @@ export function DeploymentProgressStream({
   );
   const [finalMessage, setFinalMessage] = useState<string | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  const startPolling = useCallback(() => {
+    stopPolling();
+    setConnectionStatus("error");
+
+    pollRef.current = setInterval(async () => {
+      const result = await getDeploymentStatusAction(deploymentId);
+      if (result.error || !result.deployment) return;
+
+      const status = result.deployment.status as string;
+      const terminalStatuses = ["live", "failed", "rolled_back"];
+
+      // Map deployment status to a synthetic phase event
+      setPhases((prev) => {
+        const existing = prev.find((p) => p.name === status);
+        if (existing) return prev;
+
+        const updated = prev.map((p) =>
+          p.status === "in_progress" ? { ...p, status: "complete" as const } : p,
+        );
+        return [
+          ...updated,
+          {
+            name: status,
+            status: terminalStatuses.includes(status) ? ("complete" as const) : ("in_progress" as const),
+            message: `Deployment is ${status}`,
+            details: [],
+            agentStatuses: [],
+          },
+        ];
+      });
+
+      if (terminalStatuses.includes(status)) {
+        setFinalMessage(`Deployment ${status === "live" ? "completed successfully" : status}`);
+        stopPolling();
+      }
+    }, 2000);
+  }, [deploymentId, stopPolling]);
 
   const handleEvent = useCallback((event: VpsDeployProgressEvent) => {
     switch (event.type) {
@@ -136,7 +183,7 @@ export function DeploymentProgressStream({
       };
 
       ws.onerror = () => {
-        setConnectionStatus("error");
+        startPolling();
       };
 
       ws.onclose = () => {
@@ -146,11 +193,12 @@ export function DeploymentProgressStream({
       return () => {
         ws.close();
         wsRef.current = null;
+        stopPolling();
       };
     } catch {
-      setConnectionStatus("error");
+      startPolling();
     }
-  }, [isActive, vpsWsUrl, handleEvent]);
+  }, [isActive, vpsWsUrl, handleEvent, startPolling, stopPolling]);
 
   // If VPS not configured, show static message
   if (!vpsWsUrl) {
@@ -186,7 +234,10 @@ export function DeploymentProgressStream({
             </span>
           )}
           {connectionStatus === "error" && (
-            <span className="text-xs text-amber-600">WebSocket unavailable</span>
+            <span className="flex items-center gap-1.5 text-xs text-amber-600">
+              <Loader2 className="size-3 animate-spin" />
+              Polling
+            </span>
           )}
         </div>
       </CardHeader>
