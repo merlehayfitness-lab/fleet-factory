@@ -251,13 +251,19 @@ export function ChatLayout({
                 setStreamingContent(null);
                 setStreamingAgentName(null);
                 // Add the agent message from the server response
-                setMessages((prev) => [...prev, result.agentMessage]);
+                setMessages((prev) => {
+                  if (prev.some((m) => m.id === result.agentMessage.id)) return prev;
+                  return [...prev, result.agentMessage];
+                });
                 ws.close();
                 wsRef.current = null;
               } else if (data.type === "error") {
                 setStreamingContent(null);
                 setStreamingAgentName(null);
-                setMessages((prev) => [...prev, result.agentMessage]);
+                setMessages((prev) => {
+                  if (prev.some((m) => m.id === result.agentMessage.id)) return prev;
+                  return [...prev, result.agentMessage];
+                });
                 ws.close();
                 wsRef.current = null;
               }
@@ -273,7 +279,10 @@ export function ChatLayout({
             setStreamingContent(null);
             setStreamingAgentName(null);
             // Fall back to showing the server response
-            setMessages((prev) => [...prev, result.agentMessage]);
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === result.agentMessage.id)) return prev;
+              return [...prev, result.agentMessage];
+            });
             wsRef.current = null;
           };
 
@@ -282,7 +291,10 @@ export function ChatLayout({
             if (streamingContent !== null) {
               setStreamingContent(null);
               setStreamingAgentName(null);
-              setMessages((prev) => [...prev, result.agentMessage]);
+              setMessages((prev) => {
+                if (prev.some((m) => m.id === result.agentMessage.id)) return prev;
+                return [...prev, result.agentMessage];
+              });
             }
             wsRef.current = null;
           };
@@ -293,7 +305,10 @@ export function ChatLayout({
           setIsAgentTyping(true);
           setTimeout(() => {
             setIsAgentTyping(false);
-            setMessages((prev) => [...prev, result.agentMessage]);
+            setMessages((prev) => {
+              if (prev.some((m) => m.id === result.agentMessage.id)) return prev;
+              return [...prev, result.agentMessage];
+            });
           }, 1500);
         }
       } else {
@@ -301,7 +316,10 @@ export function ChatLayout({
         setIsAgentTyping(true);
         setTimeout(() => {
           setIsAgentTyping(false);
-          setMessages((prev) => [...prev, result.agentMessage]);
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === result.agentMessage.id)) return prev;
+            return [...prev, result.agentMessage];
+          });
         }, 1500);
       }
     },

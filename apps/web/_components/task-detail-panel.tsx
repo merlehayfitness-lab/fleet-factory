@@ -171,7 +171,7 @@ export function TaskDetailPanel({
             <Button
               variant="default"
               size="sm"
-              disabled={loading || task.status !== "in_progress"}
+              disabled={loading}
               onClick={() => handleStatusChange("completed")}
             >
               {loading && <Loader2 className="mr-1.5 size-3.5 animate-spin" />}
