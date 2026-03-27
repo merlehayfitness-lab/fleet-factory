@@ -6,6 +6,7 @@ import { AgentConfig } from "@/_components/agent-config";
 import { AgentActivity } from "@/_components/agent-activity";
 import { AgentConversations } from "@/_components/agent-conversations";
 import { AgentIntegrations } from "@/_components/agent-integrations";
+import { AgentKnowledgeTab } from "@/_components/agent-knowledge-tab";
 
 interface AuditLog {
   id: string;
@@ -57,9 +58,9 @@ interface AgentDetailTabsProps {
 }
 
 /**
- * Client-side 5-tab layout for the agent detail page.
+ * Client-side 6-tab layout for the agent detail page.
  *
- * Tabs: Overview, Config, Activity, Conversations, Integrations.
+ * Tabs: Overview, Config, Activity, Conversations, Integrations, Knowledge.
  * Uses client-side state only (no URL changes) to prevent full page reloads.
  */
 export function AgentDetailTabs({
@@ -76,6 +77,7 @@ export function AgentDetailTabs({
         <TabsTrigger value="activity">Activity</TabsTrigger>
         <TabsTrigger value="conversations">Conversations</TabsTrigger>
         <TabsTrigger value="integrations">Integrations</TabsTrigger>
+        <TabsTrigger value="knowledge">Knowledge</TabsTrigger>
       </TabsList>
 
       <TabsContent value="overview">
@@ -103,6 +105,14 @@ export function AgentDetailTabs({
           agentId={agent.id}
           businessId={businessId}
           integrations={integrations}
+        />
+      </TabsContent>
+
+      <TabsContent value="knowledge">
+        <AgentKnowledgeTab
+          businessId={businessId}
+          agentId={agent.id}
+          agentName={agent.name}
         />
       </TabsContent>
     </Tabs>
