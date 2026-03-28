@@ -21,6 +21,14 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 7: RAG Knowledge Base** - pgvector, document upload/embedding, two-tier knowledge (global + per-agent), runtime retrieval
 - [ ] **Phase 8: Role Definition & Prompt Generation** - Plain-language role definition, Claude-powered prompt/SKILL.md generation, multi-agent departments, wizard update
 - [ ] **Phase 9: Skill Management & Deployment** - Skill editor UI, GitHub repo import, department-level skills, skill template library
+- [ ] **Phase 10: Template Profiles & Model Configuration** - Tool/Model Profile JSON on templates, model dropdown on agent config
+- [ ] **Phase 11: Sub-Agent Management** - Sub-agent creation under departments, visual hierarchy tree UI
+- [ ] **Phase 12: Integrations Catalog & Setup** - Integration catalog with add button, department/agent assignment, AI-generated setup guides
+- [ ] **Phase 13: Secrets Management UX** - Integration-first secrets flow, dynamic credential fields, grouped secrets page
+- [ ] **Phase 14: Slack Integration & Chat Replacement** - Slack API routing, embedded feed in admin panel, replace custom chat
+- [ ] **Phase 15: AITMPL Template Catalog** - Wizard suggestions for Skills/Agents/Commands/Settings/Hooks/MCPs/Plugins from AITMPL
+- [ ] **Phase 16: Tenant Disable Fix & Dashboard Freeze** - Fix 404 on disable, frozen dashboard banner, stop VPS activity
+- [ ] **Phase 17: VPS Activation & Embedded Terminal** - First real VPS deployment, gear icon to terminal page, embedded SSH terminal
 
 ## Phase Details
 
@@ -182,6 +190,118 @@ Plans:
 - [ ] 09-02: Skill editor UI, assignment list, Skills tab on agent detail, skill count badge
 - [ ] 09-03: Template library browser, GitHub import dialog, standalone library page, department skills panel, sidebar nav
 
+### Phase 10: Template Profiles & Model Configuration
+**Goal**: Agent templates have editable Tool Profile and Model Profile (optional JSONB), and the Model Profile on agent config is changeable via dropdown instead of static display
+**Depends on**: Phase 9
+**Requirements**: TMPL-01, TMPL-02, TMPL-03, TMPL-04
+**Success Criteria** (what must be TRUE):
+  1. Agent templates store optional tool_profile (JSONB) defining available tools and MCP configurations
+  2. Agent templates store optional model_profile (JSONB) defining model selection and parameters (temperature, max tokens, etc.)
+  3. Model Profile on agent config page is changeable via dropdown with available models (Opus, Sonnet, Haiku, etc.)
+  4. Tool/Model Profile JSON is editable via structured form or raw JSON editor on template and agent config pages
+**Plans**: TBD
+
+Plans:
+- [ ] 10-01: TBD
+
+### Phase 11: Sub-Agent Management
+**Goal**: Departments clearly support adding and managing sub-agents with a visual hierarchy tree (e.g., Owner > CEO, Sales > Paid Ads, Support > HR)
+**Depends on**: Phase 10
+**Requirements**: SUBAG-01, SUBAG-02, SUBAG-03
+**Success Criteria** (what must be TRUE):
+  1. Sub-agents can be created under any department lead agent with named roles
+  2. Agent tree UI visualizes parent-child hierarchy within departments on the agents page
+  3. Agent list and detail pages show hierarchy grouping with collapsible department sections
+**Plans**: TBD
+
+Plans:
+- [ ] 11-01: TBD
+
+### Phase 12: Integrations Catalog & Setup
+**Goal**: Admin can add integrations from a browsable catalog, assign them to specific departments or agents, and get AI-generated setup instructions
+**Depends on**: Phase 11
+**Requirements**: INTG-ENH-01, INTG-ENH-02, INTG-ENH-03, INTG-ENH-04
+**Success Criteria** (what must be TRUE):
+  1. "Add Integration" button at top of integrations page opens a browsable catalog of available integrations (Slack, Stripe, HubSpot, etc.)
+  2. Adding an integration assigns it to a specific department or individual agent
+  3. AI-generated setup instructions appear based on selected integration type and quick research
+  4. Category field auto-populates based on integration selection
+**Plans**: TBD
+
+Plans:
+- [ ] 12-01: TBD
+
+### Phase 13: Secrets Management UX
+**Goal**: Integration-first secrets flow where choosing the integration determines what credential fields are needed, accessible from both the dedicated secrets page and business settings
+**Depends on**: Phase 12
+**Requirements**: SECR-ENH-01, SECR-ENH-02, SECR-ENH-03, SECR-ENH-04
+**Success Criteria** (what must be TRUE):
+  1. Secrets flow starts with integration selection — category auto-fills, relevant credential fields appear dynamically
+  2. Secrets accessible from business settings page (near emergency controls) via link to dedicated secrets page
+  3. Dynamic credential fields adapt to integration type (API key only, API key + secret, username + password, OAuth token, etc.)
+  4. Secrets page displays credentials grouped by integration with clear labeling
+**Plans**: TBD
+
+Plans:
+- [ ] 13-01: TBD
+
+### Phase 14: Slack Integration & Chat Replacement
+**Goal**: Replace custom chat page with Slack API integration so messages route between admin panel agents and Slack, viewable in both places
+**Depends on**: Phase 13
+**Requirements**: SLACK-01, SLACK-02, SLACK-03, SLACK-04
+**Success Criteria** (what must be TRUE):
+  1. Slack API integration routes messages to/from department agents
+  2. Embedded Slack feed view in admin panel shows conversations per department/agent
+  3. Messages are viewable both in the admin panel and directly in Slack
+  4. Custom chat page replaced with Slack-powered interface (no duplicate chat infrastructure)
+**Plans**: TBD
+
+Plans:
+- [ ] 14-01: TBD
+
+### Phase 15: AITMPL Template Catalog
+**Goal**: Business setup wizard and template management suggest Skills, Agents, Commands, Settings, Hooks, MCPs, and Plugins from the AITMPL catalog (aitmpl.com)
+**Depends on**: Phase 14
+**Requirements**: AITMPL-01, AITMPL-02, AITMPL-03, AITMPL-04
+**Success Criteria** (what must be TRUE):
+  1. Users can browse and select items from AITMPL catalog within the business setup wizard
+  2. Wizard suggests relevant skills, agents, and commands based on department type and industry
+  3. Tool configurations can be imported from AITMPL agent-tool-builder to populate tool_profile JSON
+  4. Catalog covers all AITMPL categories: Skills, Agents, Commands, Settings, Hooks, MCPs, Plugins
+**Plans**: TBD
+
+Plans:
+- [ ] 15-01: TBD
+
+### Phase 16: Tenant Disable Fix & Dashboard Freeze
+**Goal**: Disabling a tenant freezes the dashboard with a suspended banner and stops all VPS activity instead of showing a 404 error
+**Depends on**: Phase 15
+**Requirements**: TFIX-01, TFIX-02, TFIX-03, TFIX-04
+**Success Criteria** (what must be TRUE):
+  1. Disabled tenant shows a frozen dashboard with "Suspended" banner instead of 404 error
+  2. Disabling a tenant stops all VPS activity (pauses containers, halts deployments)
+  3. Admin panel blocks all interaction with VPS resources when tenant is disabled
+  4. Admin can still view the business in a read-only frozen state (no edits, no deploys, no tasks)
+**Plans**: TBD
+
+Plans:
+- [ ] 16-01: TBD
+
+### Phase 17: VPS Activation & Embedded Terminal
+**Goal**: Deploy the first real department/agent to the Hostinger VPS and provide an embedded SSH terminal accessible from the business overview page for direct VPS access
+**Depends on**: Phase 16
+**Requirements**: VPS-TERM-01, VPS-TERM-02, VPS-TERM-03, VPS-TERM-04, VPS-TERM-05
+**Success Criteria** (what must be TRUE):
+  1. First real department/agent successfully deployed and running on Hostinger VPS
+  2. Gear/settings icon next to VPS status badge on business overview links to a standalone terminal page
+  3. Embedded real-time SSH terminal allows direct connection to the VPS from the admin panel
+  4. Admin can access and interact with deployed agents and Docker containers from the embedded terminal
+  5. End-to-end VPS deployment pipeline verified with real agents responding to tasks and chat
+**Plans**: TBD
+
+Plans:
+- [ ] 17-01: TBD
+
 ---
 
 ## Milestone 2 (v2): Scale & Self-Serve
@@ -232,16 +352,24 @@ These are post-MVP capabilities identified during the Phase 1-8 build. They are 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16 -> 17
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation and Tenant Provisioning | 4/4 | Complete | 2026-03-25 |
-| 2. Agent Management | 2/2 | Complete    | 2026-03-25 |
+| 2. Agent Management | 2/2 | Complete | 2026-03-25 |
 | 3. Deployment Pipeline | 5/5 | Complete | 2026-03-26 |
 | 4. Task Execution and Approvals | 5/5 | Complete | 2026-03-26 |
 | 5. Observability and Command Center | 3/3 | Complete | 2026-03-27 |
 | 6. OpenClaw Deployment & Live VPS Runtime | 4/4 | Complete | 2026-03-27 |
 | 7. RAG Knowledge Base | 3/3 | Complete | 2026-03-27 |
-| 8. Role Definition & Prompt Generation | 1/3 | In progress | - |
-| 9. Skill Management & Deployment | 0/3 | Not started | - |
+| 8. Role Definition & Prompt Generation | 3/3 | Complete | 2026-03-27 |
+| 9. Skill Management & Deployment | 4/4 | Complete | 2026-03-28 |
+| 10. Template Profiles & Model Configuration | 0/? | Not started | - |
+| 11. Sub-Agent Management | 0/? | Not started | - |
+| 12. Integrations Catalog & Setup | 0/? | Not started | - |
+| 13. Secrets Management UX | 0/? | Not started | - |
+| 14. Slack Integration & Chat Replacement | 0/? | Not started | - |
+| 15. AITMPL Template Catalog | 0/? | Not started | - |
+| 16. Tenant Disable Fix & Dashboard Freeze | 0/? | Not started | - |
+| 17. VPS Activation & Embedded Terminal | 0/? | Not started | - |
