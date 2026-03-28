@@ -125,14 +125,14 @@ export function DepartmentSkillsPanel({
 
   if (loading) {
     return (
-      <div className="rounded-md border p-4">
+      <div className="pt-2">
         <div className="h-4 w-32 animate-pulse rounded bg-muted" />
       </div>
     );
   }
 
   return (
-    <div className="rounded-md border p-4 space-y-3">
+    <div className="space-y-3 border-t pt-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h4 className="text-sm font-medium">Department Skills</h4>

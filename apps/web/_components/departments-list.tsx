@@ -5,7 +5,8 @@ import {
   Settings,
   Boxes,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { DepartmentSkillsPanel } from "./department-skills-panel";
 
 interface Department {
   id: string;
@@ -28,15 +29,17 @@ const DEPARTMENT_ICONS: Record<
 };
 
 /**
- * Renders a responsive grid of department cards.
+ * Renders a responsive grid of department cards with embedded skill panels.
  *
- * Each card shows the department name, type icon, and description.
- * No edit/delete for MVP -- departments are seeded by the provisioning system.
+ * Each card shows the department name, type icon, description,
+ * and a skills panel for department-level skill assignment.
  */
 export function DepartmentsList({
   departments,
+  businessId,
 }: {
   departments: Department[];
+  businessId: string;
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -62,6 +65,13 @@ export function DepartmentsList({
                 </CardDescription>
               )}
             </CardHeader>
+            <CardContent>
+              <DepartmentSkillsPanel
+                businessId={businessId}
+                departmentId={dept.id}
+                departmentName={dept.name}
+              />
+            </CardContent>
           </Card>
         );
       })}
