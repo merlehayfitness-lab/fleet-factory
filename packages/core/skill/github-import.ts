@@ -81,6 +81,43 @@ export function parseGitHubUrl(url: string): GitHubUrlInfo | null {
 // ---------------------------------------------------------------------------
 
 /**
+ * Extract a human-readable skill name from file content.
+ * Priority: YAML frontmatter "name:" → first "# Heading" → filename without extension.
+ */
+function extractSkillName(content: string, filePath: string): string {
+  // Try YAML frontmatter name field
+  const fmMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (fmMatch) {
+    const nameMatch = fmMatch[1].match(/^name:\s*(.+)$/m);
+    if (nameMatch) {
+      const val = nameMatch[1].trim().replace(/^["']|["']$/g, "");
+      if (val && val.toLowerCase() !== "skill") return val;
+    }
+  }
+
+  // Try first markdown heading
+  const headingMatch = content.match(/^#\s+(.+)$/m);
+  if (headingMatch) {
+    const val = headingMatch[1].trim();
+    if (val && val.toLowerCase() !== "skill") return val;
+  }
+
+  // Fallback to filename, but use parent dir name if filename is generic
+  const filename = filePath.split("/").pop() ?? "untitled";
+  const baseName = filename.replace(/\.md$/i, "");
+
+  if (baseName.toLowerCase() === "skill" || baseName.toLowerCase() === "readme") {
+    // Use parent directory name instead
+    const parts = filePath.split("/");
+    if (parts.length >= 2) {
+      return parts[parts.length - 2];
+    }
+  }
+
+  return baseName;
+}
+
+/**
  * Fetch raw file content from a public GitHub repository.
  * Uses raw.githubusercontent.com for direct content access.
  */
@@ -107,9 +144,8 @@ export async function fetchGitHubFile(
 
     const content = await response.text();
 
-    // Extract name from filename (strip .md extension)
-    const filename = info.path.split("/").pop() ?? "untitled";
-    const name = filename.replace(/\.md$/i, "");
+    // Extract name: try YAML frontmatter "name:" → first "# Heading" → filename
+    const name = extractSkillName(content, info.path);
 
     const sourceUrl = `https://github.com/${info.owner}/${info.repo}/blob/${info.branch}/${info.path}`;
 
