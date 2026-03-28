@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Pause, Play, Snowflake, Trash2, AlertTriangle } from "lucide-react";
+import Link from "next/link";
+import { Pause, Play, Snowflake, Trash2, AlertTriangle, Users, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/_components/status-badge";
 import { FreezeDialog } from "@/_components/freeze-dialog";
 import { RetireDialog } from "@/_components/retire-dialog";
@@ -16,24 +18,36 @@ interface Agent {
   id: string;
   name: string;
   status: string;
+  role: string | null;
+  parent_agent_id: string | null;
   created_at: string;
   updated_at: string;
   departments: { id: string; name: string; type: string } | null;
   agent_templates: { id: string; name: string } | null;
 }
 
+interface RelatedAgent {
+  id: string;
+  name: string;
+  status: string;
+  role: string | null;
+}
+
 interface AgentOverviewProps {
   agent: Agent;
   businessId: string;
+  parentAgent?: RelatedAgent;
+  childAgents?: RelatedAgent[];
 }
 
 /**
  * Overview tab for the agent detail page.
  *
- * Displays hero status badge, agent metadata, lifecycle control buttons
- * filtered by valid transitions, and a frozen banner when applicable.
+ * Displays hero status badge, agent metadata, role, parent/child
+ * hierarchy relationships, lifecycle control buttons filtered by
+ * valid transitions, and a frozen banner when applicable.
  */
-export function AgentOverview({ agent, businessId }: AgentOverviewProps) {
+export function AgentOverview({ agent, businessId, parentAgent, childAgents }: AgentOverviewProps) {
   const [freezeOpen, setFreezeOpen] = useState(false);
   const [retireOpen, setRetireOpen] = useState(false);
 
@@ -73,6 +87,11 @@ export function AgentOverview({ agent, businessId }: AgentOverviewProps) {
         <CardContent className="space-y-4 pt-6">
           <div className="flex items-center gap-3">
             <StatusBadge status={agent.status} className="text-sm px-3 py-1" />
+            {agent.role && (
+              <Badge variant="outline" className="text-sm">
+                {agent.role}
+              </Badge>
+            )}
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -93,6 +112,15 @@ export function AgentOverview({ agent, businessId }: AgentOverviewProps) {
                 {agent.agent_templates?.name ?? "No template"}
               </p>
             </div>
+
+            {agent.role && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">
+                  Role
+                </p>
+                <p className="text-sm">{agent.role}</p>
+              </div>
+            )}
 
             <div>
               <p className="text-xs font-medium text-muted-foreground">
@@ -122,6 +150,66 @@ export function AgentOverview({ agent, businessId }: AgentOverviewProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Reports to (parent agent) */}
+      {parentAgent && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ArrowUpRight className="size-4" />
+              Reports To
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Link
+              href={`/businesses/${businessId}/agents/${parentAgent.id}`}
+              className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted"
+            >
+              <div className="flex-1">
+                <p className="text-sm font-medium">{parentAgent.name}</p>
+                {parentAgent.role && (
+                  <p className="text-xs text-muted-foreground">{parentAgent.role}</p>
+                )}
+              </div>
+              <StatusBadge status={parentAgent.status} />
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sub-Agents (child agents) */}
+      {childAgents && childAgents.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="size-4" />
+              Sub-Agents
+              <Badge variant="secondary" className="ml-1">
+                {childAgents.length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              {childAgents.map((child) => (
+                <Link
+                  key={child.id}
+                  href={`/businesses/${businessId}/agents/${child.id}`}
+                  className="flex items-center gap-3 rounded-md p-2 transition-colors hover:bg-muted"
+                >
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{child.name}</p>
+                    {child.role && (
+                      <p className="text-xs text-muted-foreground">{child.role}</p>
+                    )}
+                  </div>
+                  <StatusBadge status={child.status} />
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Lifecycle controls */}
       {validTransitions.length > 0 && (

@@ -32,6 +32,8 @@ interface Agent {
   system_prompt: string;
   tool_profile: Record<string, unknown>;
   model_profile: Record<string, unknown>;
+  role: string | null;
+  parent_agent_id: string | null;
   role_definition: Record<string, unknown> | null;
   skill_definition: string | null;
   created_at: string;
@@ -63,6 +65,13 @@ interface IntegrationItem {
   type: string;
 }
 
+interface RelatedAgent {
+  id: string;
+  name: string;
+  status: string;
+  role: string | null;
+}
+
 interface AgentDetailTabsProps {
   agent: Agent;
   auditLogs: AuditLog[];
@@ -70,6 +79,8 @@ interface AgentDetailTabsProps {
   integrations: Integration[];
   knowledgeDocs: KnowledgeDoc[];
   configIntegrations: IntegrationItem[];
+  parentAgent?: RelatedAgent;
+  childAgents?: RelatedAgent[];
 }
 
 /**
@@ -85,6 +96,8 @@ export function AgentDetailTabs({
   integrations,
   knowledgeDocs,
   configIntegrations,
+  parentAgent,
+  childAgents,
 }: AgentDetailTabsProps) {
   return (
     <Tabs defaultValue="overview">
@@ -98,7 +111,12 @@ export function AgentDetailTabs({
       </TabsList>
 
       <TabsContent value="overview">
-        <AgentOverview agent={agent} businessId={businessId} />
+        <AgentOverview
+          agent={agent}
+          businessId={businessId}
+          parentAgent={parentAgent}
+          childAgents={childAgents}
+        />
       </TabsContent>
 
       <TabsContent value="config">

@@ -9,8 +9,9 @@ import { AgentDetailTabs } from "@/_components/agent-detail-tabs";
  * Agent detail page (Server Component).
  *
  * Fetches the agent with department, template, audit log, knowledge docs,
- * and integration data. Renders a header with status badge and back link,
- * then delegates to the client-side AgentDetailTabs component.
+ * integration, parent agent, and child agent data. Renders a header with
+ * status badge, parent link (for sub-agents), and back link, then delegates
+ * to the client-side AgentDetailTabs component.
  */
 export default async function AgentDetailPage({
   params,
@@ -69,6 +70,41 @@ export default async function AgentDetailPage({
     .eq("status", "ready")
     .order("created_at", { ascending: false });
 
+  // Fetch parent agent (if this is a sub-agent)
+  let parentAgent: { id: string; name: string; status: string; role: string | null } | null = null;
+  if (agent.parent_agent_id) {
+    const { data: parent } = await supabase
+      .from("agents")
+      .select("id, name, status, role")
+      .eq("id", agent.parent_agent_id as string)
+      .eq("business_id", businessId)
+      .single();
+
+    if (parent) {
+      parentAgent = {
+        id: parent.id as string,
+        name: parent.name as string,
+        status: parent.status as string,
+        role: (parent.role as string) ?? null,
+      };
+    }
+  }
+
+  // Fetch child agents (sub-agents of this agent)
+  const { data: childAgentsData } = await supabase
+    .from("agents")
+    .select("id, name, status, role")
+    .eq("parent_agent_id", agentId)
+    .eq("business_id", businessId)
+    .order("created_at");
+
+  const childAgents = (childAgentsData ?? []).map((a) => ({
+    id: a.id as string,
+    name: a.name as string,
+    status: a.status as string,
+    role: (a.role as string) ?? null,
+  }));
+
   // Build config-friendly integration list
   const configIntegrations = (integrations ?? []).map((i) => ({
     id: i.id as string,
@@ -89,9 +125,22 @@ export default async function AgentDetailPage({
         </Link>
       </div>
 
-      <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">{agent.name}</h1>
-        <StatusBadge status={agent.status} />
+      <div>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight">{agent.name}</h1>
+          <StatusBadge status={agent.status} />
+        </div>
+        {parentAgent && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Sub-agent of{" "}
+            <Link
+              href={`/businesses/${businessId}/agents/${parentAgent.id}`}
+              className="font-medium text-foreground hover:underline"
+            >
+              {parentAgent.name}
+            </Link>
+          </p>
+        )}
       </div>
 
       <AgentDetailTabs
@@ -106,6 +155,8 @@ export default async function AgentDetailPage({
           }))
         }
         configIntegrations={configIntegrations}
+        parentAgent={parentAgent ?? undefined}
+        childAgents={childAgents.length > 0 ? childAgents : undefined}
       />
     </div>
   );

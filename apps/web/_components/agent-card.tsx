@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MoreVertical, Eye, Pause, Play, Snowflake, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -39,6 +40,7 @@ interface AgentCardProps {
     agent_templates: { id: string; name: string } | null;
   };
   businessId: string;
+  role?: string | null;
 }
 
 /**
@@ -47,7 +49,7 @@ interface AgentCardProps {
  * Uses getValidTransitions from the lifecycle state machine to determine
  * which actions appear in the kebab menu for the agent's current status.
  */
-export function AgentCard({ agent, businessId }: AgentCardProps) {
+export function AgentCard({ agent, businessId, role }: AgentCardProps) {
   const [freezeOpen, setFreezeOpen] = useState(false);
   const [retireOpen, setRetireOpen] = useState(false);
 
@@ -89,12 +91,19 @@ export function AgentCard({ agent, businessId }: AgentCardProps) {
       >
         <CardHeader>
           <CardTitle>
-            <Link
-              href={`/businesses/${businessId}/agents/${agent.id}`}
-              className="hover:underline"
-            >
-              {agent.name}
-            </Link>
+            <span className="flex items-center gap-2">
+              <Link
+                href={`/businesses/${businessId}/agents/${agent.id}`}
+                className="hover:underline"
+              >
+                {agent.name}
+              </Link>
+              {role && (
+                <Badge variant="outline" className="text-xs font-normal">
+                  {role}
+                </Badge>
+              )}
+            </span>
           </CardTitle>
           <CardAction>
             <DropdownMenu>
