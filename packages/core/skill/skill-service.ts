@@ -30,18 +30,22 @@ export async function createSkill(
     import_collection?: string;
   },
 ): Promise<Skill> {
+  const insertData: Record<string, unknown> = {
+    business_id: businessId,
+    name: data.name,
+    description: data.description ?? null,
+    content: data.content,
+    trigger_phrases: data.trigger_phrases ?? null,
+    source_type: data.source_type ?? "manual",
+    source_url: data.source_url ?? null,
+  };
+  if (data.import_collection) {
+    insertData.import_collection = data.import_collection;
+  }
+
   const { data: skill, error } = await supabase
     .from("skills")
-    .insert({
-      business_id: businessId,
-      name: data.name,
-      description: data.description ?? null,
-      content: data.content,
-      trigger_phrases: data.trigger_phrases ?? null,
-      source_type: data.source_type ?? "manual",
-      source_url: data.source_url ?? null,
-      import_collection: data.import_collection ?? null,
-    })
+    .insert(insertData)
     .select("*")
     .single();
 
