@@ -140,10 +140,19 @@
 
 ### Role Definition & Prompt Generation
 
-- [ ] **ROLE-01**: Role Definition card on agent config with plain-language description, tone, and focus inputs
-- [ ] **ROLE-02**: Claude-powered system prompt generation from role definition
-- [ ] **ROLE-03**: Generated prompt previews in System Prompt card before saving
-- [ ] **ROLE-04**: Agent setup wizard updated with knowledge upload step (Step 4)
+- [x] **ROLE-01**: Role Definition card on agent config with plain-language description, tone, and focus inputs
+- [x] **ROLE-02**: Claude-powered system prompt AND SKILL.md generation from role definition
+- [x] **ROLE-03**: Generated prompt previews in System Prompt card before saving
+- [ ] **ROLE-04**: Agent setup wizard with knowledge upload step, SKILL.md generation, and sub-agent support
+- [ ] **ROLE-05**: Departments support multiple agents with parent-child hierarchy (lead + sub-agents with role field)
+- [ ] **ROLE-06**: SKILL.md stored on agent record and deployable to VPS as workspace artifact
+
+### Skill Management
+
+- [ ] **SKILL-01**: Skill editor UI allows creating and editing SKILL.md files with structured sections
+- [ ] **SKILL-02**: Skills can be imported from GitHub repository URLs
+- [ ] **SKILL-03**: Department-level skills can be assigned and inherited by all agents in that department
+- [ ] **SKILL-04**: Skill template library provides curated starter skills per department/role type
 
 ### Integrations
 
@@ -292,16 +301,22 @@
 | RAG-05 | Phase 7 | Complete |
 | RAG-06 | Phase 7 | Complete |
 | RAG-07 | Phase 7 | Complete |
-| ROLE-01 | Phase 8 | Pending |
-| ROLE-02 | Phase 8 | Pending |
-| ROLE-03 | Phase 8 | Pending |
+| ROLE-01 | Phase 8 | Complete |
+| ROLE-02 | Phase 8 | Complete |
+| ROLE-03 | Phase 8 | Complete |
 | ROLE-04 | Phase 8 | Pending |
+| ROLE-05 | Phase 8 | Pending |
+| ROLE-06 | Phase 8 | Pending |
+| SKILL-01 | Phase 9 | Pending |
+| SKILL-02 | Phase 9 | Pending |
+| SKILL-03 | Phase 9 | Pending |
+| SKILL-04 | Phase 9 | Pending |
 
 **Coverage:**
-- v1 requirements: 99 total
-- Mapped to phases: 99
+- v1 requirements: 109 total
+- Mapped to phases: 109
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-25*
-*Last updated: 2026-03-25 after roadmap creation*
+*Last updated: 2026-03-27 after Phase 8 scope expansion and Phase 9 addition*

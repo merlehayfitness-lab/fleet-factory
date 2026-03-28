@@ -19,7 +19,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 5: Observability and Command Center** - Tenant health monitoring, audit viewer, chat interface, and emergency controls
 - [ ] **Phase 6: OpenClaw Deployment & Live VPS Runtime** - OpenClaw-native artifacts, VPS deployment via Claude Code, live task/chat routing to real agents
 - [ ] **Phase 7: RAG Knowledge Base** - pgvector, document upload/embedding, two-tier knowledge (global + per-agent), runtime retrieval
-- [ ] **Phase 8: Role Definition & Prompt Generation** - Plain-language role definition, Claude-powered prompt generation, wizard update
+- [ ] **Phase 8: Role Definition & Prompt Generation** - Plain-language role definition, Claude-powered prompt/SKILL.md generation, multi-agent departments, wizard update
+- [ ] **Phase 9: Skill Management & Deployment** - Skill editor UI, GitHub repo import, department-level skills, skill template library
 
 ## Phase Details
 
@@ -148,24 +149,42 @@ Plans:
 - [ ] 07-03: VPS knowledge sync and runtime injection
 
 ### Phase 8: Role Definition & Prompt Generation
-**Goal**: Admin describes agent roles in plain language and Claude generates production-quality system prompts, with an updated setup wizard that includes knowledge upload
+**Goal**: Admin describes agent roles in plain language, Claude generates production-quality system prompts AND SKILL.md files, departments support multiple agents with parent-child hierarchy, and an updated setup wizard includes knowledge upload
 **Depends on**: Phase 7
-**Requirements**: ROLE-01, ROLE-02, ROLE-03, ROLE-04
+**Requirements**: ROLE-01, ROLE-02, ROLE-03, ROLE-04, ROLE-05, ROLE-06
 **Success Criteria** (what must be TRUE):
   1. Role Definition card on agent config accepts plain-language description, tone, and focus
-  2. Claude generates system prompt from role definition and previews it before saving
-  3. Agent setup wizard includes knowledge upload step with global + per-agent zones
+  2. Claude generates system prompt AND SKILL.md from role definition and previews both before saving
+  3. Agent setup wizard includes knowledge upload step with agent-specific zones
   4. Role Definition and System Prompt cards work together (generate → preview → edit → save)
+  5. Departments support multiple agents with parent-child hierarchy (lead + sub-agents with role field)
+  6. SKILL.md stored on agent record and deployable to VPS as workspace artifact
 **Plans**: TBD
 
 Plans:
-- [ ] 08-01: Role Definition card, Claude prompt generator, and wizard update
+- [ ] 08-01: Role Definition card, Claude prompt generator, and Config Tab UI
+- [ ] 08-02: Multi-agent departments (parent-child hierarchy, role field, UI updates)
+- [ ] 08-03: Agent setup wizard with knowledge upload, SKILL.md generation, and sub-agent support
+
+### Phase 9: Skill Management & Deployment
+**Goal**: Admin can create, edit, import, and assign skills to agents and departments through a dedicated skill management interface
+**Depends on**: Phase 8
+**Requirements**: SKILL-01, SKILL-02, SKILL-03, SKILL-04
+**Success Criteria** (what must be TRUE):
+  1. Skill editor UI allows creating and editing SKILL.md files with structured sections
+  2. Skills can be imported from GitHub repository URLs
+  3. Department-level skills can be assigned and inherited by all agents in that department
+  4. Skill template library provides curated starter skills per department/role type
+**Plans**: TBD
+
+Plans:
+- [ ] 09-01: Skill management UI, GitHub import, department-level skills, template library
 
 ---
 
 ## Milestone 2 (v2): Scale & Self-Serve
 
-**Prerequisite**: Phases 1-8 (MVP) complete and deployed.
+**Prerequisite**: Phases 1-9 (MVP) complete and deployed.
 
 These are post-MVP capabilities identified during the Phase 1-8 build. They are listed here for planning purposes — scoping and phase breakdown will happen when v2 begins.
 
@@ -211,7 +230,7 @@ These are post-MVP capabilities identified during the Phase 1-8 build. They are 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -222,4 +241,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 | 5. Observability and Command Center | 3/3 | Complete | 2026-03-27 |
 | 6. OpenClaw Deployment & Live VPS Runtime | 4/4 | Complete | 2026-03-27 |
 | 7. RAG Knowledge Base | 3/3 | Complete | 2026-03-27 |
-| 8. Role Definition & Prompt Generation | 0/1 | Not started | - |
+| 8. Role Definition & Prompt Generation | 1/3 | In progress | - |
+| 9. Skill Management & Deployment | 0/1 | Not started | - |

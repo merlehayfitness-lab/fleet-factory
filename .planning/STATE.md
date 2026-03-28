@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 7 -- RAG Knowledge Base
+**Current focus:** Phase 8 -- Role Definition & Prompt Generation
 
 ## Current Position
 
-Phase: 7 of 7 (RAG Knowledge Base)
-Plan: 3 of 3 in current phase (3 complete)
-Status: Phase 7 Complete
-Last activity: 2026-03-27 -- Completed 07-03 (Runtime Injection & Source Attribution)
+Phase: 8 of 8 (Role Definition & Prompt Generation)
+Plan: 1 of 3 in current phase (1 complete)
+Status: Executing Phase 8
+Last activity: 2026-03-28 -- Completed 08-01 (Role Definition & Prompt Generation Core)
 
-Progress: [██████████████████████████] 100% (26/26 plans)
+Progress: [█████████████████████████░░] 93% (27/29 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26
+- Total plans completed: 27
 - Average duration: 6min
-- Total execution time: 2.6 hours
+- Total execution time: 2.7 hours
 
 **By Phase:**
 
@@ -35,7 +35,7 @@ Progress: [███████████████████████
 | 06 | 4 | 33min | 8min |
 
 **Recent Trend:**
-- Last 5 plans: 06-04 (7min), 07-01 (4min), 07-02 (5min), 07-03 (3min)
+- Last 5 plans: 07-01 (4min), 07-02 (5min), 07-03 (3min), 08-01 (8min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -65,6 +65,7 @@ Progress: [███████████████████████
 | Phase 07 P01 | 4min | 2 tasks | 14 files |
 | Phase 07 P02 | 5min | 2 tasks | 8 files |
 | Phase 07 P03 | 3min | 2 tasks | 7 files |
+| Phase 08 P01 | 8min | 2 tasks | 22 files |
 
 ## Accumulated Context
 
@@ -183,6 +184,11 @@ Recent decisions affecting current work:
 - [07-03]: Knowledge context passed through VPS chat/task functions as optional string parameter
 - [07-03]: Source footnotes use simple useState toggle (no Collapsible component) for lightweight expand/collapse
 - [07-03]: Sources rendered below tool call traces but above timestamp in chat message visual hierarchy
+- [08-01]: Meta-prompts instruct Claude to output structured JSON with separate fields for each prompt section and SKILL.md
+- [08-01]: Used claude-sonnet-4-20250514 model for all generation, refinement, and test chat operations
+- [08-01]: DialogTrigger uses inline styled span instead of asChild prop (base-ui does not support asChild)
+- [08-01]: Department type extracted from agents join with unknown-first cast to handle array/object ambiguity
+- [08-01]: Anthropic SDK pattern mirrors existing OpenAI embedder: getApiKey() helper + getClient() factory
 
 ### Pending Todos
 
@@ -194,6 +200,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27
-Stopped at: Completed 07-03-PLAN.md (Runtime Injection & Source Attribution) -- Phase 7 Complete
-Resume file: .planning/phases/07-rag-knowledge-base/07-03-SUMMARY.md
+Last session: 2026-03-28
+Stopped at: Completed 08-01-PLAN.md (Role Definition & Prompt Generation Core)
+Resume file: .planning/phases/08-role-definition-and-prompt-generation/08-01-SUMMARY.md
