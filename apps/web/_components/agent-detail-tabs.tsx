@@ -32,6 +32,8 @@ interface Agent {
   system_prompt: string;
   tool_profile: Record<string, unknown>;
   model_profile: Record<string, unknown>;
+  role_definition: Record<string, unknown> | null;
+  skill_definition: string | null;
   created_at: string;
   updated_at: string;
   departments: { id: string; name: string; type: string } | null;
@@ -50,11 +52,24 @@ interface Integration {
   updated_at: string;
 }
 
+interface KnowledgeDoc {
+  id: string;
+  title: string;
+}
+
+interface IntegrationItem {
+  id: string;
+  name: string;
+  type: string;
+}
+
 interface AgentDetailTabsProps {
   agent: Agent;
   auditLogs: AuditLog[];
   businessId: string;
   integrations: Integration[];
+  knowledgeDocs: KnowledgeDoc[];
+  configIntegrations: IntegrationItem[];
 }
 
 /**
@@ -68,6 +83,8 @@ export function AgentDetailTabs({
   auditLogs,
   businessId,
   integrations,
+  knowledgeDocs,
+  configIntegrations,
 }: AgentDetailTabsProps) {
   return (
     <Tabs defaultValue="overview">
@@ -89,6 +106,8 @@ export function AgentDetailTabs({
           agent={agent}
           template={agent.agent_templates}
           businessId={businessId}
+          knowledgeDocs={knowledgeDocs}
+          integrations={configIntegrations}
         />
       </TabsContent>
 

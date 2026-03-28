@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { updateAgentConfigAction } from "@/_actions/agent-actions";
+import { saveRoleDefinitionAction } from "@/_actions/prompt-generator-actions";
+import { RoleDefinitionCard } from "@/_components/role-definition-card";
+import { SkillDefinitionCard } from "@/_components/skill-definition-card";
+import { ContextSuggestionUI } from "@/_components/context-suggestion-ui";
+import { PromptRefinementPanel } from "@/_components/prompt-refinement-panel";
+import { TestChatDialog } from "@/_components/test-chat-dialog";
+import type {
+  RoleDefinition,
+  GenerationResult,
+  PromptSections,
+} from "@agency-factory/core";
 
 interface Template {
   id: string;
@@ -23,12 +34,27 @@ interface Agent {
   system_prompt: string;
   tool_profile: Record<string, unknown>;
   model_profile: Record<string, unknown>;
+  role_definition: Record<string, unknown> | null;
+  skill_definition: string | null;
+}
+
+interface KnowledgeDoc {
+  id: string;
+  title: string;
+}
+
+interface IntegrationItem {
+  id: string;
+  name: string;
+  type: string;
 }
 
 interface AgentConfigProps {
   agent: Agent;
   template: Template | null;
   businessId: string;
+  knowledgeDocs: KnowledgeDoc[];
+  integrations: IntegrationItem[];
 }
 
 /** Compare two values for equality (JSON comparison for objects). */
@@ -36,16 +62,81 @@ function isEqual(a: unknown, b: unknown): boolean {
   return JSON.stringify(a) === JSON.stringify(b);
 }
 
+/** Join prompt sections into a single system prompt string. */
+function joinSections(sections: PromptSections): string {
+  return [
+    `## Identity\n${sections.identity}`,
+    `## Instructions\n${sections.instructions}`,
+    `## Tools\n${sections.tools}`,
+    `## Constraints\n${sections.constraints}`,
+  ].join("\n\n");
+}
+
+/** Try to parse a system prompt into sections. Returns null if not section-based. */
+function parseSections(prompt: string): PromptSections | null {
+  const identityMatch = prompt.match(
+    /## Identity\n([\s\S]*?)(?=\n## Instructions|$)/,
+  );
+  const instructionsMatch = prompt.match(
+    /## Instructions\n([\s\S]*?)(?=\n## Tools|$)/,
+  );
+  const toolsMatch = prompt.match(
+    /## Tools\n([\s\S]*?)(?=\n## Constraints|$)/,
+  );
+  const constraintsMatch = prompt.match(/## Constraints\n([\s\S]*?)$/);
+
+  if (identityMatch && instructionsMatch && toolsMatch && constraintsMatch) {
+    return {
+      identity: identityMatch[1].trim(),
+      instructions: instructionsMatch[1].trim(),
+      tools: toolsMatch[1].trim(),
+      constraints: constraintsMatch[1].trim(),
+    };
+  }
+  return null;
+}
+
 /**
  * Config tab for the agent detail page.
  *
- * Shows the full system prompt (editable), template reference with link,
- * template diff highlighting config drift, and tool/model profiles.
+ * Includes Role Definition, Context Suggestions, System Prompt (with refinement
+ * and test chat), SKILL.md, Template Reference, Differences, Tool/Model Profiles.
  */
-export function AgentConfig({ agent, template, businessId }: AgentConfigProps) {
+export function AgentConfig({
+  agent,
+  template,
+  businessId,
+  knowledgeDocs,
+  integrations,
+}: AgentConfigProps) {
+  // Role definition state
+  const initialRoleDef = agent.role_definition as RoleDefinition | null;
+  const [roleDefinition, setRoleDefinition] = useState<RoleDefinition | null>(
+    initialRoleDef,
+  );
+
+  // Prompt sections state (try to parse from existing prompt)
+  const [promptSections, setPromptSections] = useState<PromptSections | null>(
+    parseSections(agent.system_prompt),
+  );
+  const [skillDefinition, setSkillDefinition] = useState<string | null>(
+    agent.skill_definition,
+  );
+
+  // Context selections
+  const [selectedDocTitles, setSelectedDocTitles] = useState<string[]>(
+    knowledgeDocs.map((d) => d.title),
+  );
+  const [selectedIntegrationNames, setSelectedIntegrationNames] = useState<
+    string[]
+  >(integrations.map((i) => `${i.name} (${i.type})`));
+
+  // UI state
+  const [isRefinementOpen, setIsRefinementOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedPrompt, setEditedPrompt] = useState(agent.system_prompt);
   const [isSaving, setIsSaving] = useState(false);
+  const [isSavingAll, setIsSavingAll] = useState(false);
 
   // Calculate template drift
   const promptDiffers = template
@@ -59,7 +150,23 @@ export function AgentConfig({ agent, template, businessId }: AgentConfigProps) {
     : false;
   const hasDrift = promptDiffers || toolsDiffer || modelDiffers;
 
-  async function handleSave() {
+  // Context selection handler
+  const handleSelectionChange = useCallback(
+    (docTitles: string[], intNames: string[]) => {
+      setSelectedDocTitles(docTitles);
+      setSelectedIntegrationNames(intNames);
+    },
+    [],
+  );
+
+  // Generation handler
+  function handleGenerate(result: GenerationResult) {
+    setPromptSections(result.promptSections);
+    setSkillDefinition(result.skillDefinition);
+  }
+
+  // Save system prompt only (manual edit)
+  async function handleSavePrompt() {
     setIsSaving(true);
     try {
       const result = await updateAgentConfigAction(agent.id, businessId, {
@@ -78,27 +185,123 @@ export function AgentConfig({ agent, template, businessId }: AgentConfigProps) {
     }
   }
 
-  function handleCancel() {
+  function handleCancelPrompt() {
     setEditedPrompt(agent.system_prompt);
     setIsEditing(false);
   }
 
+  // Save all generated content
+  async function handleSaveAll() {
+    if (!promptSections || !roleDefinition) return;
+
+    setIsSavingAll(true);
+    try {
+      const result = await saveRoleDefinitionAction(
+        agent.id,
+        businessId,
+        roleDefinition,
+        joinSections(promptSections),
+        skillDefinition ?? "",
+      );
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Role definition, prompt, and SKILL.md saved");
+      }
+    } catch {
+      toast.error("Failed to save");
+    } finally {
+      setIsSavingAll(false);
+    }
+  }
+
+  // Handle skill definition save from card
+  function handleSkillSave(updated: string) {
+    setSkillDefinition(updated);
+  }
+
+  // Handle refinement accept
+  function handleRefinementAccept(updated: PromptSections) {
+    setPromptSections(updated);
+    setIsRefinementOpen(false);
+  }
+
+  const currentPrompt = promptSections
+    ? joinSections(promptSections)
+    : agent.system_prompt;
+
   return (
     <div className="space-y-6 pt-4">
-      {/* System prompt */}
+      {/* Role Definition card */}
+      <RoleDefinitionCard
+        agentId={agent.id}
+        businessId={businessId}
+        initialRoleDefinition={initialRoleDef}
+        knowledgeDocTitles={selectedDocTitles}
+        integrationNames={selectedIntegrationNames}
+        onGenerate={(result) => {
+          setRoleDefinition({
+            description: initialRoleDef?.description ?? "",
+            tone: initialRoleDef?.tone ?? "professional",
+            focus_areas: initialRoleDef?.focus_areas ?? [],
+            workflow_instructions:
+              initialRoleDef?.workflow_instructions ?? "",
+            linked_integrations: selectedIntegrationNames,
+            linked_knowledge_docs: selectedDocTitles,
+          });
+          handleGenerate(result);
+        }}
+      />
+
+      {/* Context Suggestion UI (shown when role definition exists) */}
+      {(knowledgeDocs.length > 0 || integrations.length > 0) && (
+        <ContextSuggestionUI
+          knowledgeDocs={knowledgeDocs}
+          integrations={integrations}
+          onSelectionChange={handleSelectionChange}
+        />
+      )}
+
+      {/* Refinement Panel (shown when open) */}
+      {isRefinementOpen && promptSections && (
+        <PromptRefinementPanel
+          initialSections={promptSections}
+          onAccept={handleRefinementAccept}
+          onClose={() => setIsRefinementOpen(false)}
+        />
+      )}
+
+      {/* System Prompt card */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>System Prompt</span>
-            {!isEditing && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-              >
-                Edit
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {promptSections && !isRefinementOpen && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsRefinementOpen(true)}
+                  >
+                    Refine Prompt
+                  </Button>
+                  <TestChatDialog
+                    systemPrompt={currentPrompt}
+                    modelProfile={agent.model_profile}
+                  />
+                </>
+              )}
+              {!isEditing && !promptSections && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditing(true)}
+                >
+                  Edit
+                </Button>
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -111,18 +314,42 @@ export function AgentConfig({ agent, template, businessId }: AgentConfigProps) {
                 disabled={isSaving}
               />
               <div className="flex gap-2">
-                <Button onClick={handleSave} disabled={isSaving} size="sm">
+                <Button
+                  onClick={handleSavePrompt}
+                  disabled={isSaving}
+                  size="sm"
+                >
                   {isSaving ? "Saving..." : "Save"}
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={handleCancel}
+                  onClick={handleCancelPrompt}
                   disabled={isSaving}
                   size="sm"
                 >
                   Cancel
                 </Button>
               </div>
+            </div>
+          ) : promptSections ? (
+            <div className="space-y-4">
+              {(
+                [
+                  ["Identity", promptSections.identity],
+                  ["Instructions", promptSections.instructions],
+                  ["Tools", promptSections.tools],
+                  ["Constraints", promptSections.constraints],
+                ] as const
+              ).map(([label, content]) => (
+                <div key={label}>
+                  <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                    {label}
+                  </p>
+                  <pre className="whitespace-pre-wrap rounded-lg bg-muted p-3 font-mono text-sm">
+                    {content}
+                  </pre>
+                </div>
+              ))}
             </div>
           ) : (
             <pre className="whitespace-pre-wrap rounded-lg bg-muted p-4 font-mono text-sm">
@@ -131,6 +358,25 @@ export function AgentConfig({ agent, template, businessId }: AgentConfigProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* SKILL.md card */}
+      <SkillDefinitionCard
+        skillDefinition={skillDefinition}
+        onSave={handleSkillSave}
+      />
+
+      {/* Save All button (when generated content exists) */}
+      {promptSections && (
+        <Button
+          onClick={handleSaveAll}
+          disabled={isSavingAll}
+          className="w-full"
+        >
+          {isSavingAll
+            ? "Saving..."
+            : "Save Role Definition, Prompt & SKILL.md"}
+        </Button>
+      )}
 
       {/* Template reference */}
       {template && (

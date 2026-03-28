@@ -8,9 +8,9 @@ import { AgentDetailTabs } from "@/_components/agent-detail-tabs";
 /**
  * Agent detail page (Server Component).
  *
- * Fetches the agent with department, template, and audit log data.
- * Renders a header with status badge and back link, then delegates
- * to the client-side AgentDetailTabs component.
+ * Fetches the agent with department, template, audit log, knowledge docs,
+ * and integration data. Renders a header with status badge and back link,
+ * then delegates to the client-side AgentDetailTabs component.
  */
 export default async function AgentDetailPage({
   params,
@@ -60,6 +60,22 @@ export default async function AgentDetailPage({
     .eq("business_id", businessId)
     .order("type");
 
+  // Fetch knowledge documents (agent-specific + global) for context suggestion UI
+  const { data: knowledgeDocs } = await supabase
+    .from("knowledge_documents")
+    .select("id, title")
+    .eq("business_id", businessId)
+    .or(`agent_id.eq.${agentId},agent_id.is.null`)
+    .eq("status", "ready")
+    .order("created_at", { ascending: false });
+
+  // Build config-friendly integration list
+  const configIntegrations = (integrations ?? []).map((i) => ({
+    id: i.id as string,
+    name: (i.provider as string) ?? (i.type as string),
+    type: i.type as string,
+  }));
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -83,6 +99,13 @@ export default async function AgentDetailPage({
         auditLogs={auditLogs ?? []}
         businessId={businessId}
         integrations={integrations ?? []}
+        knowledgeDocs={
+          (knowledgeDocs ?? []).map((d) => ({
+            id: d.id as string,
+            title: d.title as string,
+          }))
+        }
+        configIntegrations={configIntegrations}
       />
     </div>
   );
