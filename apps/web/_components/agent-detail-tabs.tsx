@@ -6,6 +6,7 @@ import { AgentConfig } from "@/_components/agent-config";
 import { AgentActivity } from "@/_components/agent-activity";
 import { AgentConversations } from "@/_components/agent-conversations";
 import { AgentIntegrations } from "@/_components/agent-integrations";
+import { AgentSkillsTab } from "@/_components/agent-skills-tab";
 import { AgentKnowledgeTab } from "@/_components/agent-knowledge-tab";
 
 interface AuditLog {
@@ -84,9 +85,9 @@ interface AgentDetailTabsProps {
 }
 
 /**
- * Client-side 6-tab layout for the agent detail page.
+ * Client-side 7-tab layout for the agent detail page.
  *
- * Tabs: Overview, Config, Activity, Conversations, Integrations, Knowledge.
+ * Tabs: Overview, Config, Activity, Conversations, Integrations, Skills, Knowledge.
  * Uses client-side state only (no URL changes) to prevent full page reloads.
  */
 export function AgentDetailTabs({
@@ -107,6 +108,7 @@ export function AgentDetailTabs({
         <TabsTrigger value="activity">Activity</TabsTrigger>
         <TabsTrigger value="conversations">Conversations</TabsTrigger>
         <TabsTrigger value="integrations">Integrations</TabsTrigger>
+        <TabsTrigger value="skills">Skills</TabsTrigger>
         <TabsTrigger value="knowledge">Knowledge</TabsTrigger>
       </TabsList>
 
@@ -145,6 +147,15 @@ export function AgentDetailTabs({
           agentId={agent.id}
           businessId={businessId}
           integrations={integrations}
+        />
+      </TabsContent>
+
+      <TabsContent value="skills">
+        <AgentSkillsTab
+          businessId={businessId}
+          agentId={agent.id}
+          departmentId={agent.departments?.id ?? ""}
+          agentName={agent.name}
         />
       </TabsContent>
 

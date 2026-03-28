@@ -41,6 +41,7 @@ interface AgentCardProps {
   };
   businessId: string;
   role?: string | null;
+  skillCount?: number;
 }
 
 /**
@@ -49,7 +50,7 @@ interface AgentCardProps {
  * Uses getValidTransitions from the lifecycle state machine to determine
  * which actions appear in the kebab menu for the agent's current status.
  */
-export function AgentCard({ agent, businessId, role }: AgentCardProps) {
+export function AgentCard({ agent, businessId, role, skillCount }: AgentCardProps) {
   const [freezeOpen, setFreezeOpen] = useState(false);
   const [retireOpen, setRetireOpen] = useState(false);
 
@@ -172,6 +173,12 @@ export function AgentCard({ agent, businessId, role }: AgentCardProps) {
           {modelName && (
             <p className="font-mono text-xs text-muted-foreground">
               {String(modelName)}
+            </p>
+          )}
+
+          {typeof skillCount === "number" && skillCount > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {skillCount} {skillCount === 1 ? "skill" : "skills"}
             </p>
           )}
         </CardContent>

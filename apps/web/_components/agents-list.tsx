@@ -23,6 +23,7 @@ interface Agent {
   created_at: string;
   departments: { id: string; name: string; type: string } | null;
   agent_templates: { id: string; name: string } | null;
+  skill_count?: number;
 }
 
 interface AgentsListProps {
@@ -96,6 +97,7 @@ export function AgentsList({ agents, businessId }: AgentsListProps) {
                         agent={lead}
                         businessId={businessId}
                         role={lead.role}
+                        skillCount={lead.skill_count}
                       />
                     </div>
                     {children.length > 0 && (
@@ -107,6 +109,7 @@ export function AgentsList({ agents, businessId }: AgentsListProps) {
                               agent={child}
                               businessId={businessId}
                               role={child.role}
+                              skillCount={child.skill_count}
                             />
                           ))}
                         </div>
@@ -125,6 +128,7 @@ export function AgentsList({ agents, businessId }: AgentsListProps) {
                         agent={orphan}
                         businessId={businessId}
                         role={orphan.role}
+                        skillCount={orphan.skill_count}
                       />
                     ))}
                   </div>
@@ -139,6 +143,7 @@ export function AgentsList({ agents, businessId }: AgentsListProps) {
                       agent={agent}
                       businessId={businessId}
                       role={agent.role}
+                      skillCount={agent.skill_count}
                     />
                   ))}
                 </div>
