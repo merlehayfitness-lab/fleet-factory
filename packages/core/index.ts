@@ -182,5 +182,12 @@ export type {
   TestChatMessage,
 } from "./prompt-generator/generator-types";
 
+// Role template library (client-safe static data)
+export type { RoleTemplate } from "./prompt-generator/templates/role-templates";
+export {
+  ROLE_TEMPLATES,
+  getRoleTemplatesForDepartment,
+} from "./prompt-generator/templates/role-templates";
+
 // NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker, approval service)
 // are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.

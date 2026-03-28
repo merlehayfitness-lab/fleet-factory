@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Plus } from "lucide-react";
 import { createServerClient } from "@/_lib/supabase/server";
 import { AgentsList } from "@/_components/agents-list";
 
@@ -48,11 +50,20 @@ export default async function AgentsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Agents</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage agents across departments
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Agents</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage agents across departments
+          </p>
+        </div>
+        <Link
+          href={`/businesses/${businessId}/agents/new`}
+          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
+        >
+          <Plus className="size-4" />
+          New Agent
+        </Link>
       </div>
 
       {!agents || agents.length === 0 ? (
