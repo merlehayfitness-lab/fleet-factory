@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 9 of 9 (Skill Management & Deployment)
-Plan: 3 of 3 in current phase (3 complete)
-Status: Phase 9 complete -- all plans executed
-Last activity: 2026-03-28 -- Completed 09-03-PLAN.md (Template Browser, GitHub Import, Skill Library, Department Skills)
+Plan: 4 of 4 in current phase (4 complete)
+Status: Phase 9 complete -- all plans including gap closure executed
+Last activity: 2026-03-28 -- Completed 09-04-PLAN.md (Recursive GitHub Import with Collection Grouping)
 
-Progress: [██████████████████████████████] 100% (32/32 plans)
+Progress: [██████████████████████████████] 100% (33/33 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 32
+- Total plans completed: 33
 - Average duration: 6min
-- Total execution time: 3.2 hours
+- Total execution time: 3.3 hours
 
 **By Phase:**
 
@@ -35,10 +35,10 @@ Progress: [███████████████████████
 | 06 | 4 | 33min | 8min |
 | 07 | 3 | 12min | 4min |
 | 08 | 3 | 20min | 7min |
-| 09 | 3 | 19min | 6min |
+| 09 | 4 | 23min | 6min |
 
 **Recent Trend:**
-- Last 5 plans: 08-03 (6min), 09-01 (6min), 09-02 (5min), 09-03 (8min)
+- Last 5 plans: 09-01 (6min), 09-02 (5min), 09-03 (8min), 09-04 (4min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -74,6 +74,7 @@ Progress: [███████████████████████
 | Phase 09 P01 | 6min | 2 tasks | 11 files |
 | Phase 09 P02 | 5min | 2 tasks | 10 files |
 | Phase 09 P03 | 8min | 2 tasks | 9 files |
+| Phase 09 P04 | 4min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -215,6 +216,8 @@ Recent decisions affecting current work:
 - [09-03]: GitHub import uses two-phase flow: previewGitHubUrlAction validates, then importFromGitHubAction commits
 - [09-03]: getDepartmentSkillsAction queries skill_assignments directly to include assignment IDs for unassign
 - [09-03]: DropdownMenuTrigger uses inline className styling (base-ui does not support asChild)
+- [09-04]: Replaced Contents API with Git Trees API for recursive directory scanning
+- [09-04]: import_collection stored as nullable text column with conditional index on business_id
 
 ### Pending Todos
 
@@ -227,5 +230,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-28
-Stopped at: Completed 09-03-PLAN.md (Template Browser, GitHub Import, Skill Library, Department Skills) -- Phase 9 complete, all 32 plans executed
-Resume file: .planning/phases/09-skill-management-deployment/09-03-SUMMARY.md
+Stopped at: Completed 09-04-PLAN.md (Recursive GitHub Import with Collection Grouping) -- Phase 9 gap closure complete, all 33 plans executed
+Resume file: .planning/phases/09-skill-management-deployment/09-04-SUMMARY.md
