@@ -21,6 +21,7 @@ const FETCH_TIMEOUT_MS = 10_000;
  * Supported formats:
  * - https://github.com/{owner}/{repo}/blob/{branch}/{path} (file)
  * - https://github.com/{owner}/{repo}/tree/{branch}/{path} (directory)
+ * - https://github.com/{owner}/{repo} (repo root — treated as directory at root of default branch)
  *
  * Returns null for invalid or unrecognized URLs.
  */
@@ -29,15 +30,25 @@ export function parseGitHubUrl(url: string): GitHubUrlInfo | null {
     const parsed = new URL(url);
     if (parsed.hostname !== "github.com") return null;
 
-    // Remove leading slash and split
-    const parts = parsed.pathname.replace(/^\//, "").split("/");
+    // Remove leading/trailing slashes and split
+    const parts = parsed.pathname.replace(/^\/|\/$/g, "").split("/");
 
-    // Minimum: owner/repo/blob-or-tree/branch/path
-    if (parts.length < 5) return null;
+    if (parts.length < 2 || !parts[0] || !parts[1]) return null;
 
     const [owner, repo, typeSegment, branch, ...pathParts] = parts;
 
-    if (!owner || !repo || !branch) return null;
+    // Repo root URL: github.com/{owner}/{repo}
+    if (parts.length === 2) {
+      return {
+        owner,
+        repo,
+        path: "",
+        branch: "main",
+        type: "directory",
+      };
+    }
+
+    if (!branch) return null;
 
     if (typeSegment === "blob") {
       return {
@@ -123,7 +134,8 @@ interface GitHubContentsItem {
 export async function fetchGitHubDirectory(
   info: GitHubUrlInfo,
 ): Promise<GitHubImportResult[]> {
-  const apiUrl = `https://api.github.com/repos/${info.owner}/${info.repo}/contents/${info.path}?ref=${info.branch}`;
+  const pathSegment = info.path ? `/${info.path}` : "";
+  const apiUrl = `https://api.github.com/repos/${info.owner}/${info.repo}/contents${pathSegment}?ref=${info.branch}`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
