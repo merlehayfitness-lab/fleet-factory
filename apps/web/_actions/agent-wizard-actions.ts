@@ -122,6 +122,24 @@ export async function createProvisionalAgentAction(
   }
 
   try {
+    // Auto-detect parent agent if not explicitly provided
+    let effectiveParentAgentId = parentAgentId;
+    if (!effectiveParentAgentId) {
+      const { data: leadAgent } = await supabase
+        .from("agents")
+        .select("id")
+        .eq("business_id", businessId)
+        .eq("department_id", departmentId)
+        .is("parent_agent_id", null)
+        .neq("status", "provisioning")
+        .limit(1)
+        .maybeSingle();
+
+      if (leadAgent) {
+        effectiveParentAgentId = leadAgent.id as string;
+      }
+    }
+
     const insertPayload: Record<string, unknown> = {
       business_id: businessId,
       department_id: departmentId,
@@ -136,8 +154,8 @@ export async function createProvisionalAgentAction(
       insertPayload.role = role;
     }
 
-    if (parentAgentId) {
-      insertPayload.parent_agent_id = parentAgentId;
+    if (effectiveParentAgentId) {
+      insertPayload.parent_agent_id = effectiveParentAgentId;
     }
 
     const { data: agent, error: insertError } = await supabase

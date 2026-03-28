@@ -2,14 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+
 
 interface Department {
   id: string;
@@ -74,28 +67,22 @@ export function WizardBasicInfoStep({
         <Label htmlFor="department">
           Department <span className="text-destructive">*</span>
         </Label>
-        <Select
+        <select
+          id="department"
           value={departmentId}
-          onValueChange={(v) => v && onDepartmentChange(v)}
+          onChange={(e) => onDepartmentChange(e.target.value)}
+          className="flex h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         >
-          <SelectTrigger id="department">
-            <SelectValue placeholder="Select a department" />
-          </SelectTrigger>
-          <SelectContent>
-            {departments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.id}>
-                <span className="flex items-center gap-2">
-                  {dept.name}
-                  {dept.agentCount > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      {dept.agentCount} agent{dept.agentCount !== 1 ? "s" : ""}
-                    </Badge>
-                  )}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <option value="">Select a department</option>
+          {departments.map((dept) => (
+            <option key={dept.id} value={dept.id}>
+              {dept.name}
+              {dept.agentCount > 0
+                ? ` (${dept.agentCount} agent${dept.agentCount !== 1 ? "s" : ""})`
+                : ""}
+            </option>
+          ))}
+        </select>
 
         {/* Sub-agent info */}
         {selectedDept?.hasLead && (

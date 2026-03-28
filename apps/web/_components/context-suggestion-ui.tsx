@@ -75,13 +75,35 @@ export function ContextSuggestionUI({
 
   const hasDocs = knowledgeDocs.length > 0;
   const hasIntegrations = integrations.length > 0;
+  const totalItems = knowledgeDocs.length + integrations.length;
+  const totalSelected = selectedDocs.size + selectedIntegrations.size;
+  const allSelected = totalSelected === totalItems;
+
+  function toggleAll() {
+    if (allSelected) {
+      setSelectedDocs(new Set());
+      setSelectedIntegrations(new Set());
+    } else {
+      setSelectedDocs(new Set(knowledgeDocs.map((d) => d.id)));
+      setSelectedIntegrations(new Set(integrations.map((i) => i.id)));
+    }
+  }
 
   if (!hasDocs && !hasIntegrations) return null;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-sm">Context for Generation</CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm">Context for Generation</CardTitle>
+          <button
+            type="button"
+            onClick={toggleAll}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {allSelected ? "Deselect All" : "Select All"}
+          </button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Knowledge Documents */}
