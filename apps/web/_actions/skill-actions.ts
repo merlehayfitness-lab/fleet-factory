@@ -396,27 +396,14 @@ export async function previewGitHubUrlAction(
       return { type: "file", preview: result };
     }
 
-    // Directory: fetch listing via GitHub API
-    const apiUrl = `https://api.github.com/repos/${info.owner}/${info.repo}/contents/${info.path}?ref=${info.branch}`;
-    const response = await fetch(apiUrl, {
-      headers: { Accept: "application/vnd.github.v3+json" },
-      signal: AbortSignal.timeout(10_000),
-    });
+    // Directory: use fetchGitHubDirectory which handles branch fallback (main → master)
+    const results = await fetchGitHubDirectory(info);
 
-    if (!response.ok) {
-      return { error: `Failed to list directory: HTTP ${response.status}` };
-    }
-
-    const items = (await response.json()) as Array<{ name: string; type: string }>;
-    const mdFiles = items
-      .filter((item) => item.type === "file" && item.name.toLowerCase().endsWith(".md"))
-      .map((item) => item.name);
-
-    if (mdFiles.length === 0) {
+    if (results.length === 0) {
       return { error: "No .md files found in this directory." };
     }
 
-    return { type: "directory", files: mdFiles };
+    return { type: "directory", files: results.map((r) => r.name + ".md") };
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Failed to preview GitHub URL",
