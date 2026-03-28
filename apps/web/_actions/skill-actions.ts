@@ -10,10 +10,14 @@ import {
   assignSkill,
   unassignSkill,
   getSkillsForAgent,
+  getSkillsForDepartment,
   getSkillUsage,
   getSkillTemplates,
   createSkillFromTemplate,
   listSkillsForBusiness,
+  parseGitHubUrl,
+  fetchGitHubFile,
+  fetchGitHubDirectory,
 } from "@agency-factory/core/server";
 import type {
   Skill,
@@ -21,6 +25,7 @@ import type {
   SkillTemplate,
   SkillUsage,
   SkillAssignment,
+  GitHubImportResult,
 } from "@agency-factory/core";
 
 /**
@@ -314,6 +319,154 @@ export async function listSkillsForBusinessAction(
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Failed to list skills",
+    };
+  }
+}
+
+/**
+ * Get all skills assigned to a department.
+ */
+export async function getDepartmentSkillsAction(
+  departmentId: string,
+): Promise<{ skills: Skill[] } | { error: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  try {
+    const skills = await getSkillsForDepartment(supabase, departmentId);
+    return { skills };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to fetch department skills",
+    };
+  }
+}
+
+/**
+ * Preview a GitHub URL before import.
+ * For files: returns content preview. For directories: returns list of .md files.
+ * No database writes -- preview only.
+ */
+export async function previewGitHubUrlAction(
+  url: string,
+): Promise<
+  | { type: "file"; preview: GitHubImportResult }
+  | { type: "directory"; files: string[] }
+  | { error: string }
+> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  const info = parseGitHubUrl(url);
+  if (!info) {
+    return { error: "Invalid GitHub URL. Must be a blob (file) or tree (directory) URL from github.com." };
+  }
+
+  try {
+    if (info.type === "file") {
+      const result = await fetchGitHubFile(info);
+      return { type: "file", preview: result };
+    }
+
+    // Directory: fetch listing via GitHub API
+    const apiUrl = `https://api.github.com/repos/${info.owner}/${info.repo}/contents/${info.path}?ref=${info.branch}`;
+    const response = await fetch(apiUrl, {
+      headers: { Accept: "application/vnd.github.v3+json" },
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!response.ok) {
+      return { error: `Failed to list directory: HTTP ${response.status}` };
+    }
+
+    const items = (await response.json()) as Array<{ name: string; type: string }>;
+    const mdFiles = items
+      .filter((item) => item.type === "file" && item.name.toLowerCase().endsWith(".md"))
+      .map((item) => item.name);
+
+    if (mdFiles.length === 0) {
+      return { error: "No .md files found in this directory." };
+    }
+
+    return { type: "directory", files: mdFiles };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to preview GitHub URL",
+    };
+  }
+}
+
+/**
+ * Import skills from a GitHub URL.
+ * For files: creates a single skill. For directories: creates skills for all .md files.
+ * Optionally assigns imported skills to an agent.
+ */
+export async function importFromGitHubAction(
+  businessId: string,
+  url: string,
+  agentId?: string,
+): Promise<{ skills: Skill[] } | { error: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const info = parseGitHubUrl(url);
+  if (!info) {
+    return { error: "Invalid GitHub URL. Must be a blob (file) or tree (directory) URL from github.com." };
+  }
+
+  try {
+    let importResults: GitHubImportResult[];
+
+    if (info.type === "file") {
+      const result = await fetchGitHubFile(info);
+      importResults = [result];
+    } else {
+      importResults = await fetchGitHubDirectory(info);
+      if (importResults.length === 0) {
+        return { error: "No .md files found in this directory." };
+      }
+    }
+
+    const createdSkills: Skill[] = [];
+
+    for (const result of importResults) {
+      const skill = await createSkill(supabase, businessId, {
+        name: result.name,
+        content: result.content,
+        source_type: "imported",
+        source_url: result.source_url,
+      });
+
+      if (agentId) {
+        await assignSkill(supabase, skill.id, businessId, { agent_id: agentId });
+      }
+
+      createdSkills.push(skill);
+    }
+
+    revalidatePath(`/businesses/${businessId}`);
+    return { skills: createdSkills };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to import from GitHub",
     };
   }
 }

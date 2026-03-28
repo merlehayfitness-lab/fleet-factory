@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Layers, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SkillEditor } from "@/_components/skill-editor";
 import { SkillAssignmentList } from "@/_components/skill-assignment-list";
 import { SkillUsageCard } from "@/_components/skill-usage-card";
+import { SkillTemplateBrowser } from "@/_components/skill-template-browser";
+import { GitHubImportDialog } from "@/_components/github-import-dialog";
 import {
   getSkillsForAgentAction,
   listSkillsForBusinessAction,
@@ -35,6 +37,8 @@ export function AgentSkillsTab({
   const [loading, setLoading] = useState(true);
   const [editorSkill, setEditorSkill] = useState<Skill | null | "new">(null);
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
+  const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false);
+  const [githubImportOpen, setGithubImportOpen] = useState(false);
 
   const fetchSkills = useCallback(async () => {
     setLoading(true);
@@ -112,17 +116,17 @@ export function AgentSkillsTab({
           <Button
             size="sm"
             variant="outline"
-            disabled
-            title="Coming in next update"
+            onClick={() => setTemplateBrowserOpen(true)}
           >
+            <Layers className="mr-1 size-3.5" />
             Add from Templates
           </Button>
           <Button
             size="sm"
             variant="outline"
-            disabled
-            title="Coming in next update"
+            onClick={() => setGithubImportOpen(true)}
           >
+            <GitBranch className="mr-1 size-3.5" />
             Import from GitHub
           </Button>
         </div>
@@ -153,6 +157,24 @@ export function AgentSkillsTab({
           onClose={handleEditorClose}
         />
       )}
+
+      {/* Template browser dialog */}
+      <SkillTemplateBrowser
+        businessId={businessId}
+        agentId={agentId}
+        onSkillAdded={fetchSkills}
+        open={templateBrowserOpen}
+        onOpenChange={setTemplateBrowserOpen}
+      />
+
+      {/* GitHub import dialog */}
+      <GitHubImportDialog
+        businessId={businessId}
+        agentId={agentId}
+        onImported={fetchSkills}
+        open={githubImportOpen}
+        onOpenChange={setGithubImportOpen}
+      />
     </div>
   );
 }
