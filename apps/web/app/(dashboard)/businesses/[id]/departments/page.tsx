@@ -1,5 +1,6 @@
 import { createServerClient } from "@/_lib/supabase/server";
 import { DepartmentsList } from "@/_components/departments-list";
+import { DepartmentSkillsPanel } from "@/_components/department-skills-panel";
 
 export const metadata = {
   title: "Departments | Agency Factory",
@@ -47,7 +48,19 @@ export default async function DepartmentsPage({
           </p>
         </div>
       ) : (
-        <DepartmentsList departments={departments} />
+        <>
+          <DepartmentsList departments={departments} />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {departments.map((dept) => (
+              <DepartmentSkillsPanel
+                key={dept.id}
+                businessId={id}
+                departmentId={dept.id}
+                departmentName={dept.name}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

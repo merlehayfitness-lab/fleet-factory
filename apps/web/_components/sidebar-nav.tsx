@@ -8,6 +8,7 @@ import {
   Users,
   Bot,
   FileText,
+  Sparkles,
   Rocket,
   Plug,
   Shield,
@@ -84,6 +85,12 @@ function getBusinessSubNav(businessId: string) {
       href: `/businesses/${businessId}/templates`,
       label: "Templates",
       icon: FileText,
+      enabled: true,
+    },
+    {
+      href: `/businesses/${businessId}/skills`,
+      label: "Skills",
+      icon: Sparkles,
       enabled: true,
     },
     {

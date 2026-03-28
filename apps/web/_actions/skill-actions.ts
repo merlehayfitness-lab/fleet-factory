@@ -324,11 +324,11 @@ export async function listSkillsForBusinessAction(
 }
 
 /**
- * Get all skills assigned to a department.
+ * Get all skills assigned to a department, including assignment IDs for unassign.
  */
 export async function getDepartmentSkillsAction(
   departmentId: string,
-): Promise<{ skills: Skill[] } | { error: string }> {
+): Promise<{ skills: Array<Skill & { assignment_id: string }> } | { error: string }> {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -339,7 +339,23 @@ export async function getDepartmentSkillsAction(
   }
 
   try {
-    const skills = await getSkillsForDepartment(supabase, departmentId);
+    const { data, error } = await supabase
+      .from("skill_assignments")
+      .select("id, skills(*)")
+      .eq("department_id", departmentId);
+
+    if (error) {
+      throw new Error(`Failed to fetch department skills: ${error.message}`);
+    }
+
+    const skills = (data ?? [])
+      .map((row) => {
+        const skill = row.skills as unknown as Skill | null;
+        if (!skill) return null;
+        return { ...skill, assignment_id: row.id as string };
+      })
+      .filter((s): s is Skill & { assignment_id: string } => s !== null);
+
     return { skills };
   } catch (err) {
     return {
