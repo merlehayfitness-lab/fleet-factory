@@ -10,6 +10,7 @@ export {
 } from "./generators/agent-runtime";
 
 // OpenClaw workspace generators
+export { generateSkillMd } from "./generators/openclaw-skill-md";
 export { generateAgentsMd } from "./generators/openclaw-agents-md";
 export { generateSoulMd } from "./generators/openclaw-soul-md";
 export { generateIdentityMd } from "./generators/openclaw-identity-md";

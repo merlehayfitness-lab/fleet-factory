@@ -29,6 +29,7 @@ import { generateSoulMd } from "./openclaw-soul-md";
 import { generateIdentityMd } from "./openclaw-identity-md";
 import { generateToolsMd } from "./openclaw-tools-md";
 import { generateUserMd } from "./openclaw-user-md";
+import { generateSkillMd } from "./openclaw-skill-md";
 import { generateOpenClawConfig } from "./openclaw-config";
 
 /** Agent workspace file in a deployment package (local definition to avoid circular dep) */
@@ -52,12 +53,14 @@ interface AgentInput {
   tool_profile: Record<string, unknown>;
   model_profile: Record<string, unknown>;
   status: string;
+  skill_definition: string | null;
 }
 
 interface DepartmentInput {
   id: string;
   type: string;
   name: string;
+  department_skill: string | null;
 }
 
 interface IntegrationInput {
@@ -128,6 +131,12 @@ export function generateOpenClawWorkspace(
     files.push({
       path: `${workspaceDir}/USER.md`,
       content: generateUserMd(business.name, business.industry, business.slug),
+    });
+
+    // SKILL.md
+    files.push({
+      path: `${workspaceDir}/SKILL.md`,
+      content: generateSkillMd(agent.name, dept.department_skill, agent.skill_definition),
     });
   }
 

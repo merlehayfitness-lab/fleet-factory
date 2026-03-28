@@ -1005,3 +1005,7 @@ ALTER TABLE public.agents
 
 CREATE INDEX IF NOT EXISTS idx_agents_parent_agent_id
   ON public.agents (parent_agent_id);
+
+-- ====== 034: Department Skill ======
+ALTER TABLE public.departments
+  ADD COLUMN IF NOT EXISTS department_skill text;

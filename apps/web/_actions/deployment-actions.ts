@@ -177,7 +177,7 @@ export async function deployAgentAction(businessId: string, agentId: string) {
     // Fetch agent data
     const { data: agent, error: agentError } = await supabase
       .from("agents")
-      .select("id, name, system_prompt, tool_profile, model_profile, department_id, status")
+      .select("id, name, system_prompt, tool_profile, model_profile, department_id, status, skill_definition")
       .eq("id", agentId)
       .eq("business_id", businessId)
       .single();
@@ -200,7 +200,7 @@ export async function deployAgentAction(businessId: string, agentId: string) {
     // Fetch department
     const { data: dept, error: deptError } = await supabase
       .from("departments")
-      .select("id, name, type")
+      .select("id, name, type, department_skill")
       .eq("id", agent.department_id)
       .single();
 
@@ -245,9 +245,10 @@ export async function deployAgentAction(businessId: string, agentId: string) {
           tool_profile: (agent.tool_profile as Record<string, unknown>) ?? {},
           model_profile: (agent.model_profile as Record<string, unknown>) ?? {},
           status: agent.status as string,
+          skill_definition: (agent.skill_definition as string) ?? null,
         },
       ],
-      [{ id: dept.id as string, type: dept.type as string, name: dept.name as string }],
+      [{ id: dept.id as string, type: dept.type as string, name: dept.name as string, department_skill: (dept.department_skill as string) ?? null }],
       integrationsByAgent,
     );
 

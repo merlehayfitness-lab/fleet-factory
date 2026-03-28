@@ -81,6 +81,8 @@ export async function updateAgentConfig(
     model_profile?: Record<string, unknown>;
     role_definition?: Record<string, unknown>;
     skill_definition?: string;
+    role?: string;
+    parent_agent_id?: string | null;
   },
 ): Promise<void> {
   // 1. Verify agent exists and belongs to business
@@ -114,6 +116,12 @@ export async function updateAgentConfig(
   if (config.skill_definition !== undefined) {
     updatePayload.skill_definition = config.skill_definition;
   }
+  if (config.role !== undefined) {
+    updatePayload.role = config.role;
+  }
+  if (config.parent_agent_id !== undefined) {
+    updatePayload.parent_agent_id = config.parent_agent_id;
+  }
 
   if (Object.keys(updatePayload).length === 0) {
     return; // Nothing to update
@@ -145,4 +153,71 @@ export async function updateAgentConfig(
   if (auditError) {
     console.error("Failed to create audit log:", auditError.message);
   }
+}
+
+/**
+ * Get child agents for a parent agent (lead agent's sub-agents).
+ */
+export async function getChildAgents(
+  supabase: SupabaseClient,
+  parentAgentId: string,
+  businessId: string,
+): Promise<Array<{ id: string; name: string; status: string; role: string | null }>> {
+  const { data, error } = await supabase
+    .from("agents")
+    .select("id, name, status, role")
+    .eq("parent_agent_id", parentAgentId)
+    .eq("business_id", businessId)
+    .order("created_at");
+
+  if (error) {
+    throw new Error(`Failed to fetch child agents: ${error.message}`);
+  }
+
+  return (data ?? []).map((a) => ({
+    id: a.id as string,
+    name: a.name as string,
+    status: a.status as string,
+    role: (a.role as string) ?? null,
+  }));
+}
+
+/**
+ * Get the parent agent for a sub-agent, if one exists.
+ */
+export async function getParentAgent(
+  supabase: SupabaseClient,
+  agentId: string,
+  businessId: string,
+): Promise<{ id: string; name: string; status: string; role: string | null } | null> {
+  // First fetch the agent to get its parent_agent_id
+  const { data: agent, error: agentError } = await supabase
+    .from("agents")
+    .select("parent_agent_id")
+    .eq("id", agentId)
+    .eq("business_id", businessId)
+    .single();
+
+  if (agentError || !agent || !agent.parent_agent_id) {
+    return null;
+  }
+
+  // Fetch the parent agent
+  const { data: parent, error: parentError } = await supabase
+    .from("agents")
+    .select("id, name, status, role")
+    .eq("id", agent.parent_agent_id as string)
+    .eq("business_id", businessId)
+    .single();
+
+  if (parentError || !parent) {
+    return null;
+  }
+
+  return {
+    id: parent.id as string,
+    name: parent.name as string,
+    status: parent.status as string,
+    role: (parent.role as string) ?? null,
+  };
 }

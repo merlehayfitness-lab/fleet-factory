@@ -65,7 +65,7 @@ export async function triggerDeployment(
   // 3. Fetch agents with department info
   const { data: agents, error: agentsError } = await supabase
     .from("agents")
-    .select("id, name, system_prompt, tool_profile, model_profile, department_id, status")
+    .select("id, name, system_prompt, tool_profile, model_profile, department_id, status, skill_definition")
     .eq("business_id", businessId);
 
   if (agentsError) {
@@ -75,7 +75,7 @@ export async function triggerDeployment(
   // 4. Fetch departments
   const { data: departments, error: deptError } = await supabase
     .from("departments")
-    .select("id, name, type")
+    .select("id, name, type, department_skill")
     .eq("business_id", businessId);
 
   if (deptError) {
@@ -307,11 +307,13 @@ export async function triggerDeployment(
         tool_profile: (a.tool_profile as Record<string, unknown>) ?? {},
         model_profile: (a.model_profile as Record<string, unknown>) ?? {},
         status: a.status as string,
+        skill_definition: (a.skill_definition as string) ?? null,
       })),
       (departments ?? []).map((d) => ({
         id: d.id as string,
         type: d.type as string,
         name: d.name as string,
+        department_skill: (d.department_skill as string) ?? null,
       })),
       integrationsByAgent,
     );
