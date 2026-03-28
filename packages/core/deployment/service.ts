@@ -12,6 +12,7 @@ import {
 import { isVpsConfigured } from "../vps/vps-config";
 import { deriveVpsAgentId } from "../vps/vps-naming";
 import { pushDeploymentToVps, pushRollbackToVps, runPostDeployHealthCheck } from "../vps/vps-deploy";
+import { getSkillsForAgent } from "../skill/skill-service";
 
 /**
  * Trigger a new deployment for a business.
@@ -291,7 +292,33 @@ export async function triggerDeployment(
       },
     };
 
-    // 9b. Generate OpenClaw workspace artifacts
+    // 9b. Query skills per agent for multi-skill deployment
+    const skillsByAgent: Record<string, Array<{ name: string; content: string; level: "department" | "agent" }>> = {};
+    await Promise.all(
+      (agents ?? []).map(async (a) => {
+        try {
+          const agentSkills = await getSkillsForAgent(
+            supabase,
+            a.id as string,
+            a.department_id as string,
+          );
+          if (agentSkills.length > 0) {
+            skillsByAgent[a.id as string] = agentSkills.map((s) => ({
+              name: s.name,
+              content: s.content,
+              level: s.assignment_level,
+            }));
+          }
+        } catch (err) {
+          // Non-blocking: if skill query fails, agent deploys without multi-skill data
+          console.warn(
+            `Failed to fetch skills for agent ${a.id}: ${err instanceof Error ? err.message : "Unknown error"}`,
+          );
+        }
+      }),
+    );
+
+    // 9c. Generate OpenClaw workspace artifacts
     const openclawWorkspace = generateOpenClawWorkspace(
       {
         id: business.id,
@@ -308,6 +335,7 @@ export async function triggerDeployment(
         model_profile: (a.model_profile as Record<string, unknown>) ?? {},
         status: a.status as string,
         skill_definition: (a.skill_definition as string) ?? null,
+        skills: skillsByAgent[a.id as string] ?? [],
       })),
       (departments ?? []).map((d) => ({
         id: d.id as string,

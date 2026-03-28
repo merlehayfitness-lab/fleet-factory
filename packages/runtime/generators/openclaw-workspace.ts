@@ -54,6 +54,7 @@ interface AgentInput {
   model_profile: Record<string, unknown>;
   status: string;
   skill_definition: string | null;
+  skills?: Array<{ name: string; content: string; level: "department" | "agent" }>;
 }
 
 interface DepartmentInput {
@@ -133,11 +134,18 @@ export function generateOpenClawWorkspace(
       content: generateUserMd(business.name, business.industry, business.slug),
     });
 
-    // SKILL.md
-    files.push({
-      path: `${workspaceDir}/SKILL.md`,
-      content: generateSkillMd(agent.name, dept.department_skill, agent.skill_definition),
-    });
+    // SKILL.md -- use multi-skill array when available, fall back to legacy two-blob merge
+    if (agent.skills && agent.skills.length > 0) {
+      files.push({
+        path: `${workspaceDir}/SKILL.md`,
+        content: generateSkillMd(agent.name, agent.skills),
+      });
+    } else {
+      files.push({
+        path: `${workspaceDir}/SKILL.md`,
+        content: generateSkillMd(agent.name, dept.department_skill, agent.skill_definition),
+      });
+    }
   }
 
   // Generate shared openclaw.json
