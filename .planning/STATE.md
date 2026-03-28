@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 8 -- Role Definition & Prompt Generation
+**Current focus:** Phase 9 -- Skill Management & Deployment
 
 ## Current Position
 
-Phase: 8 of 8 (Role Definition & Prompt Generation)
-Plan: 3 of 3 in current phase (3 complete)
-Status: Phase 8 Complete -- All plans executed
-Last activity: 2026-03-28 -- Completed 08-03 (Agent Setup Wizard)
+Phase: 9 of 9 (Skill Management & Deployment)
+Plan: 1 of 3 in current phase (1 complete)
+Status: Executing Phase 9 -- Plan 01 complete
+Last activity: 2026-03-28 -- Completed 09-01-PLAN.md (Skills Schema, Service, and Deployment Pipeline)
 
-Progress: [████████████████████████████] 100% (29/29 plans)
+Progress: [█████████████████████████████░] 94% (30/32 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 28
+- Total plans completed: 30
 - Average duration: 6min
-- Total execution time: 2.8 hours
+- Total execution time: 3.0 hours
 
 **By Phase:**
 
@@ -33,9 +33,12 @@ Progress: [███████████████████████
 | 04 | 5 | 29min | 6min |
 | 05 | 3 | 21min | 7min |
 | 06 | 4 | 33min | 8min |
+| 07 | 3 | 12min | 4min |
+| 08 | 3 | 20min | 7min |
+| 09 | 1 | 6min | 6min |
 
 **Recent Trend:**
-- Last 5 plans: 07-03 (3min), 08-01 (8min), 08-02 (6min), 08-03 (6min)
+- Last 5 plans: 08-01 (8min), 08-02 (6min), 08-03 (6min), 09-01 (6min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -68,6 +71,7 @@ Progress: [███████████████████████
 | Phase 08 P01 | 8min | 2 tasks | 22 files |
 | Phase 08 P02 | 6min | 2 tasks | 13 files |
 | Phase 08 P03 | 6min | 2 tasks | 11 files |
+| Phase 09 P01 | 6min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -198,6 +202,9 @@ Recent decisions affecting current work:
 - [08-03]: Provisional agent created on Step 1->Step 2 transition (not page load) to reduce orphaned agents
 - [08-03]: Knowledge step blocks Next while docs upload/process; template selector preserves linked context on pre-fill
 - [08-03]: Review step uses local useState for collapsible sections (lightweight, no extra component)
+- [09-01]: generateSkillMd uses TypeScript overloads for backward-compatible multi-skill support
+- [09-01]: Skill queries in deployment pipeline are non-blocking (warn on failure, deploy without multi-skill)
+- [09-01]: Department skills listed before agent skills in compiled SKILL.md with agent-level name precedence
 
 ### Pending Todos
 
@@ -210,5 +217,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-28
-Stopped at: Completed 08-03-PLAN.md (Agent Setup Wizard) -- All phases complete
-Resume file: .planning/phases/08-role-definition-and-prompt-generation/08-03-SUMMARY.md
+Stopped at: Completed 09-01-PLAN.md (Skills Schema, Service, and Deployment Pipeline)
+Resume file: .planning/phases/09-skill-management-deployment/09-01-SUMMARY.md

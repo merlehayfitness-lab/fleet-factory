@@ -175,10 +175,12 @@ Plans:
   2. Skills can be imported from GitHub repository URLs
   3. Department-level skills can be assigned and inherited by all agents in that department
   4. Skill template library provides curated starter skills per department/role type
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 09-01: Skill management UI, GitHub import, department-level skills, template library
+- [ ] 09-01: Schema, skill service, skill compiler, GitHub import service, deployment pipeline integration
+- [ ] 09-02: Skill editor UI, assignment list, Skills tab on agent detail, skill count badge
+- [ ] 09-03: Template library browser, GitHub import dialog, standalone library page, department skills panel, sidebar nav
 
 ---
 
@@ -242,4 +244,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9
 | 6. OpenClaw Deployment & Live VPS Runtime | 4/4 | Complete | 2026-03-27 |
 | 7. RAG Knowledge Base | 3/3 | Complete | 2026-03-27 |
 | 8. Role Definition & Prompt Generation | 1/3 | In progress | - |
-| 9. Skill Management & Deployment | 0/1 | Not started | - |
+| 9. Skill Management & Deployment | 0/3 | Not started | - |

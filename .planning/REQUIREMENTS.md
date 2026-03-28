@@ -149,10 +149,10 @@
 
 ### Skill Management
 
-- [ ] **SKILL-01**: Skill editor UI allows creating and editing SKILL.md files with structured sections
-- [ ] **SKILL-02**: Skills can be imported from GitHub repository URLs
-- [ ] **SKILL-03**: Department-level skills can be assigned and inherited by all agents in that department
-- [ ] **SKILL-04**: Skill template library provides curated starter skills per department/role type
+- [x] **SKILL-01**: Skill editor UI allows creating and editing SKILL.md files with structured sections
+- [x] **SKILL-02**: Skills can be imported from GitHub repository URLs
+- [x] **SKILL-03**: Department-level skills can be assigned and inherited by all agents in that department
+- [x] **SKILL-04**: Skill template library provides curated starter skills per department/role type
 
 ### Integrations
 
@@ -307,10 +307,10 @@
 | ROLE-04 | Phase 8 | Complete |
 | ROLE-05 | Phase 8 | Complete |
 | ROLE-06 | Phase 8 | Complete |
-| SKILL-01 | Phase 9 | Pending |
-| SKILL-02 | Phase 9 | Pending |
-| SKILL-03 | Phase 9 | Pending |
-| SKILL-04 | Phase 9 | Pending |
+| SKILL-01 | Phase 9 | Complete |
+| SKILL-02 | Phase 9 | Complete |
+| SKILL-03 | Phase 9 | Complete |
+| SKILL-04 | Phase 9 | Complete |
 
 **Coverage:**
 - v1 requirements: 109 total
