@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { GitBranch, Loader2, FileText, FolderOpen } from "lucide-react";
+import { GitBranch, Loader2, FileText, FolderOpen, Folder } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,7 @@ type PreviewState =
   | { type: "idle" }
   | { type: "checking" }
   | { type: "file"; preview: GitHubImportResult }
-  | { type: "directory"; files: string[] }
+  | { type: "directory"; files: string[]; repoName: string }
   | { type: "error"; message: string };
 
 /**
@@ -74,7 +74,7 @@ export function GitHubImportDialog({
     if (result.type === "file") {
       setPreview({ type: "file", preview: result.preview });
     } else {
-      setPreview({ type: "directory", files: result.files });
+      setPreview({ type: "directory", files: result.files, repoName: result.repoName });
     }
   }
 
@@ -159,17 +159,59 @@ export function GitHubImportDialog({
               <div className="flex items-center gap-2">
                 <FolderOpen className="size-4 text-muted-foreground" />
                 <span className="text-sm font-medium">
-                  {preview.files.length} .md file{preview.files.length === 1 ? "" : "s"} found
+                  Importing from {preview.repoName}
+                </span>
+                <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                  {preview.files.length} file{preview.files.length === 1 ? "" : "s"}
                 </span>
               </div>
-              <ul className="max-h-[200px] overflow-auto rounded-md border bg-muted/50 p-3 space-y-1">
-                {preview.files.map((file) => (
-                  <li key={file} className="flex items-center gap-2 text-xs font-mono">
-                    <FileText className="size-3 text-muted-foreground shrink-0" />
-                    {file}
-                  </li>
-                ))}
+              <ul className="max-h-[200px] overflow-auto rounded-md border bg-muted/50 p-3 space-y-0.5">
+                {(() => {
+                  // Group files by directory for tree display
+                  const dirs = new Set<string>();
+                  const rendered: Array<{ key: string; dir?: string; file: string; depth: number }> = [];
+                  for (const filePath of preview.files) {
+                    const parts = filePath.split("/");
+                    if (parts.length > 1) {
+                      // Show each unique directory path
+                      let dirPath = "";
+                      for (let i = 0; i < parts.length - 1; i++) {
+                        dirPath = dirPath ? dirPath + "/" + parts[i] : parts[i];
+                        if (!dirs.has(dirPath)) {
+                          dirs.add(dirPath);
+                          rendered.push({ key: "dir-" + dirPath, dir: parts[i], depth: i, file: "" });
+                        }
+                      }
+                      rendered.push({ key: filePath, file: parts[parts.length - 1], depth: parts.length - 1 });
+                    } else {
+                      rendered.push({ key: filePath, file: filePath, depth: 0 });
+                    }
+                  }
+
+                  return rendered.map((item) => (
+                    <li
+                      key={item.key}
+                      className="flex items-center gap-1.5 text-xs font-mono"
+                      style={{ paddingLeft: `${item.depth * 16}px` }}
+                    >
+                      {item.dir ? (
+                        <>
+                          <Folder className="size-3 text-amber-500 shrink-0" />
+                          <span className="text-muted-foreground">{item.dir}/</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="size-3 text-muted-foreground shrink-0" />
+                          {item.file}
+                        </>
+                      )}
+                    </li>
+                  ));
+                })()}
               </ul>
+              <p className="text-xs text-muted-foreground">
+                Skills will be grouped under &ldquo;{preview.repoName}&rdquo; collection in your library.
+              </p>
             </div>
           )}
 
@@ -193,7 +235,7 @@ export function GitHubImportDialog({
               ) : preview.type === "file" ? (
                 "Import"
               ) : (
-                `Import All (${preview.files.length})`
+                `Import All from ${preview.repoName} (${preview.files.length})`
               )}
             </Button>
           )}

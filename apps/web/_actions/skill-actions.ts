@@ -366,14 +366,14 @@ export async function getDepartmentSkillsAction(
 
 /**
  * Preview a GitHub URL before import.
- * For files: returns content preview. For directories: returns list of .md files.
+ * For files: returns content preview. For directories: returns list of .md files with paths.
  * No database writes -- preview only.
  */
 export async function previewGitHubUrlAction(
   url: string,
 ): Promise<
   | { type: "file"; preview: GitHubImportResult }
-  | { type: "directory"; files: string[] }
+  | { type: "directory"; files: string[]; repoName: string }
   | { error: string }
 > {
   const supabase = await createServerClient();
@@ -403,7 +403,18 @@ export async function previewGitHubUrlAction(
       return { error: "No .md files found in this directory." };
     }
 
-    return { type: "directory", files: results.map((r) => r.name + ".md") };
+    // Extract relative file paths from source_url for subdirectory display
+    const files = results.map((r) => {
+      const parts = r.source_url.split("/blob/");
+      if (parts.length > 1) {
+        const afterBlob = parts[1];
+        const slashIdx = afterBlob.indexOf("/");
+        return slashIdx >= 0 ? afterBlob.slice(slashIdx + 1) : r.name + ".md";
+      }
+      return r.name + ".md";
+    });
+
+    return { type: "directory", files, repoName: info.repo };
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Failed to preview GitHub URL",
@@ -456,6 +467,7 @@ export async function importFromGitHubAction(
         content: result.content,
         source_type: "imported",
         source_url: result.source_url,
+        import_collection: info.type === "directory" ? info.repo : undefined,
       });
 
       if (agentId) {

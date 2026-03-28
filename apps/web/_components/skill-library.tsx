@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { Plus, Layers, GitBranch, MoreVertical, Loader2 } from "lucide-react";
+import { Plus, Layers, GitBranch, MoreVertical, Loader2, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,7 @@ export function SkillLibrary({ businessId, initialSkills }: SkillLibraryProps) {
   const [skills, setSkills] = useState<Skill[]>(initialSkills);
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState("All");
+  const [collectionFilter, setCollectionFilter] = useState("All");
   const [editorSkill, setEditorSkill] = useState<Skill | null | "new">(null);
   const [usageSkillId, setUsageSkillId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
@@ -67,9 +68,19 @@ export function SkillLibrary({ businessId, initialSkills }: SkillLibraryProps) {
   const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false);
   const [githubImportOpen, setGithubImportOpen] = useState(false);
 
+  // Extract unique import_collection values for filter dropdown
+  const collections = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of skills) {
+      if (s.import_collection) set.add(s.import_collection);
+    }
+    return Array.from(set).sort();
+  }, [skills]);
+
   const filtered = useMemo(() => {
     return skills.filter((s) => {
       if (sourceFilter !== "All" && s.source_type !== sourceFilter) return false;
+      if (collectionFilter !== "All" && s.import_collection !== collectionFilter) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         if (!s.name.toLowerCase().includes(q) && !(s.description?.toLowerCase().includes(q))) {
@@ -78,7 +89,7 @@ export function SkillLibrary({ businessId, initialSkills }: SkillLibraryProps) {
       }
       return true;
     });
-  }, [skills, search, sourceFilter]);
+  }, [skills, search, sourceFilter, collectionFilter]);
 
   async function refetchSkills() {
     const result = await listSkillsForBusinessAction(businessId);
@@ -161,6 +172,24 @@ export function SkillLibrary({ businessId, initialSkills }: SkillLibraryProps) {
             ))}
           </SelectContent>
         </Select>
+        {collections.length > 0 && (
+          <Select
+            value={collectionFilter}
+            onValueChange={(v) => v && setCollectionFilter(v)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All Collections</SelectItem>
+              {collections.map((c) => (
+                <SelectItem key={c} value={c}>
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Card grid or empty state */}
@@ -230,6 +259,12 @@ export function SkillLibrary({ businessId, initialSkills }: SkillLibraryProps) {
                 <Badge variant="secondary" className="text-xs">
                   v{skill.version}
                 </Badge>
+                {skill.import_collection && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                    <FolderOpen className="size-2.5" />
+                    {skill.import_collection}
+                  </span>
+                )}
               </div>
 
               {skill.trigger_phrases && skill.trigger_phrases.length > 0 && (

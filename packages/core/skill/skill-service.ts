@@ -27,6 +27,7 @@ export async function createSkill(
     trigger_phrases?: string[];
     source_type?: "manual" | "imported" | "template";
     source_url?: string;
+    import_collection?: string;
   },
 ): Promise<Skill> {
   const { data: skill, error } = await supabase
@@ -39,6 +40,7 @@ export async function createSkill(
       trigger_phrases: data.trigger_phrases ?? null,
       source_type: data.source_type ?? "manual",
       source_url: data.source_url ?? null,
+      import_collection: data.import_collection ?? null,
     })
     .select("*")
     .single();
