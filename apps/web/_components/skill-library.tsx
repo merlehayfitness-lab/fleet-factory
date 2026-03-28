@@ -222,6 +222,18 @@ export function SkillLibrary({ businessId, initialSkills }: SkillLibraryProps) {
   }, [collectionSummaries, skills, search, sourceFilter]);
 
   const isViewingCollection = collectionFilter !== "All";
+  const isSearching = search.trim().length > 0;
+
+  // Global search results — all matching skills as flat cards (bypasses folders)
+  const globalSearchResults = useMemo(() => {
+    if (!isSearching) return [];
+    const q = search.toLowerCase();
+    return skills.filter((s) => {
+      if (sourceFilter !== "All" && s.source_type !== sourceFilter) return false;
+      if (!s.name.toLowerCase().includes(q) && !(s.description?.toLowerCase().includes(q))) return false;
+      return true;
+    });
+  }, [skills, search, sourceFilter, isSearching]);
 
   async function refetchSkills() {
     const result = await listSkillsForBusinessAction(businessId);
@@ -329,7 +341,29 @@ export function SkillLibrary({ businessId, initialSkills }: SkillLibraryProps) {
       </div>
 
       {/* Card grid or empty state */}
-      {isViewingCollection ? (
+      {isSearching && !isViewingCollection ? (
+        /* Global search — flat list of ALL matching skills across collections */
+        globalSearchResults.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
+            <p className="text-sm text-muted-foreground">
+              No skills match &ldquo;{search}&rdquo;.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {globalSearchResults.map((skill) => (
+              <SkillCard
+                key={skill.id}
+                skill={skill}
+                onEdit={() => setEditorSkill(skill)}
+                onViewUsage={() => setUsageSkillId(skill.id)}
+                onDelete={() => setDeleteTarget(skill)}
+                showCollection={true}
+              />
+            ))}
+          </div>
+        )
+      ) : isViewingCollection ? (
         /* Collection detail view — list of skills in the selected collection */
         collectionSkills.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
