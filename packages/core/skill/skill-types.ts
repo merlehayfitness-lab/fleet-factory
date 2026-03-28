@@ -12,6 +12,7 @@ export interface Skill {
   trigger_phrases: string[] | null;
   source_type: "manual" | "imported" | "template";
   source_url: string | null;
+  import_collection: string | null;
   version: number;
   deleted_at: string | null;
   created_at: string;

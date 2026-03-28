@@ -119,27 +119,39 @@ export async function fetchGitHubFile(
   }
 }
 
-/** GitHub API contents response item. */
-interface GitHubContentsItem {
-  name: string;
+// ---------------------------------------------------------------------------
+// Git Trees API (recursive directory scanning)
+// ---------------------------------------------------------------------------
+
+/** Git Trees API response item. */
+interface GitHubTreeItem {
   path: string;
-  type: "file" | "dir" | "symlink" | "submodule";
-  download_url: string | null;
+  mode: string;
+  type: "blob" | "tree";
+  sha: string;
+  size?: number;
+  url: string;
+}
+
+/** Git Trees API response. */
+interface GitHubTreeResponse {
+  sha: string;
+  url: string;
+  tree: GitHubTreeItem[];
+  truncated: boolean;
 }
 
 /**
- * Fetch directory contents from the GitHub API. If the branch returns 404,
- * retries with "master" as a fallback (common for repos that haven't switched
- * to "main" as default).
+ * Fetch the full repository tree using the Git Trees API with ?recursive=1.
+ * Falls back to "master" branch if the primary branch returns 404.
  */
-async function fetchContentsApi(
+async function fetchTreeApi(
   info: GitHubUrlInfo,
-): Promise<{ items: GitHubContentsItem[]; branch: string }> {
-  const pathSegment = info.path ? `/${info.path}` : "";
+): Promise<{ items: GitHubTreeItem[]; branch: string }> {
   const branches = [info.branch, ...(info.branch !== "master" ? ["master"] : [])];
 
   for (const branch of branches) {
-    const apiUrl = `https://api.github.com/repos/${info.owner}/${info.repo}/contents${pathSegment}?ref=${branch}`;
+    const apiUrl = `https://api.github.com/repos/${info.owner}/${info.repo}/git/trees/${branch}?recursive=1`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -150,7 +162,7 @@ async function fetchContentsApi(
       });
 
       if (response.status === 404 && branch !== branches[branches.length - 1]) {
-        continue; // try next branch
+        continue;
       }
 
       if (!response.ok) {
@@ -160,38 +172,42 @@ async function fetchContentsApi(
             throw new Error("GitHub API rate limit exceeded. Try again later.");
           }
         }
-        throw new Error(`Failed to list directory: HTTP ${response.status}`);
+        throw new Error(`Failed to fetch repository tree: HTTP ${response.status}`);
       }
 
-      const items = (await response.json()) as GitHubContentsItem[];
-      return { items, branch };
+      const data = (await response.json()) as GitHubTreeResponse;
+      return { items: data.tree, branch };
     } finally {
       clearTimeout(timeout);
     }
   }
 
-  throw new Error("Failed to list directory: HTTP 404");
+  throw new Error("Failed to fetch repository tree: HTTP 404");
 }
 
 /**
- * Fetch all .md files from a public GitHub directory.
- * Uses the GitHub API to list contents, then fetches each .md file.
+ * Fetch all .md files from a public GitHub directory, recursing into subdirectories.
+ * Uses the Git Trees API with ?recursive=1 to discover .md files at all levels.
  */
 export async function fetchGitHubDirectory(
   info: GitHubUrlInfo,
 ): Promise<GitHubImportResult[]> {
-  const { items, branch } = await fetchContentsApi(info);
+  const { items, branch } = await fetchTreeApi(info);
 
-  // Filter to .md files only
+  // Filter to .md blob files within the target path
+  const pathPrefix = info.path ? info.path + "/" : "";
   const mdFiles = items.filter(
-    (item) => item.type === "file" && item.name.toLowerCase().endsWith(".md"),
+    (item) =>
+      item.type === "blob" &&
+      item.path.toLowerCase().endsWith(".md") &&
+      (pathPrefix === "" || item.path.startsWith(pathPrefix)),
   );
 
   if (mdFiles.length === 0) {
     return [];
   }
 
-  // Fetch each .md file
+  // Fetch each .md file's raw content
   const results = await Promise.all(
     mdFiles.map((file) =>
       fetchGitHubFile({

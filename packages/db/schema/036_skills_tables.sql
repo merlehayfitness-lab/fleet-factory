@@ -223,3 +223,8 @@ VALUES
   'scheduling',
   ARRAY['schedule meeting', 'capacity planning', 'resource allocation', 'workload balance', 'calendar']
 );
+
+-- 036b: Add import_collection column for grouping imported skills by repo name
+ALTER TABLE public.skills ADD COLUMN IF NOT EXISTS import_collection text;
+CREATE INDEX IF NOT EXISTS idx_skills_import_collection
+  ON public.skills (business_id, import_collection) WHERE import_collection IS NOT NULL;
