@@ -189,5 +189,17 @@ export {
   getRoleTemplatesForDepartment,
 } from "./prompt-generator/templates/role-templates";
 
+// Skill types (client-safe)
+export type {
+  Skill,
+  SkillAssignment,
+  SkillTemplate,
+  CompiledSkill,
+  SkillWithAssignment,
+  SkillUsage,
+  GitHubUrlInfo,
+  GitHubImportResult,
+} from "./skill/skill-types";
+
 // NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker, approval service)
 // are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.

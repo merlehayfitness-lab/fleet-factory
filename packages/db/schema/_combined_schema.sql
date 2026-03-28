@@ -1009,3 +1009,130 @@ CREATE INDEX IF NOT EXISTS idx_agents_parent_agent_id
 -- ====== 034: Department Skill ======
 ALTER TABLE public.departments
   ADD COLUMN IF NOT EXISTS department_skill text;
+
+-- ====== 035: Nullable template_id ======
+ALTER TABLE public.agents
+  ALTER COLUMN template_id DROP NOT NULL;
+
+-- ====== 036: Skills, Skill Assignments, and Skill Templates ======
+
+CREATE TABLE IF NOT EXISTS public.skills (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  name text NOT NULL,
+  description text,
+  content text NOT NULL,
+  trigger_phrases text[],
+  source_type text NOT NULL DEFAULT 'manual'
+    CHECK (source_type IN ('manual', 'imported', 'template')),
+  source_url text,
+  version integer NOT NULL DEFAULT 1,
+  deleted_at timestamptz,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.skills ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_skills_business
+  ON public.skills (business_id);
+CREATE INDEX IF NOT EXISTS idx_skills_business_name
+  ON public.skills (business_id, name);
+
+CREATE TABLE IF NOT EXISTS public.skill_assignments (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  skill_id uuid NOT NULL REFERENCES public.skills ON DELETE CASCADE,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  agent_id uuid REFERENCES public.agents ON DELETE CASCADE,
+  department_id uuid REFERENCES public.departments ON DELETE CASCADE,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  CONSTRAINT skill_assignment_target CHECK (
+    (agent_id IS NOT NULL AND department_id IS NULL)
+    OR (agent_id IS NULL AND department_id IS NOT NULL)
+  )
+);
+
+ALTER TABLE public.skill_assignments ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_skill_assignments_agent
+  ON public.skill_assignments (agent_id);
+CREATE INDEX IF NOT EXISTS idx_skill_assignments_department
+  ON public.skill_assignments (department_id);
+CREATE INDEX IF NOT EXISTS idx_skill_assignments_skill
+  ON public.skill_assignments (skill_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_skill_assignments_unique_agent
+  ON public.skill_assignments (skill_id, agent_id) WHERE agent_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_skill_assignments_unique_dept
+  ON public.skill_assignments (skill_id, department_id) WHERE department_id IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS public.skill_templates (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  name text NOT NULL,
+  description text,
+  content text NOT NULL,
+  department_type text NOT NULL,
+  role_type text,
+  trigger_phrases text[],
+  is_active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now() NOT NULL,
+  updated_at timestamptz DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.skill_templates ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_skill_templates_department
+  ON public.skill_templates (department_type);
+
+-- Skills RLS
+CREATE POLICY "skills_select_member" ON public.skills
+  FOR SELECT TO authenticated
+  USING (public.is_business_member(business_id));
+
+CREATE POLICY "skills_insert_admin" ON public.skills
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+  );
+
+CREATE POLICY "skills_update_admin" ON public.skills
+  FOR UPDATE TO authenticated
+  USING (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+  )
+  WITH CHECK (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+  );
+
+CREATE POLICY "skills_delete_admin" ON public.skills
+  FOR DELETE TO authenticated
+  USING (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+  );
+
+-- Skill Assignments RLS
+CREATE POLICY "skill_assignments_select_member" ON public.skill_assignments
+  FOR SELECT TO authenticated
+  USING (public.is_business_member(business_id));
+
+CREATE POLICY "skill_assignments_insert_admin" ON public.skill_assignments
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+  );
+
+CREATE POLICY "skill_assignments_delete_admin" ON public.skill_assignments
+  FOR DELETE TO authenticated
+  USING (
+    public.has_role_on_business(business_id, 'owner')
+    OR public.has_role_on_business(business_id, 'admin')
+  );
+
+-- Skill Templates RLS (globally readable)
+CREATE POLICY "skill_templates_select_authenticated" ON public.skill_templates
+  FOR SELECT TO authenticated
+  USING (true);

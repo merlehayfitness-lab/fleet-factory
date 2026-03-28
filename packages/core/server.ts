@@ -158,5 +158,23 @@ export { generatePromptAndSkill } from "./prompt-generator/generator-service";
 export { refinePrompt } from "./prompt-generator/refinement-service";
 export { sendTestMessage } from "./prompt-generator/test-chat-service";
 
+// Skill service (server-only -- database operations)
+export {
+  createSkill,
+  updateSkill,
+  softDeleteSkill,
+  getSkill,
+  listSkillsForBusiness,
+  assignSkill,
+  unassignSkill,
+  getSkillsForAgent,
+  getSkillsForDepartment,
+  getSkillUsage,
+  getSkillTemplates,
+  createSkillFromTemplate,
+} from "./skill/skill-service";
+export { compileSkills } from "./skill/skill-compiler";
+export { parseGitHubUrl, fetchGitHubFile, fetchGitHubDirectory } from "./skill/github-import";
+
 // OpenClaw workspace generator (re-exported for server-only use in web app)
 export { generateOpenClawWorkspace } from "@agency-factory/runtime";
