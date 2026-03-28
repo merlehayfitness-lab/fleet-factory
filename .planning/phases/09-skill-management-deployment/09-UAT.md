@@ -1,9 +1,9 @@
 ---
-status: complete
+status: resolved
 phase: 09-skill-management-deployment
-source: 09-01-SUMMARY.md, 09-02-SUMMARY.md, 09-03-SUMMARY.md
+source: 09-01-SUMMARY.md, 09-02-SUMMARY.md, 09-03-SUMMARY.md, 09-04-SUMMARY.md
 started: 2026-03-28T17:00:00Z
-updated: 2026-03-28T17:00:00Z
+updated: 2026-03-28T18:30:00Z
 ---
 
 ## Current Test
@@ -66,7 +66,7 @@ skipped: 0
 ## Gaps
 
 - truth: "GitHub import scans subdirectories recursively and groups imported skills under repo name"
-  status: failed
+  status: resolved
   reason: "User reported: Works for root-level .md files but doesn't recurse into subdirectories. Want it to scan all subfolders and group imported skills under the repo name as a collection in the library."
   severity: minor
   test: 8
