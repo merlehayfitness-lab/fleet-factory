@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 8 of 8 (Role Definition & Prompt Generation)
-Plan: 1 of 3 in current phase (1 complete)
+Plan: 2 of 3 in current phase (2 complete)
 Status: Executing Phase 8
-Last activity: 2026-03-28 -- Completed 08-01 (Role Definition & Prompt Generation Core)
+Last activity: 2026-03-28 -- Completed 08-02 (Department Hierarchy & SKILL.md Pipeline)
 
-Progress: [█████████████████████████░░] 93% (27/29 plans)
+Progress: [██████████████████████████░] 97% (28/29 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27
+- Total plans completed: 28
 - Average duration: 6min
-- Total execution time: 2.7 hours
+- Total execution time: 2.8 hours
 
 **By Phase:**
 
@@ -35,7 +35,7 @@ Progress: [███████████████████████
 | 06 | 4 | 33min | 8min |
 
 **Recent Trend:**
-- Last 5 plans: 07-01 (4min), 07-02 (5min), 07-03 (3min), 08-01 (8min)
+- Last 5 plans: 07-02 (5min), 07-03 (3min), 08-01 (8min), 08-02 (6min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -66,6 +66,7 @@ Progress: [███████████████████████
 | Phase 07 P02 | 5min | 2 tasks | 8 files |
 | Phase 07 P03 | 3min | 2 tasks | 7 files |
 | Phase 08 P01 | 8min | 2 tasks | 22 files |
+| Phase 08 P02 | 6min | 2 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -189,6 +190,10 @@ Recent decisions affecting current work:
 - [08-01]: DialogTrigger uses inline styled span instead of asChild prop (base-ui does not support asChild)
 - [08-01]: Department type extracted from agents join with unknown-first cast to handle array/object ambiguity
 - [08-01]: Anthropic SDK pattern mirrors existing OpenAI embedder: getApiKey() helper + getClient() factory
+- [08-02]: SKILL.md 4-case merge: neither=default, dept-only=baseline, agent-only=direct, both=section-concatenation
+- [08-02]: Character budget 4000 chars on SKILL.md with truncation (matches other OpenClaw generators)
+- [08-02]: Lead agents identified by parent_agent_id IS NULL, sub-agents indented with border-left connector
+- [08-02]: Agent detail header shows "Sub-agent of {parent}" link; overview shows Reports To and Sub-Agents cards
 
 ### Pending Todos
 
@@ -201,5 +206,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-28
-Stopped at: Completed 08-01-PLAN.md (Role Definition & Prompt Generation Core)
-Resume file: .planning/phases/08-role-definition-and-prompt-generation/08-01-SUMMARY.md
+Stopped at: Completed 08-02-PLAN.md (Department Hierarchy & SKILL.md Pipeline)
+Resume file: .planning/phases/08-role-definition-and-prompt-generation/08-02-SUMMARY.md

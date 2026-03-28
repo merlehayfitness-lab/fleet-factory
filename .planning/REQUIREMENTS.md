@@ -144,8 +144,8 @@
 - [x] **ROLE-02**: Claude-powered system prompt AND SKILL.md generation from role definition
 - [x] **ROLE-03**: Generated prompt previews in System Prompt card before saving
 - [ ] **ROLE-04**: Agent setup wizard with knowledge upload step, SKILL.md generation, and sub-agent support
-- [ ] **ROLE-05**: Departments support multiple agents with parent-child hierarchy (lead + sub-agents with role field)
-- [ ] **ROLE-06**: SKILL.md stored on agent record and deployable to VPS as workspace artifact
+- [x] **ROLE-05**: Departments support multiple agents with parent-child hierarchy (lead + sub-agents with role field)
+- [x] **ROLE-06**: SKILL.md stored on agent record and deployable to VPS as workspace artifact
 
 ### Skill Management
 
@@ -305,8 +305,8 @@
 | ROLE-02 | Phase 8 | Complete |
 | ROLE-03 | Phase 8 | Complete |
 | ROLE-04 | Phase 8 | Pending |
-| ROLE-05 | Phase 8 | Pending |
-| ROLE-06 | Phase 8 | Pending |
+| ROLE-05 | Phase 8 | Complete |
+| ROLE-06 | Phase 8 | Complete |
 | SKILL-01 | Phase 9 | Pending |
 | SKILL-02 | Phase 9 | Pending |
 | SKILL-03 | Phase 9 | Pending |
