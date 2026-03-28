@@ -153,5 +153,10 @@ export { extractText } from "./knowledge/text-extractor";
 export { chunkText } from "./knowledge/chunker";
 export { generateEmbedding, generateEmbeddings } from "./knowledge/embedder";
 
+// Prompt generator services (server-only -- Anthropic API)
+export { generatePromptAndSkill } from "./prompt-generator/generator-service";
+export { refinePrompt } from "./prompt-generator/refinement-service";
+export { sendTestMessage } from "./prompt-generator/test-chat-service";
+
 // OpenClaw workspace generator (re-exported for server-only use in web app)
 export { generateOpenClawWorkspace } from "@agency-factory/runtime";

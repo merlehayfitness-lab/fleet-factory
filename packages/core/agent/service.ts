@@ -79,6 +79,8 @@ export async function updateAgentConfig(
     system_prompt?: string;
     tool_profile?: Record<string, unknown>;
     model_profile?: Record<string, unknown>;
+    role_definition?: Record<string, unknown>;
+    skill_definition?: string;
   },
 ): Promise<void> {
   // 1. Verify agent exists and belongs to business
@@ -105,6 +107,12 @@ export async function updateAgentConfig(
   }
   if (config.model_profile !== undefined) {
     updatePayload.model_profile = config.model_profile;
+  }
+  if (config.role_definition !== undefined) {
+    updatePayload.role_definition = config.role_definition;
+  }
+  if (config.skill_definition !== undefined) {
+    updatePayload.skill_definition = config.skill_definition;
   }
 
   if (Object.keys(updatePayload).length === 0) {

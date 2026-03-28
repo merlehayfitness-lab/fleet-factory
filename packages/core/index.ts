@@ -172,5 +172,15 @@ export type {
   KnowledgeFileType,
 } from "./knowledge/knowledge-types";
 
+// Prompt generator types (client-safe)
+export type {
+  RoleDefinition,
+  GenerationResult,
+  RefinementRequest,
+  RefinementResult,
+  PromptSections,
+  TestChatMessage,
+} from "./prompt-generator/generator-types";
+
 // NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker, approval service)
 // are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.
