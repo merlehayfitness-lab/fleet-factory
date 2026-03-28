@@ -128,40 +128,59 @@ interface GitHubContentsItem {
 }
 
 /**
+ * Fetch directory contents from the GitHub API. If the branch returns 404,
+ * retries with "master" as a fallback (common for repos that haven't switched
+ * to "main" as default).
+ */
+async function fetchContentsApi(
+  info: GitHubUrlInfo,
+): Promise<{ items: GitHubContentsItem[]; branch: string }> {
+  const pathSegment = info.path ? `/${info.path}` : "";
+  const branches = [info.branch, ...(info.branch !== "master" ? ["master"] : [])];
+
+  for (const branch of branches) {
+    const apiUrl = `https://api.github.com/repos/${info.owner}/${info.repo}/contents${pathSegment}?ref=${branch}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(apiUrl, {
+        signal: controller.signal,
+        headers: { Accept: "application/vnd.github.v3+json" },
+      });
+
+      if (response.status === 404 && branch !== branches[branches.length - 1]) {
+        continue; // try next branch
+      }
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          const rateLimitRemaining = response.headers.get("x-ratelimit-remaining");
+          if (rateLimitRemaining === "0") {
+            throw new Error("GitHub API rate limit exceeded. Try again later.");
+          }
+        }
+        throw new Error(`Failed to list directory: HTTP ${response.status}`);
+      }
+
+      const items = (await response.json()) as GitHubContentsItem[];
+      return { items, branch };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  throw new Error("Failed to list directory: HTTP 404");
+}
+
+/**
  * Fetch all .md files from a public GitHub directory.
  * Uses the GitHub API to list contents, then fetches each .md file.
  */
 export async function fetchGitHubDirectory(
   info: GitHubUrlInfo,
 ): Promise<GitHubImportResult[]> {
-  const pathSegment = info.path ? `/${info.path}` : "";
-  const apiUrl = `https://api.github.com/repos/${info.owner}/${info.repo}/contents${pathSegment}?ref=${info.branch}`;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-
-  let items: GitHubContentsItem[];
-
-  try {
-    const response = await fetch(apiUrl, {
-      signal: controller.signal,
-      headers: { Accept: "application/vnd.github.v3+json" },
-    });
-
-    if (!response.ok) {
-      if (response.status === 403) {
-        const rateLimitRemaining = response.headers.get("x-ratelimit-remaining");
-        if (rateLimitRemaining === "0") {
-          throw new Error("GitHub API rate limit exceeded. Try again later.");
-        }
-      }
-      throw new Error(`Failed to list directory: HTTP ${response.status}`);
-    }
-
-    items = (await response.json()) as GitHubContentsItem[];
-  } finally {
-    clearTimeout(timeout);
-  }
+  const { items, branch } = await fetchContentsApi(info);
 
   // Filter to .md files only
   const mdFiles = items.filter(
@@ -179,7 +198,7 @@ export async function fetchGitHubDirectory(
         owner: info.owner,
         repo: info.repo,
         path: file.path,
-        branch: info.branch,
+        branch,
         type: "file",
       }),
     ),
