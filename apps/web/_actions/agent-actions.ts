@@ -140,3 +140,26 @@ export async function updateAgentConfigAction(
 
   revalidatePath(`/businesses/${businessId}/agents/${agentId}`);
 }
+
+/**
+ * Test an MCP server connection by pinging its URL.
+ * Advisory only -- result does not block saving.
+ */
+export async function testMcpConnectionAction(
+  url: string,
+  transport: string,
+): Promise<{ reachable: boolean; error?: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { reachable: false, error: "Not authenticated" };
+  }
+
+  const { validateMcpServerUrl } = await import(
+    "@agency-factory/core/server"
+  );
+  return validateMcpServerUrl(url, transport);
+}
