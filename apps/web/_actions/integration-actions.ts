@@ -6,6 +6,49 @@ import { revalidatePath } from "next/cache";
 import { getCatalogEntry, bulkCreateIntegrations } from "@agency-factory/core";
 
 /**
+ * Save (persist) AI-generated setup instructions for an integration.
+ *
+ * Fallback action for cases where the API route's DB write fails or
+ * for manual saves. The primary save path is the streaming API route
+ * which persists after stream completes.
+ */
+export async function saveSetupInstructionsAction(
+  integrationId: string,
+  businessId: string,
+  instructions: string,
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  try {
+    const { error } = await supabase
+      .from("integrations")
+      .update({ setup_instructions: instructions })
+      .eq("id", integrationId)
+      .eq("business_id", businessId);
+
+    if (error) throw new Error(error.message);
+
+    revalidatePath(`/businesses/${businessId}/integrations`);
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to save setup instructions",
+    };
+  }
+}
+
+/**
  * Fetch all integrations for a specific agent.
  */
 export async function getAgentIntegrationsAction(agentId: string) {

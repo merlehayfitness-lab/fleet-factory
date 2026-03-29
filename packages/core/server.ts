@@ -182,5 +182,8 @@ export { validateMcpServerUrl } from "./agent/tool-profile-schema";
 // Agent profile sync (server-only -- database operations)
 export { syncFromTemplate, reparentAgent } from "./agent/service";
 
+// Integration setup instructions (server-only -- Anthropic streaming API)
+export { streamSetupInstructions } from "./integrations/instructions-service";
+
 // OpenClaw workspace generator (re-exported for server-only use in web app)
 export { generateOpenClawWorkspace } from "@agency-factory/runtime";
