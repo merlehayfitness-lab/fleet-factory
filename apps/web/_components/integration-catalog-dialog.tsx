@@ -21,6 +21,7 @@ import {
   type CatalogEntry,
 } from "@agency-factory/core";
 import { CatalogTargetPicker } from "@/_components/catalog-target-picker";
+import { CatalogInstructionsPanel } from "@/_components/catalog-instructions-panel";
 import { addCatalogIntegrationAction } from "@/_actions/integration-actions";
 
 interface Department {
@@ -73,6 +74,7 @@ export function IntegrationCatalogDialog({
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [isCreating, startTransition] = useTransition();
   const [createdCount, setCreatedCount] = useState(0);
+  const [createdIds, setCreatedIds] = useState<string[]>([]);
   const router = useRouter();
 
   function resetState() {
@@ -82,6 +84,7 @@ export function IntegrationCatalogDialog({
     setSelectedDepartments([]);
     setSelectedAgents(preSelectedAgentId ? [preSelectedAgentId] : []);
     setCreatedCount(0);
+    setCreatedIds([]);
   }
 
   function handleOpenChange(newOpen: boolean) {
@@ -125,7 +128,9 @@ export function IntegrationCatalogDialog({
         return;
       }
 
-      setCreatedCount(result.integrationIds?.length ?? totalTargets);
+      const ids = result.integrationIds ?? [];
+      setCreatedIds(ids);
+      setCreatedCount(ids.length || totalTargets);
       setStep(3);
       router.refresh();
     });
@@ -278,23 +283,23 @@ export function IntegrationCatalogDialog({
             </>
           )}
 
-          {/* Step 3: Confirmation */}
+          {/* Step 3: Confirmation + Streaming Instructions */}
           {step === 3 && selectedEntry && (
             <>
               <DialogHeader>
                 <DialogTitle>
                   <div className="flex items-center gap-2">
                     <Check className="size-5 text-green-500" />
-                    Integration Added
+                    {selectedEntry.name} Added
                   </div>
                 </DialogTitle>
                 <DialogDescription>
-                  {selectedEntry.name} added to {createdCount} target
-                  {createdCount !== 1 ? "s" : ""}
+                  Added to {createdCount} target
+                  {createdCount !== 1 ? "s" : ""} successfully
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {selectedDepartments.map((deptId) => {
                   const dept = departments.find((d) => d.id === deptId);
                   return (
@@ -321,9 +326,46 @@ export function IntegrationCatalogDialog({
                 })}
               </div>
 
-              <p className="text-xs text-muted-foreground">
-                Setup instructions will appear here after plan 12-02.
-              </p>
+              <div className="border-t pt-3">
+                {(() => {
+                  // Determine the first target for instructions context
+                  const firstDeptId = selectedDepartments[0];
+                  const firstAgentId = selectedAgents[0];
+                  const firstDept = firstDeptId
+                    ? departments.find((d) => d.id === firstDeptId)
+                    : undefined;
+                  const firstAgent = firstAgentId
+                    ? agents.find((a) => a.id === firstAgentId)
+                    : undefined;
+
+                  const instrTargetName = firstDept
+                    ? `${firstDept.name} Department`
+                    : firstAgent?.name ?? "Unknown";
+                  const instrTargetType = firstDept
+                    ? firstDept.type
+                    : "agent";
+
+                  return (
+                    <div className="max-h-60 overflow-y-auto">
+                      <CatalogInstructionsPanel
+                        integrationId={createdIds[0] ?? ""}
+                        businessId={businessId}
+                        integrationName={selectedEntry.name}
+                        integrationCategory={selectedEntry.category}
+                        provider={selectedEntry.provider}
+                        targetName={instrTargetName}
+                        targetType={instrTargetType}
+                      />
+                      {createdCount > 1 && (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          Instructions shown for {instrTargetName}. View setup
+                          for other targets from their integration cards.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
 
               <DialogFooter>
                 <Button onClick={() => handleOpenChange(false)}>Done</Button>

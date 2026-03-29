@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -7,10 +8,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Building2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Building2, BookOpen } from "lucide-react";
 import { getAdapter } from "@agency-factory/core";
 import type { IntegrationType } from "@agency-factory/core";
+import { CatalogInstructionsPanel } from "@/_components/catalog-instructions-panel";
 
 interface Integration {
   id: string;
@@ -20,6 +29,7 @@ interface Integration {
   type: string;
   provider: string;
   name?: string | null;
+  setup_instructions?: string | null;
   config: Record<string, unknown> | null;
   status: string;
   created_at: string;
@@ -56,6 +66,7 @@ export function IntegrationConfigCard({
   integration,
   businessId,
 }: IntegrationConfigCardProps) {
+  const [setupOpen, setSetupOpen] = useState(false);
   const isDepartmentLevel = !integration.agent_id && integration.departments;
   const departmentName = integration.departments?.name;
   const agentName = integration.agents?.name ?? "Unknown Agent";
@@ -63,6 +74,12 @@ export function IntegrationConfigCard({
 
   // Display name: use catalog name if available, otherwise provider
   const displayName = integration.name ?? integration.provider;
+
+  // Target context for instructions
+  const instrTargetName = isDepartmentLevel
+    ? `${departmentName} Department`
+    : agentName;
+  const instrTargetType = isDepartmentLevel ? "department" : "agent";
 
   let capabilities: string[] = [];
   try {
@@ -76,55 +93,93 @@ export function IntegrationConfigCard({
   const overflowCount = capabilities.length - MAX_VISIBLE_CAPABILITIES;
 
   return (
-    <Card className="transition-colors hover:bg-accent/30">
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          {isDepartmentLevel ? (
-            <div className="flex items-center gap-1.5 text-sm font-medium">
-              <Building2 className="size-3.5 text-muted-foreground" />
-              <span>Department: {departmentName}</span>
+    <>
+      <Card className="transition-colors hover:bg-accent/30">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            {isDepartmentLevel ? (
+              <div className="flex items-center gap-1.5 text-sm font-medium">
+                <Building2 className="size-3.5 text-muted-foreground" />
+                <span>Department: {departmentName}</span>
+              </div>
+            ) : (
+              <Link
+                href={`/businesses/${businessId}/agents/${agentId}`}
+                className="text-sm font-medium underline-offset-4 hover:underline"
+              >
+                {agentName}
+              </Link>
+            )}
+            <div className="flex items-center gap-1.5">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground"
+                onClick={() => setSetupOpen(true)}
+              >
+                <BookOpen className="size-3" />
+                View Setup
+              </Button>
+              <Badge
+                variant="outline"
+                className={statusColor(integration.status)}
+              >
+                {integration.status}
+              </Badge>
             </div>
-          ) : (
-            <Link
-              href={`/businesses/${businessId}/agents/${agentId}`}
-              className="text-sm font-medium underline-offset-4 hover:underline"
-            >
-              {agentName}
-            </Link>
-          )}
-          <Badge
-            variant="outline"
-            className={statusColor(integration.status)}
-          >
-            {integration.status}
-          </Badge>
-        </div>
-        <CardTitle className="text-xs font-normal text-muted-foreground">
-          {displayName}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* Capabilities chips */}
-        <div className="flex flex-wrap gap-1">
-          {visibleCaps.map((cap) => (
-            <Badge
-              key={cap}
-              variant="secondary"
-              className="text-[10px] font-normal"
-            >
-              {cap}
-            </Badge>
-          ))}
-          {overflowCount > 0 && (
-            <Badge
-              variant="secondary"
-              className="text-[10px] font-normal text-muted-foreground"
-            >
-              +{overflowCount} more
-            </Badge>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+          </div>
+          <CardTitle className="text-xs font-normal text-muted-foreground">
+            {displayName}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* Capabilities chips */}
+          <div className="flex flex-wrap gap-1">
+            {visibleCaps.map((cap) => (
+              <Badge
+                key={cap}
+                variant="secondary"
+                className="text-[10px] font-normal"
+              >
+                {cap}
+              </Badge>
+            ))}
+            {overflowCount > 0 && (
+              <Badge
+                variant="secondary"
+                className="text-[10px] font-normal text-muted-foreground"
+              >
+                +{overflowCount} more
+              </Badge>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Setup Instructions Dialog */}
+      <Dialog open={setupOpen} onOpenChange={setSetupOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{displayName} Setup Guide</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            {setupOpen && (
+              <CatalogInstructionsPanel
+                integrationId={integration.id}
+                businessId={businessId}
+                integrationName={displayName}
+                integrationCategory={integration.type}
+                provider={integration.provider}
+                targetName={instrTargetName}
+                targetType={instrTargetType}
+                existingInstructions={
+                  integration.setup_instructions ?? undefined
+                }
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
