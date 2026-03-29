@@ -7,6 +7,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import type { TestChatMessage } from "./generator-types";
+import { CLAUDE_MODELS } from "../agent/model-constants";
 
 /**
  * Read ANTHROPIC_API_KEY from environment. Throws if missing.
@@ -29,7 +30,7 @@ function getAnthropicClient(): Anthropic {
   return new Anthropic({ apiKey: getAnthropicApiKey() });
 }
 
-const DEFAULT_MODEL = "claude-sonnet-4-20250514";
+const DEFAULT_MODEL = CLAUDE_MODELS.find(m => m.tier === "sonnet" && m.isLatest)?.id ?? "claude-sonnet-4-6";
 
 /**
  * Send a test message using a draft system prompt.

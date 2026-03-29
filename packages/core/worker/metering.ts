@@ -72,19 +72,28 @@ export function estimateTokens(
 // Cost calculation
 // ---------------------------------------------------------------------------
 
-/**
- * Model pricing in dollars per million tokens.
- */
+/** Per-MTok pricing for Claude models. Shorthand keys preserved for backward compat. */
 const MODEL_PRICING: Record<string, { input: number; output: number }> = {
+  // Full API model IDs
+  "claude-opus-4-6": { input: 5, output: 25 },
+  "claude-sonnet-4-6": { input: 3, output: 15 },
+  "claude-haiku-4-5-20251001": { input: 1, output: 5 },
+  "claude-sonnet-4-5-20250929": { input: 3, output: 15 },
+  "claude-opus-4-5-20251101": { input: 5, output: 25 },
+  "claude-sonnet-4-20250514": { input: 3, output: 15 },
+  // Shorthand aliases (backward compat with existing usage_records)
   "claude-sonnet": { input: 3, output: 15 },
-  "claude-haiku": { input: 0.25, output: 1.25 },
-  "claude-opus": { input: 15, output: 75 },
+  "claude-haiku": { input: 1, output: 5 },
+  "claude-opus": { input: 5, output: 25 },
+  // Default fallback
+  default: { input: 3, output: 15 },
 };
 
 /**
  * Calculate cost in cents from token counts.
  *
- * Default model is 'claude-sonnet': $3/M input, $15/M output.
+ * Looks up model-specific pricing, falling back to default Sonnet pricing.
+ * Supports both full API model IDs and shorthand aliases.
  * Returns cost rounded to nearest cent.
  */
 export function calculateCost(
@@ -92,7 +101,7 @@ export function calculateCost(
   completionTokens: number,
   model = "claude-sonnet",
 ): number {
-  const pricing = MODEL_PRICING[model] ?? MODEL_PRICING["claude-sonnet"];
+  const pricing = MODEL_PRICING[model] ?? MODEL_PRICING["default"];
 
   const inputCostDollars = (promptTokens / 1_000_000) * pricing.input;
   const outputCostDollars = (completionTokens / 1_000_000) * pricing.output;

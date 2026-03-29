@@ -179,5 +179,8 @@ export { parseGitHubUrl, fetchGitHubFile, fetchGitHubDirectory } from "./skill/g
 // Tool profile validation (server-only -- uses fetch)
 export { validateMcpServerUrl } from "./agent/tool-profile-schema";
 
+// Agent profile sync (server-only -- database operations)
+export { syncFromTemplate } from "./agent/service";
+
 // OpenClaw workspace generator (re-exported for server-only use in web app)
 export { generateOpenClawWorkspace } from "@agency-factory/runtime";

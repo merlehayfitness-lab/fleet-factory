@@ -11,6 +11,7 @@ import {
   buildGenerationSystemPrompt,
   buildGenerationUserMessage,
 } from "./prompt-templates";
+import { CLAUDE_MODELS } from "../agent/model-constants";
 
 /**
  * Read ANTHROPIC_API_KEY from environment. Throws if missing.
@@ -33,7 +34,7 @@ function getAnthropicClient(): Anthropic {
   return new Anthropic({ apiKey: getAnthropicApiKey() });
 }
 
-const MODEL = "claude-sonnet-4-20250514";
+const GENERATOR_MODEL = CLAUDE_MODELS.find(m => m.tier === "sonnet" && m.isLatest)?.id ?? "claude-sonnet-4-6";
 
 /**
  * Generate a structured system prompt and SKILL.md from a role definition.
@@ -58,7 +59,7 @@ export async function generatePromptAndSkill(
   );
 
   const response = await client.messages.create({
-    model: MODEL,
+    model: GENERATOR_MODEL,
     max_tokens: 4096,
     system: systemPrompt,
     messages: [{ role: "user", content: userMessage }],

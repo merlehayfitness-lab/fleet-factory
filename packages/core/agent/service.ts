@@ -221,3 +221,71 @@ export async function getParentAgent(
     role: (parent.role as string) ?? null,
   };
 }
+
+/**
+ * Sync an agent's tool_profile and model_profile from its template.
+ * Overwrites current agent values with the template's current values.
+ * Returns the diff for UI confirmation.
+ */
+export async function syncFromTemplate(
+  supabase: SupabaseClient,
+  agentId: string,
+  businessId: string,
+): Promise<{
+  before: { tool_profile: Record<string, unknown>; model_profile: Record<string, unknown> };
+  after: { tool_profile: Record<string, unknown>; model_profile: Record<string, unknown> };
+}> {
+  // 1. Fetch agent with template_id
+  const { data: agent, error: agentErr } = await supabase
+    .from("agents")
+    .select("id, template_id, tool_profile, model_profile")
+    .eq("id", agentId)
+    .eq("business_id", businessId)
+    .single();
+  if (agentErr || !agent) throw new Error("Agent not found");
+  if (!agent.template_id) throw new Error("Agent has no linked template");
+
+  // 2. Fetch template
+  const { data: template, error: tmplErr } = await supabase
+    .from("agent_templates")
+    .select("tool_profile, model_profile")
+    .eq("id", agent.template_id as string)
+    .single();
+  if (tmplErr || !template) throw new Error("Template not found");
+
+  const before = {
+    tool_profile: (agent.tool_profile as Record<string, unknown>) ?? {},
+    model_profile: (agent.model_profile as Record<string, unknown>) ?? {},
+  };
+  const after = {
+    tool_profile: (template.tool_profile as Record<string, unknown>) ?? {},
+    model_profile: (template.model_profile as Record<string, unknown>) ?? {},
+  };
+
+  // 3. Update agent profiles
+  const { error: updateErr } = await supabase
+    .from("agents")
+    .update({
+      tool_profile: after.tool_profile,
+      model_profile: after.model_profile,
+    })
+    .eq("id", agentId)
+    .eq("business_id", businessId);
+  if (updateErr) throw new Error(`Failed to sync: ${updateErr.message}`);
+
+  // 4. Audit log (best effort)
+  try {
+    await supabase.from("audit_logs").insert({
+      business_id: businessId,
+      actor_id: (await supabase.auth.getUser()).data.user?.id,
+      event_type: "agent.sync_from_template",
+      entity_type: "agent",
+      entity_id: agentId,
+      metadata: { template_id: agent.template_id, changes: { before, after } },
+    });
+  } catch {
+    console.error("Failed to log sync event (non-fatal)");
+  }
+
+  return { before, after };
+}
