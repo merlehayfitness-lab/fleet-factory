@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 11 of 11 (Sub-Agent Management)
-Plan: 1 of 2 in current phase (1 complete)
-Status: Executing Phase 11
-Last activity: 2026-03-29 -- Completed 11-01-PLAN.md (Reparent Service & Agent Tree Visualization)
+Plan: 2 of 2 in current phase (2 complete)
+Status: Phase 11 Complete -- All Phases Complete
+Last activity: 2026-03-29 -- Completed 11-02-PLAN.md (Sidebar Panel, Drag-and-Drop Reparenting & Mobile Fallback)
 
-Progress: [██████████████████████████████] 97% (37/38 plans)
+Progress: [██████████████████████████████] 100% (38/38 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 37
+- Total plans completed: 38
 - Average duration: 6min
-- Total execution time: 3.6 hours
+- Total execution time: 3.7 hours
 
 **By Phase:**
 
@@ -39,10 +39,10 @@ Progress: [███████████████████████
 
 | 10 | 3 | 14min | 5min |
 
-| 11 | 1 | 5min | 5min |
+| 11 | 2 | 10min | 5min |
 
 **Recent Trend:**
-- Last 5 plans: 10-01 (6min), 10-02 (5min), 10-03 (3min), 11-01 (5min)
+- Last 5 plans: 10-02 (5min), 10-03 (3min), 11-01 (5min), 11-02 (5min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -83,6 +83,7 @@ Progress: [███████████████████████
 | Phase 10 P02 | 5min | 2 tasks | 7 files |
 | Phase 10 P03 | 3min | 2 tasks | 6 files |
 | Phase 11 P01 | 5min | 2 tasks | 10 files |
+| Phase 11 P02 | 5min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -238,6 +239,9 @@ Recent decisions affecting current work:
 - [11-01]: Explicit type cast on Supabase query result in wouldCreateCycle to avoid TS7022 self-referential type inference
 - [11-01]: Agent pill click navigates to agent detail page (router.push) rather than sidebar panel (deferred to 11-02)
 - [11-01]: Empty departments still render as header nodes with '+' button for creating first agent
+- [11-02]: Agent node click opens sidebar panel instead of navigating to detail page (changed from 11-01 behavior)
+- [11-02]: Confirmation toast with Confirm/Cancel before committing reparent operation (not modal dialog)
+- [11-02]: Lead agents are both draggable and droppable; sub-agents are draggable only
 
 ### Pending Todos
 
@@ -250,5 +254,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-29
-Stopped at: Completed 11-01-PLAN.md (Reparent Service & Agent Tree Visualization)
-Resume file: .planning/phases/11-sub-agent-management/11-01-SUMMARY.md
+Stopped at: Completed 11-02-PLAN.md (Sidebar Panel, Drag-and-Drop Reparenting & Mobile Fallback) -- ALL PHASES COMPLETE
+Resume file: .planning/phases/11-sub-agent-management/11-02-SUMMARY.md
