@@ -367,10 +367,10 @@
 | SKILL-02 | Phase 9 | Complete |
 | SKILL-03 | Phase 9 | Complete |
 | SKILL-04 | Phase 9 | Complete |
-| TMPL-01 | Phase 10 | Not started |
-| TMPL-02 | Phase 10 | Not started |
-| TMPL-03 | Phase 10 | Not started |
-| TMPL-04 | Phase 10 | Not started |
+| TMPL-01 | Phase 10 | Complete |
+| TMPL-02 | Phase 10 | Complete |
+| TMPL-03 | Phase 10 | Complete |
+| TMPL-04 | Phase 10 | Complete |
 | SUBAG-01 | Phase 11 | Not started |
 | SUBAG-02 | Phase 11 | Not started |
 | SUBAG-03 | Phase 11 | Not started |
