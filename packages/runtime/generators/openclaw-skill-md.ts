@@ -50,8 +50,13 @@ export function generateSkillMd(
 // ---------------------------------------------------------------------------
 
 function generateFromArray(agentName: string, skills: SkillInput[]): string {
-  const deptSkills = skills.filter((s) => s.level === "department");
   const agentSkills = skills.filter((s) => s.level === "agent");
+
+  // Deduplicate: agent-level skills take precedence over department skills with the same name
+  const agentSkillNames = new Set(agentSkills.map((s) => s.name.toLowerCase()));
+  const deptSkills = skills.filter(
+    (s) => s.level === "department" && !agentSkillNames.has(s.name.toLowerCase()),
+  );
 
   const hasAny = deptSkills.length > 0 || agentSkills.length > 0;
 

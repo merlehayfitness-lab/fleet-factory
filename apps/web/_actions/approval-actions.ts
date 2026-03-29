@@ -12,6 +12,7 @@ import {
   provideGuidance,
   bulkApprove,
   bulkReject,
+  executeTask,
 } from "@agency-factory/core/server";
 
 /**
@@ -87,7 +88,18 @@ export async function approveActionHandler(
   }
 
   try {
-    await approveAction(supabase, approvalId, user.id, decisionNote);
+    const approval = await approveAction(supabase, approvalId, user.id, decisionNote);
+
+    // Re-execute the task now that approval has been granted
+    if (approval?.task_id) {
+      try {
+        await executeTask(supabase, businessId, approval.task_id as string);
+      } catch {
+        // Non-blocking: task re-execution is best-effort
+        console.error("Failed to re-execute task after approval");
+      }
+    }
+
     revalidatePath(`/businesses/${businessId}/approvals`);
     revalidatePath(`/businesses/${businessId}/tasks`);
     revalidatePath(`/businesses/${businessId}`);
