@@ -242,10 +242,12 @@ Plans:
   2. Secrets accessible from business settings page (near emergency controls) via link to dedicated secrets page
   3. Dynamic credential fields adapt to integration type (API key only, API key + secret, username + password, OAuth token, etc.)
   4. Secrets page displays credentials grouped by integration with clear labeling
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 13-01: TBD
+- [ ] 13-01-PLAN.md -- Schema migrations (provider_credential_fields, secrets provider column), extended secrets service, test connection, server actions
+- [ ] 13-02-PLAN.md -- Settings page with Emergency Controls + Secrets sections, provider-grouped secrets UI, eye toggle reveal, nav updates
+- [ ] 13-03-PLAN.md -- Credential side drawer on Integrations page, Configure button, dynamic credential form
 
 ### Phase 14: Slack Integration & Chat Replacement
 **Goal**: Replace custom chat page with Slack API integration so messages route between admin panel agents and Slack, viewable in both places
