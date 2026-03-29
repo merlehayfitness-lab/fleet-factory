@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 10 of 10 (Template Profiles & Model Configuration)
-Plan: 1 of 3 in current phase (1 complete)
+Plan: 2 of 3 in current phase (2 complete)
 Status: Executing Phase 10
-Last activity: 2026-03-29 -- Completed 10-01-PLAN.md (Model Constants & Tool Profile Schema)
+Last activity: 2026-03-29 -- Completed 10-02-PLAN.md (Model & Tool Profile UI Components)
 
-Progress: [██████████████████████████████] 94% (34/36 plans)
+Progress: [██████████████████████████████] 97% (35/36 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 34
+- Total plans completed: 35
 - Average duration: 6min
-- Total execution time: 3.4 hours
+- Total execution time: 3.5 hours
 
 **By Phase:**
 
@@ -37,10 +37,10 @@ Progress: [███████████████████████
 | 08 | 3 | 20min | 7min |
 | 09 | 4 | 23min | 6min |
 
-| 10 | 1 | 6min | 6min |
+| 10 | 2 | 11min | 6min |
 
 **Recent Trend:**
-- Last 5 plans: 09-02 (5min), 09-03 (8min), 09-04 (4min), 10-01 (6min)
+- Last 5 plans: 09-03 (8min), 09-04 (4min), 10-01 (6min), 10-02 (5min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -78,6 +78,7 @@ Progress: [███████████████████████
 | Phase 09 P03 | 8min | 2 tasks | 9 files |
 | Phase 09 P04 | 4min | 2 tasks | 8 files |
 | Phase 10 P01 | 6min | 2 tasks | 10 files |
+| Phase 10 P02 | 5min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -224,6 +225,9 @@ Recent decisions affecting current work:
 - [10-01]: MODEL_PRICING updated from legacy flat-rate pricing to model-specific per-MTok pricing with backward-compat aliases
 - [10-01]: CLAUDE_MODELS uses dynamic lookup (find latest sonnet) instead of hardcoded strings in test-chat and generator services
 - [10-01]: syncFromTemplate audit log uses actor_id from supabase.auth.getUser() for traceability
+- [10-02]: testMcpConnectionAction placed in agent-actions.ts since it serves both template and agent contexts
+- [10-02]: Tool profile summary card shows first 5 tool names as badges with +N overflow
+- [10-02]: Model changes on agent config persist immediately via updateAgentConfigAction (no separate save step)
 
 ### Pending Todos
 
@@ -236,5 +240,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-29
-Stopped at: Completed 10-01-PLAN.md (Model Constants & Tool Profile Schema)
-Resume file: .planning/phases/10-template-profiles-model-configuration/10-01-SUMMARY.md
+Stopped at: Completed 10-02-PLAN.md (Model & Tool Profile UI Components)
+Resume file: .planning/phases/10-template-profiles-model-configuration/10-02-SUMMARY.md
