@@ -3,6 +3,7 @@
 import { createServerClient } from "@/_lib/supabase/server";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { getCatalogEntry, bulkCreateIntegrations } from "@agency-factory/core";
 
 /**
  * Fetch all integrations for a specific agent.
@@ -36,7 +37,7 @@ export async function getAgentIntegrationsAction(agentId: string) {
 }
 
 /**
- * Fetch all integrations for a business with agent names.
+ * Fetch all integrations for a business with agent and department names.
  */
 export async function getBusinessIntegrationsAction(businessId: string) {
   const supabase = await createServerClient();
@@ -51,7 +52,7 @@ export async function getBusinessIntegrationsAction(businessId: string) {
   try {
     const { data, error } = await supabase
       .from("integrations")
-      .select("*, agents(id, name)")
+      .select("*, agents(id, name), departments(id, name)")
       .eq("business_id", businessId)
       .order("type")
       .order("created_at");
@@ -65,6 +66,81 @@ export async function getBusinessIntegrationsAction(businessId: string) {
         err instanceof Error
           ? err.message
           : "Failed to fetch business integrations",
+    };
+  }
+}
+
+/**
+ * Add an integration from the catalog to multiple targets (departments and/or agents).
+ * Category is auto-populated from the catalog entry.
+ */
+export async function addCatalogIntegrationAction(
+  businessId: string,
+  catalogEntryId: string,
+  departmentIds: string[],
+  agentIds: string[]
+): Promise<{ integrationIds?: string[]; error?: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const entry = getCatalogEntry(catalogEntryId);
+  if (!entry) {
+    return { error: `Unknown catalog entry: ${catalogEntryId}` };
+  }
+
+  try {
+    const entries: Array<{
+      agentId?: string;
+      departmentId?: string;
+      type: string;
+      provider: string;
+      name: string;
+      config?: Record<string, unknown>;
+    }> = [];
+
+    // Department targets: department_id set, agent_id null
+    for (const departmentId of departmentIds) {
+      entries.push({
+        departmentId,
+        type: entry.category,
+        provider: entry.provider,
+        name: entry.name,
+        config: entry.defaultConfig,
+      });
+    }
+
+    // Agent targets: agent_id set, department_id null
+    for (const agentId of agentIds) {
+      entries.push({
+        agentId,
+        type: entry.category,
+        provider: entry.provider,
+        name: entry.name,
+        config: entry.defaultConfig,
+      });
+    }
+
+    const created = await bulkCreateIntegrations(supabase, businessId, entries);
+
+    revalidatePath(`/businesses/${businessId}/integrations`);
+    // Also revalidate agent pages for targeted agents
+    for (const agentId of agentIds) {
+      revalidatePath(`/businesses/${businessId}/agents/${agentId}`);
+    }
+
+    return { integrationIds: created.map((i) => i.id) };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to add catalog integration",
     };
   }
 }
