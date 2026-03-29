@@ -164,7 +164,7 @@ Plans:
   1. Role Definition card on agent config accepts plain-language description, tone, and focus
   2. Claude generates system prompt AND SKILL.md from role definition and previews both before saving
   3. Agent setup wizard includes knowledge upload step with agent-specific zones
-  4. Role Definition and System Prompt cards work together (generate → preview → edit → save)
+  4. Role Definition and System Prompt cards work together (generate -> preview -> edit -> save)
   5. Departments support multiple agents with parent-child hierarchy (lead + sub-agents with role field)
   6. SKILL.md stored on agent record and deployable to VPS as workspace artifact
 **Plans**: TBD
@@ -212,10 +212,12 @@ Plans:
   1. Sub-agents can be created under any department lead agent with named roles
   2. Agent tree UI visualizes parent-child hierarchy within departments on the agents page
   3. Agent list and detail pages show hierarchy grouping with collapsible department sections
-**Plans**: TBD
+**Plans**: 3 plans (2 original + 1 gap closure)
 
 Plans:
-- [ ] 11-01: TBD
+- [x] 11-01: Reparent service, tree data components, SVG lines, agents page and wizard updates
+- [x] 11-02: Sidebar panel, drag-and-drop reparenting, responsive mobile fallback
+- [ ] 11-03: UAT gap closure -- Unified org chart layout, box nodes, elbow connectors, DnD hydration fix
 
 ### Phase 12: Integrations Catalog & Setup
 **Goal**: Admin can add integrations from a browsable catalog, assign them to specific departments or agents, and get AI-generated setup instructions
@@ -366,7 +368,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 8. Role Definition & Prompt Generation | 3/3 | Complete | 2026-03-27 |
 | 9. Skill Management & Deployment | 4/4 | Complete | 2026-03-28 |
 | 10. Template Profiles & Model Configuration | 3/3 | Complete    | 2026-03-29 |
-| 11. Sub-Agent Management | 2/2 | Complete    | 2026-03-29 |
+| 11. Sub-Agent Management | 2/3 | Gap closure    | 2026-03-29 |
 | 12. Integrations Catalog & Setup | 2/2 | Complete    | 2026-03-29 |
 | 13. Secrets Management UX | 0/? | Not started | - |
 | 14. Slack Integration & Chat Replacement | 0/? | Not started | - |
