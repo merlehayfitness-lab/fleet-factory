@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { createTaskSchema } from "@agency-factory/core";
 import type { CreateTaskInput } from "@agency-factory/core";
 import type { TaskStatus } from "@agency-factory/core";
+import type { RiskLevel } from "@agency-factory/core";
 import {
   createTask,
   getTasksForBusiness,
@@ -13,6 +14,7 @@ import {
   updateTaskStatus,
   respondToAssistanceRequest,
   executeTask,
+  createApproval,
 } from "@agency-factory/core/server";
 
 /**
@@ -47,6 +49,20 @@ export async function createTaskAction(
 
     // Route the task through the orchestrator
     const result = await executeTask(supabase, businessId, task.id);
+
+    // If the task needs approval, create the approval record
+    if (result.needsApproval && result.agentId) {
+      await createApproval(
+        supabase,
+        businessId,
+        task.id,
+        result.agentId,
+        result.approvalToolName ?? "unknown_tool",
+        result.approvalAction ?? `Task "${input.title}" requires approval`,
+        (result.approvalRiskLevel as RiskLevel) ?? "high",
+      );
+      revalidatePath(`/businesses/${businessId}/approvals`);
+    }
 
     revalidatePath(`/businesses/${businessId}/tasks`);
     revalidatePath(`/businesses/${businessId}`);
@@ -184,6 +200,20 @@ export async function quickAddTaskAction(
 
     // Route through orchestrator
     const result = await executeTask(supabase, businessId, task.id);
+
+    // If the task needs approval, create the approval record
+    if (result.needsApproval && result.agentId) {
+      await createApproval(
+        supabase,
+        businessId,
+        task.id,
+        result.agentId,
+        result.approvalToolName ?? "unknown_tool",
+        result.approvalAction ?? `Task "${title}" requires approval`,
+        (result.approvalRiskLevel as RiskLevel) ?? "high",
+      );
+      revalidatePath(`/businesses/${businessId}/approvals`);
+    }
 
     revalidatePath(`/businesses/${businessId}/tasks`);
     revalidatePath(`/businesses/${businessId}`);

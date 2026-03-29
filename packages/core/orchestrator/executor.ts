@@ -360,7 +360,7 @@ export async function executeTask(
 
   // 9. Handle worker result
   if (workerResult.needsApproval) {
-    // Transition to waiting_approval -- approval creation happens in 04-03
+    // Transition to waiting_approval -- caller creates approval record from returned metadata
     await supabase
       .from("tasks")
       .update({ status: "waiting_approval" })
