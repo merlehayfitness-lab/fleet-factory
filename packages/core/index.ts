@@ -64,9 +64,21 @@ export { getAdapter, MOCK_ADAPTERS } from "./integrations/index";
 export {
   getIntegrationsForAgent,
   getIntegrationsForBusiness,
+  getIntegrationsForDepartment,
+  getEffectiveIntegrationsForAgent,
+  bulkCreateIntegrations,
   upsertIntegration,
   deleteIntegration,
 } from "./integrations/service";
+export type {
+  Integration as IntegrationRecord,
+  IntegrationWithAgent,
+  IntegrationWithDepartment,
+} from "./integrations/service";
+
+// Integration catalog (client-safe)
+export type { CatalogEntry } from "./integrations/catalog";
+export { INTEGRATION_CATALOG, getCatalogByCategory, getCatalogEntry } from "./integrations/catalog";
 
 // Deployment lifecycle (pure functions, no Node.js deps)
 export {

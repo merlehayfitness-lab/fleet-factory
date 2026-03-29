@@ -24,3 +24,7 @@ export function getAdapter(type: IntegrationType, _provider?: string): Integrati
   if (!factory) throw new Error(`Unknown integration type: ${type}`);
   return factory();
 }
+
+// Integration catalog
+export { INTEGRATION_CATALOG, getCatalogByCategory, getCatalogEntry } from "./catalog";
+export type { CatalogEntry } from "./catalog";
