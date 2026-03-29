@@ -28,6 +28,7 @@ interface AgentTreeDepartmentProps {
   agentCount: number;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  onSelect?: () => void;
   registerRef: (nodeId: string, el: HTMLElement | null) => void;
 }
 
@@ -41,6 +42,7 @@ export function AgentTreeDepartment({
   agentCount,
   isCollapsed,
   onToggleCollapse,
+  onSelect,
   registerRef,
 }: AgentTreeDepartmentProps) {
   const router = useRouter();
@@ -77,7 +79,13 @@ export function AgentTreeDepartment({
       </button>
 
       {/* Department name */}
-      <span className="text-base font-bold uppercase tracking-wide">
+      <span
+        className="cursor-pointer text-base font-bold uppercase tracking-wide hover:text-primary"
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect?.();
+        }}
+      >
         {department.name}
       </span>
 
