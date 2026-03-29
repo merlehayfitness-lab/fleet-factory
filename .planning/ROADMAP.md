@@ -12,15 +12,15 @@ Agency Factory delivers a multi-tenant SaaS platform for deploying and managing 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation and Tenant Provisioning** - Auth, RLS isolation, atomic business provisioning, and core admin screens
+- [x] **Phase 1: Foundation and Tenant Provisioning** - Auth, RLS isolation, atomic business provisioning, and core admin screens (completed 2026-03-25)
 - [x] **Phase 2: Agent Management** - Template-based agent lifecycle with list and detail views (completed 2026-03-25)
 - [x] **Phase 3: Deployment Pipeline** - Config generation, deployment execution, secrets, and integration adapters (completed 2026-03-26)
-- [ ] **Phase 4: Task Execution and Approvals** - Orchestrator routing, worker execution, approval gates, and security controls
-- [ ] **Phase 5: Observability and Command Center** - Tenant health monitoring, audit viewer, chat interface, and emergency controls
-- [ ] **Phase 6: OpenClaw Deployment & Live VPS Runtime** - OpenClaw-native artifacts, VPS deployment via Claude Code, live task/chat routing to real agents
-- [ ] **Phase 7: RAG Knowledge Base** - pgvector, document upload/embedding, two-tier knowledge (global + per-agent), runtime retrieval
-- [ ] **Phase 8: Role Definition & Prompt Generation** - Plain-language role definition, Claude-powered prompt/SKILL.md generation, multi-agent departments, wizard update
-- [ ] **Phase 9: Skill Management & Deployment** - Skill editor UI, GitHub repo import, department-level skills, skill template library
+- [x] **Phase 4: Task Execution and Approvals** - Orchestrator routing, worker execution, approval gates, and security controls (completed 2026-03-26)
+- [x] **Phase 5: Observability and Command Center** - Tenant health monitoring, audit viewer, chat interface, and emergency controls (completed 2026-03-27)
+- [x] **Phase 6: OpenClaw Deployment & Live VPS Runtime** - OpenClaw-native artifacts, VPS deployment via Claude Code, live task/chat routing to real agents (completed 2026-03-27)
+- [x] **Phase 7: RAG Knowledge Base** - pgvector, document upload/embedding, two-tier knowledge (global + per-agent), runtime retrieval (completed 2026-03-27)
+- [x] **Phase 8: Role Definition & Prompt Generation** - Plain-language role definition, Claude-powered prompt/SKILL.md generation, multi-agent departments, wizard update (completed 2026-03-27)
+- [x] **Phase 9: Skill Management & Deployment** - Skill editor UI, GitHub repo import, department-level skills, skill template library (completed 2026-03-28)
 - [ ] **Phase 10: Template Profiles & Model Configuration** - Tool/Model Profile JSON on templates, model dropdown on agent config
 - [ ] **Phase 11: Sub-Agent Management** - Sub-agent creation under departments, visual hierarchy tree UI
 - [ ] **Phase 12: Integrations Catalog & Setup** - Integration catalog with add button, department/agent assignment, AI-generated setup guides
@@ -365,7 +365,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 7. RAG Knowledge Base | 3/3 | Complete | 2026-03-27 |
 | 8. Role Definition & Prompt Generation | 3/3 | Complete | 2026-03-27 |
 | 9. Skill Management & Deployment | 4/4 | Complete | 2026-03-28 |
-| 10. Template Profiles & Model Configuration | 0/? | Not started | - |
+| 10. Template Profiles & Model Configuration | 1/3 | In Progress|  |
 | 11. Sub-Agent Management | 0/? | Not started | - |
 | 12. Integrations Catalog & Setup | 0/? | Not started | - |
 | 13. Secrets Management UX | 0/? | Not started | - |

@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 9 -- Skill Management & Deployment
+**Current focus:** Phase 10 -- Template Profiles & Model Configuration
 
 ## Current Position
 
-Phase: 9 of 9 (Skill Management & Deployment)
-Plan: 4 of 4 in current phase (4 complete)
-Status: Phase 9 complete -- all plans including gap closure executed
-Last activity: 2026-03-28 -- Completed 09-04-PLAN.md (Recursive GitHub Import with Collection Grouping)
+Phase: 10 of 10 (Template Profiles & Model Configuration)
+Plan: 1 of 3 in current phase (1 complete)
+Status: Executing Phase 10
+Last activity: 2026-03-29 -- Completed 10-01-PLAN.md (Model Constants & Tool Profile Schema)
 
-Progress: [██████████████████████████████] 100% (33/33 plans)
+Progress: [██████████████████████████████] 94% (34/36 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 33
+- Total plans completed: 34
 - Average duration: 6min
-- Total execution time: 3.3 hours
+- Total execution time: 3.4 hours
 
 **By Phase:**
 
@@ -37,8 +37,10 @@ Progress: [███████████████████████
 | 08 | 3 | 20min | 7min |
 | 09 | 4 | 23min | 6min |
 
+| 10 | 1 | 6min | 6min |
+
 **Recent Trend:**
-- Last 5 plans: 09-01 (6min), 09-02 (5min), 09-03 (8min), 09-04 (4min)
+- Last 5 plans: 09-02 (5min), 09-03 (8min), 09-04 (4min), 10-01 (6min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -75,6 +77,7 @@ Progress: [███████████████████████
 | Phase 09 P02 | 5min | 2 tasks | 10 files |
 | Phase 09 P03 | 8min | 2 tasks | 9 files |
 | Phase 09 P04 | 4min | 2 tasks | 8 files |
+| Phase 10 P01 | 6min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -218,6 +221,9 @@ Recent decisions affecting current work:
 - [09-03]: DropdownMenuTrigger uses inline className styling (base-ui does not support asChild)
 - [09-04]: Replaced Contents API with Git Trees API for recursive directory scanning
 - [09-04]: import_collection stored as nullable text column with conditional index on business_id
+- [10-01]: MODEL_PRICING updated from legacy flat-rate pricing to model-specific per-MTok pricing with backward-compat aliases
+- [10-01]: CLAUDE_MODELS uses dynamic lookup (find latest sonnet) instead of hardcoded strings in test-chat and generator services
+- [10-01]: syncFromTemplate audit log uses actor_id from supabase.auth.getUser() for traceability
 
 ### Pending Todos
 
@@ -229,6 +235,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28
-Stopped at: Completed 09-04-PLAN.md (Recursive GitHub Import with Collection Grouping) -- Phase 9 gap closure complete, all 33 plans executed
-Resume file: .planning/phases/09-skill-management-deployment/09-04-SUMMARY.md
+Last session: 2026-03-29
+Stopped at: Completed 10-01-PLAN.md (Model Constants & Tool Profile Schema)
+Resume file: .planning/phases/10-template-profiles-model-configuration/10-01-SUMMARY.md

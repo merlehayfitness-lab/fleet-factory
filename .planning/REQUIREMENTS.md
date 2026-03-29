@@ -161,6 +161,62 @@
 - [x] **INTG-03**: Integration adapter interface designed for swappable real connectors later
 - [x] **INTG-04**: Integration credentials scoped per tenant and stored encrypted
 
+### Template Profiles & Model Configuration
+
+- [x] **TMPL-01**: Agent templates store optional tool_profile (JSONB) defining available tools and MCP configurations
+- [x] **TMPL-02**: Agent templates store optional model_profile (JSONB) defining model selection and parameters
+- [x] **TMPL-03**: Model Profile on agent config page is changeable via dropdown with available models
+- [x] **TMPL-04**: Tool/Model Profile JSON editable via structured form or raw JSON editor
+
+### Sub-Agent Management
+
+- [ ] **SUBAG-01**: Sub-agents can be created under department lead agents with named roles
+- [ ] **SUBAG-02**: Agent tree UI visualizes parent-child hierarchy within departments
+- [ ] **SUBAG-03**: Agent list and detail pages show hierarchy grouping with collapsible department sections
+
+### Integrations Catalog & Setup
+
+- [ ] **INTG-ENH-01**: "Add Integration" button opens browsable catalog of available integrations
+- [ ] **INTG-ENH-02**: Adding an integration assigns it to a specific department or agent
+- [ ] **INTG-ENH-03**: AI-generated setup instructions based on integration type
+- [ ] **INTG-ENH-04**: Category field auto-populates based on integration selection
+
+### Secrets Management UX
+
+- [ ] **SECR-ENH-01**: Integration-first secrets flow (pick integration, category auto-fills, relevant fields appear)
+- [ ] **SECR-ENH-02**: Secrets accessible from business settings page via link to dedicated secrets page
+- [ ] **SECR-ENH-03**: Dynamic credential fields adapt to integration type (API key, OAuth, username/password, etc.)
+- [ ] **SECR-ENH-04**: Secrets page displays credentials grouped by integration
+
+### Slack Integration
+
+- [ ] **SLACK-01**: Slack API integration routes messages to/from department agents
+- [ ] **SLACK-02**: Embedded Slack feed view in admin panel per department/agent
+- [ ] **SLACK-03**: Messages viewable both in admin panel and directly in Slack
+- [ ] **SLACK-04**: Custom chat page replaced with Slack-powered interface
+
+### AITMPL Template Catalog
+
+- [ ] **AITMPL-01**: Browse and select from AITMPL catalog within business setup wizard
+- [ ] **AITMPL-02**: Wizard suggests skills, agents, commands based on department/industry
+- [ ] **AITMPL-03**: Import tool configurations from AITMPL agent-tool-builder for tool_profile JSON
+- [ ] **AITMPL-04**: Catalog covers Skills, Agents, Commands, Settings, Hooks, MCPs, Plugins
+
+### Tenant Disable Fix
+
+- [ ] **TFIX-01**: Disabled tenant shows frozen dashboard with "Suspended" banner instead of 404
+- [ ] **TFIX-02**: Disabling tenant stops all VPS activity (pause containers, halt deployments)
+- [ ] **TFIX-03**: Admin panel blocks interaction with VPS when tenant disabled
+- [ ] **TFIX-04**: Admin can still view business in read-only frozen state
+
+### VPS Activation & Embedded Terminal
+
+- [ ] **VPS-TERM-01**: First real department/agent deployed and running on Hostinger VPS
+- [ ] **VPS-TERM-02**: Gear icon next to VPS status badge links to standalone terminal page
+- [ ] **VPS-TERM-03**: Embedded real-time SSH terminal for direct VPS access from admin panel
+- [ ] **VPS-TERM-04**: Admin can access deployed agents and Docker containers from embedded terminal
+- [ ] **VPS-TERM-05**: End-to-end VPS deployment pipeline verified with real agents
+
 ## v2 Requirements
 
 ### Advanced Auth
@@ -311,10 +367,42 @@
 | SKILL-02 | Phase 9 | Complete |
 | SKILL-03 | Phase 9 | Complete |
 | SKILL-04 | Phase 9 | Complete |
+| TMPL-01 | Phase 10 | Not started |
+| TMPL-02 | Phase 10 | Not started |
+| TMPL-03 | Phase 10 | Not started |
+| TMPL-04 | Phase 10 | Not started |
+| SUBAG-01 | Phase 11 | Not started |
+| SUBAG-02 | Phase 11 | Not started |
+| SUBAG-03 | Phase 11 | Not started |
+| INTG-ENH-01 | Phase 12 | Not started |
+| INTG-ENH-02 | Phase 12 | Not started |
+| INTG-ENH-03 | Phase 12 | Not started |
+| INTG-ENH-04 | Phase 12 | Not started |
+| SECR-ENH-01 | Phase 13 | Not started |
+| SECR-ENH-02 | Phase 13 | Not started |
+| SECR-ENH-03 | Phase 13 | Not started |
+| SECR-ENH-04 | Phase 13 | Not started |
+| SLACK-01 | Phase 14 | Not started |
+| SLACK-02 | Phase 14 | Not started |
+| SLACK-03 | Phase 14 | Not started |
+| SLACK-04 | Phase 14 | Not started |
+| AITMPL-01 | Phase 15 | Not started |
+| AITMPL-02 | Phase 15 | Not started |
+| AITMPL-03 | Phase 15 | Not started |
+| AITMPL-04 | Phase 15 | Not started |
+| TFIX-01 | Phase 16 | Not started |
+| TFIX-02 | Phase 16 | Not started |
+| TFIX-03 | Phase 16 | Not started |
+| TFIX-04 | Phase 16 | Not started |
+| VPS-TERM-01 | Phase 17 | Not started |
+| VPS-TERM-02 | Phase 17 | Not started |
+| VPS-TERM-03 | Phase 17 | Not started |
+| VPS-TERM-04 | Phase 17 | Not started |
+| VPS-TERM-05 | Phase 17 | Not started |
 
 **Coverage:**
-- v1 requirements: 109 total
-- Mapped to phases: 109
+- v1 requirements: 141 total
+- Mapped to phases: 141
 - Unmapped: 0
 
 ---
