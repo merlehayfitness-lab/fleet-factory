@@ -244,6 +244,43 @@ export async function syncFromTemplateAction(
 }
 
 /**
+ * Reparent an agent (move to a different parent or department).
+ * Used by drag-and-drop in the agent tree view.
+ */
+export async function reparentAgentAction(
+  agentId: string,
+  businessId: string,
+  newParentAgentId: string | null,
+  newDepartmentId: string,
+) {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  try {
+    const { reparentAgent } = await import("@agency-factory/core/server");
+    await reparentAgent(
+      supabase,
+      agentId,
+      businessId,
+      newParentAgentId,
+      newDepartmentId,
+    );
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to reparent agent",
+    };
+  }
+
+  revalidatePath(`/businesses/${businessId}/agents`);
+}
+
+/**
  * Test an MCP server connection by pinging its URL.
  * Advisory only -- result does not block saving.
  */

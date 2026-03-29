@@ -289,3 +289,136 @@ export async function syncFromTemplate(
 
   return { before, after };
 }
+
+/**
+ * Check if reparenting an agent would create a circular reference.
+ * Walks up the parent chain from targetParentId; if it encounters agentId, it's a cycle.
+ */
+async function wouldCreateCycle(
+  supabase: SupabaseClient,
+  agentId: string,
+  targetParentId: string,
+  businessId: string,
+): Promise<boolean> {
+  let currentId: string | null = targetParentId;
+  const visited = new Set<string>();
+  while (currentId) {
+    if (currentId === agentId) return true;
+    if (visited.has(currentId)) return false; // safety: break infinite loop
+    visited.add(currentId);
+    const { data: row } = await supabase
+      .from("agents")
+      .select("parent_agent_id")
+      .eq("id", currentId)
+      .eq("business_id", businessId)
+      .single() as { data: { parent_agent_id: string | null } | null };
+    currentId = row?.parent_agent_id ?? null;
+  }
+  return false;
+}
+
+/**
+ * Reparent an agent: change its parent_agent_id and optionally its department_id.
+ * Used by drag-and-drop in the agent tree view.
+ *
+ * Rules:
+ * 1. Cannot reparent to self
+ * 2. Cannot create circular reference (agent cannot become child of its own descendant)
+ * 3. Must be same business
+ * 4. If new parent is in a different department, update department_id too
+ * 5. If dropping on a department (no parent), set parent_agent_id = null and department_id = target dept
+ */
+export async function reparentAgent(
+  supabase: SupabaseClient,
+  agentId: string,
+  businessId: string,
+  newParentAgentId: string | null,
+  newDepartmentId: string,
+): Promise<void> {
+  // 1. Fetch the agent being moved
+  const { data: agent, error: fetchError } = await supabase
+    .from("agents")
+    .select("id, name, parent_agent_id, department_id")
+    .eq("id", agentId)
+    .eq("business_id", businessId)
+    .single();
+
+  if (fetchError || !agent) {
+    throw new Error(
+      `Agent not found: ${fetchError?.message ?? "No agent with that ID in this business"}`,
+    );
+  }
+
+  let effectiveDepartmentId = newDepartmentId;
+
+  if (newParentAgentId) {
+    // Cannot reparent to self
+    if (newParentAgentId === agentId) {
+      throw new Error("Cannot reparent: agent cannot be its own parent");
+    }
+
+    // Verify target parent exists and is in the same business
+    const { data: targetParent, error: parentError } = await supabase
+      .from("agents")
+      .select("id, department_id")
+      .eq("id", newParentAgentId)
+      .eq("business_id", businessId)
+      .single();
+
+    if (parentError || !targetParent) {
+      throw new Error("Target parent agent not found in this business");
+    }
+
+    // Check for circular reference
+    if (await wouldCreateCycle(supabase, agentId, newParentAgentId, businessId)) {
+      throw new Error("Cannot reparent: would create circular reference");
+    }
+
+    // Sub-agent inherits parent's department
+    effectiveDepartmentId = targetParent.department_id as string;
+  }
+
+  const previousParent = agent.parent_agent_id as string | null;
+  const previousDepartment = agent.department_id as string;
+
+  // 2. Update the agent
+  const { error: updateError } = await supabase
+    .from("agents")
+    .update({
+      parent_agent_id: newParentAgentId,
+      department_id: effectiveDepartmentId,
+    })
+    .eq("id", agentId)
+    .eq("business_id", businessId);
+
+  if (updateError) {
+    throw new Error(`Failed to reparent agent: ${updateError.message}`);
+  }
+
+  // 3. If the agent had children and changed departments, move children too
+  if (effectiveDepartmentId !== previousDepartment) {
+    await supabase
+      .from("agents")
+      .update({ department_id: effectiveDepartmentId })
+      .eq("parent_agent_id", agentId)
+      .eq("business_id", businessId);
+  }
+
+  // 4. Audit log (best-effort)
+  const { error: auditError } = await supabase.from("audit_logs").insert({
+    business_id: businessId,
+    action: "agent.reparented",
+    entity_type: "agent",
+    entity_id: agentId,
+    metadata: {
+      previous_parent: previousParent,
+      new_parent: newParentAgentId,
+      previous_department: previousDepartment,
+      new_department: effectiveDepartmentId,
+    },
+  });
+
+  if (auditError) {
+    console.error("Failed to create audit log:", auditError.message);
+  }
+}
