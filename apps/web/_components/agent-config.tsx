@@ -18,6 +18,7 @@ import { PromptRefinementPanel } from "@/_components/prompt-refinement-panel";
 import { TestChatDialog } from "@/_components/test-chat-dialog";
 import { ModelSelector } from "@/_components/model-selector";
 import { ProfileEditorDrawer } from "@/_components/profile-editor-drawer";
+import { SyncFromTemplateDialog } from "@/_components/sync-from-template-dialog";
 import type {
   RoleDefinition,
   GenerationResult,
@@ -494,21 +495,29 @@ export function AgentConfig({
               </Link>
             </p>
 
-            {hasDrift ? (
-              <Badge
-                variant="secondary"
-                className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
-              >
-                Config differs from template
-              </Badge>
-            ) : (
-              <Badge
-                variant="secondary"
-                className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
-              >
-                In sync with template
-              </Badge>
-            )}
+            <div className="flex items-center gap-2">
+              {hasDrift ? (
+                <Badge
+                  variant="secondary"
+                  className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                >
+                  Config differs from template
+                </Badge>
+              ) : (
+                <Badge
+                  variant="secondary"
+                  className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400"
+                >
+                  In sync with template
+                </Badge>
+              )}
+            </div>
+
+            <SyncFromTemplateDialog
+              agentId={agent.id}
+              businessId={businessId}
+              hasTemplate={!!template}
+            />
           </CardContent>
         </Card>
       )}

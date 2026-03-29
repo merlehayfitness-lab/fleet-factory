@@ -142,6 +142,108 @@ export async function updateAgentConfigAction(
 }
 
 /**
+ * Get the diff between an agent's current profiles and its template's profiles.
+ * Used by the Sync from Template dialog to show a preview of changes.
+ */
+export async function getTemplateDiffAction(
+  agentId: string,
+  businessId: string,
+) {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  // Fetch agent with template_id
+  const { data: agent, error: agentErr } = await supabase
+    .from("agents")
+    .select("id, template_id, tool_profile, model_profile")
+    .eq("id", agentId)
+    .eq("business_id", businessId)
+    .single();
+
+  if (agentErr || !agent) {
+    return { error: "Agent not found" };
+  }
+
+  if (!agent.template_id) {
+    return { error: "Agent has no linked template" };
+  }
+
+  // Fetch template profiles
+  const { data: template, error: tmplErr } = await supabase
+    .from("agent_templates")
+    .select("tool_profile, model_profile")
+    .eq("id", agent.template_id as string)
+    .single();
+
+  if (tmplErr || !template) {
+    return { error: "Template not found" };
+  }
+
+  const agentProfiles = {
+    tool_profile: (agent.tool_profile as Record<string, unknown>) ?? {},
+    model_profile: (agent.model_profile as Record<string, unknown>) ?? {},
+  };
+  const templateProfiles = {
+    tool_profile: (template.tool_profile as Record<string, unknown>) ?? {},
+    model_profile: (template.model_profile as Record<string, unknown>) ?? {},
+  };
+
+  const hasChanges =
+    JSON.stringify(agentProfiles.tool_profile) !==
+      JSON.stringify(templateProfiles.tool_profile) ||
+    JSON.stringify(agentProfiles.model_profile) !==
+      JSON.stringify(templateProfiles.model_profile);
+
+  return {
+    agent: agentProfiles,
+    template: templateProfiles,
+    hasChanges,
+  };
+}
+
+/**
+ * Sync an agent's profiles from its linked template.
+ * Overwrites tool_profile and model_profile with template values.
+ */
+export async function syncFromTemplateAction(
+  agentId: string,
+  businessId: string,
+) {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  try {
+    const { syncFromTemplate } = await import("@agency-factory/core/server");
+    const { before, after } = await syncFromTemplate(
+      supabase,
+      agentId,
+      businessId,
+    );
+    revalidatePath(`/businesses/${businessId}/agents/${agentId}`);
+    return { success: true, before, after };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error
+          ? err.message
+          : "Failed to sync from template",
+    };
+  }
+}
+
+/**
  * Test an MCP server connection by pinging its URL.
  * Advisory only -- result does not block saving.
  */
