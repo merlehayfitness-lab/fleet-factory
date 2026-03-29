@@ -13,10 +13,13 @@ import { AgentSetupWizard } from "@/_components/agent-setup-wizard";
  */
 export default async function NewAgentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ departmentId?: string; parentAgentId?: string }>;
 }) {
   const { id: businessId } = await params;
+  const { departmentId: initialDepartmentId, parentAgentId: initialParentAgentId } = await searchParams;
   const supabase = await createServerClient();
 
   const {
@@ -79,6 +82,8 @@ export default async function NewAgentPage({
             type: i.type as string,
           }))
         }
+        initialDepartmentId={initialDepartmentId}
+        initialParentAgentId={initialParentAgentId}
       />
     </div>
   );

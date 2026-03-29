@@ -51,6 +51,8 @@ interface AgentSetupWizardProps {
   businessIndustry: string;
   departments: Department[];
   integrations: Integration[];
+  initialDepartmentId?: string;
+  initialParentAgentId?: string;
 }
 
 /**
@@ -65,6 +67,8 @@ export function AgentSetupWizard({
   businessIndustry,
   departments,
   integrations,
+  initialDepartmentId,
+  initialParentAgentId,
 }: AgentSetupWizardProps) {
   const router = useRouter();
 
@@ -73,9 +77,9 @@ export function AgentSetupWizard({
 
   // Step 1: Basic Info
   const [agentName, setAgentName] = useState("");
-  const [departmentId, setDepartmentId] = useState("");
+  const [departmentId, setDepartmentId] = useState(initialDepartmentId ?? "");
   const [role, setRole] = useState("");
-  const [parentAgentId, setParentAgentId] = useState<string | null>(null);
+  const [parentAgentId, setParentAgentId] = useState<string | null>(initialParentAgentId ?? null);
 
   // Step 2: Knowledge
   const [provisionalAgentId, setProvisionalAgentId] = useState<string | null>(

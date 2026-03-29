@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
-import { Plus } from "lucide-react";
 import { createServerClient } from "@/_lib/supabase/server";
-import { AgentsList } from "@/_components/agents-list";
+import { AgentTreeView } from "@/_components/agent-tree-view";
 
 /**
- * Agents list page (Server Component).
+ * Agents page (Server Component).
  *
- * Fetches all agents for the business with department and template joins,
+ * Fetches all agents for the business with department joins,
  * plus skill assignment counts per agent (direct + department-inherited).
+ * Renders the AgentTreeView hierarchy instead of a flat list.
  * RLS scopes results to the authenticated user's businesses.
  */
 export default async function AgentsPage({
@@ -27,6 +26,13 @@ export default async function AgentsPage({
     redirect("/sign-in");
   }
 
+  // Fetch departments separately for the tree view headers
+  const { data: departments } = await supabase
+    .from("departments")
+    .select("id, name, type")
+    .eq("business_id", businessId)
+    .order("created_at");
+
   const { data: agents, error } = await supabase
     .from("agents")
     .select("*, departments(id, name, type), agent_templates(id, name)")
@@ -39,7 +45,7 @@ export default async function AgentsPage({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Agents</h1>
           <p className="text-sm text-muted-foreground">
-            Manage agents across departments
+            Agent hierarchy across departments
           </p>
         </div>
         <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -89,31 +95,37 @@ export default async function AgentsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Agents</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage agents across departments
-          </p>
-        </div>
-        <Link
-          href={`/businesses/${businessId}/agents/new`}
-          className="inline-flex h-9 items-center justify-center gap-2 whitespace-nowrap rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-xs transition-colors hover:bg-primary/90"
-        >
-          <Plus className="size-4" />
-          New Agent
-        </Link>
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">Agents</h1>
+        <p className="text-sm text-muted-foreground">
+          Agent hierarchy across departments
+        </p>
       </div>
 
-      {agentsWithSkills.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12">
-          <p className="text-sm text-muted-foreground">
-            No agents found. Create a business to provision starter agents.
-          </p>
-        </div>
-      ) : (
-        <AgentsList agents={agentsWithSkills} businessId={businessId} />
-      )}
+      <AgentTreeView
+        agents={agentsWithSkills.map((a) => ({
+          id: a.id as string,
+          name: a.name as string,
+          status: a.status as string,
+          role: (a.role as string) ?? null,
+          parent_agent_id: (a.parent_agent_id as string) ?? null,
+          model_profile: (a.model_profile as Record<string, unknown>) ?? {},
+          departments: a.departments
+            ? {
+                id: (a.departments as { id: string; name: string; type: string }).id,
+                name: (a.departments as { id: string; name: string; type: string }).name,
+                type: (a.departments as { id: string; name: string; type: string }).type,
+              }
+            : null,
+          skill_count: a.skill_count,
+        }))}
+        departments={(departments ?? []).map((d) => ({
+          id: d.id as string,
+          name: d.name as string,
+          type: d.type as string,
+        }))}
+        businessId={businessId}
+      />
     </div>
   );
 }
