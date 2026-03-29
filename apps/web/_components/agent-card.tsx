@@ -25,7 +25,7 @@ import { FreezeDialog } from "@/_components/freeze-dialog";
 import { RetireDialog } from "@/_components/retire-dialog";
 import { pauseAgent, resumeAgent } from "@/_actions/agent-actions";
 import type { AgentStatus } from "@agency-factory/core";
-import { getValidTransitions } from "@agency-factory/core";
+import { getValidTransitions, getModelFriendlyName } from "@agency-factory/core";
 
 interface AgentCardProps {
   agent: {
@@ -56,12 +56,8 @@ export function AgentCard({ agent, businessId, role, skillCount }: AgentCardProp
 
   const validTransitions = getValidTransitions(agent.status as AgentStatus);
 
-  const modelName =
-    agent.model_profile && Object.keys(agent.model_profile).length > 0
-      ? (agent.model_profile as Record<string, string>).model ??
-        (agent.model_profile as Record<string, string>).name ??
-        Object.values(agent.model_profile)[0]
-      : null;
+  const modelId = (agent.model_profile as { model?: string })?.model;
+  const modelDisplay = modelId ? getModelFriendlyName(modelId) : null;
 
   async function handlePause() {
     const result = await pauseAgent(agent.id, businessId);
@@ -170,9 +166,9 @@ export function AgentCard({ agent, businessId, role, skillCount }: AgentCardProp
             </p>
           )}
 
-          {modelName && (
-            <p className="font-mono text-xs text-muted-foreground">
-              {String(modelName)}
+          {modelDisplay && (
+            <p className="text-xs text-foreground">
+              {modelDisplay}
             </p>
           )}
 

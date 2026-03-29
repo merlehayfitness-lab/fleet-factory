@@ -25,6 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteTemplateAction } from "@/_actions/template-actions";
+import { getModelFriendlyName } from "@agency-factory/core";
 
 interface Template {
   id: string;
@@ -108,16 +109,31 @@ export function TemplateList({ templates, businessId }: TemplateListProps) {
               </p>
             </div>
 
-            {Object.keys(template.model_profile).length > 0 && (
-              <div>
-                <p className="mb-1 text-xs font-medium text-muted-foreground">
-                  Model Profile
-                </p>
-                <p className="font-mono text-xs text-muted-foreground/80">
-                  {Object.keys(template.model_profile).join(", ")}
-                </p>
-              </div>
-            )}
+            {(() => {
+              const templateModelId = (template.model_profile as { model?: string })?.model;
+              const toolProfile = template.tool_profile as { allowed_tools?: string[]; mcp_servers?: unknown[] } | undefined;
+              const toolCount = toolProfile?.allowed_tools?.length ?? 0;
+              const mcpCount = toolProfile?.mcp_servers?.length ?? 0;
+              return (
+                <>
+                  {templateModelId && (
+                    <p className="text-xs text-muted-foreground">
+                      Model:{" "}
+                      <span className="font-medium">
+                        {getModelFriendlyName(templateModelId)}
+                      </span>
+                    </p>
+                  )}
+                  {(toolCount > 0 || mcpCount > 0) && (
+                    <p className="text-xs text-muted-foreground">
+                      {toolCount > 0 && `${toolCount} tools`}
+                      {toolCount > 0 && mcpCount > 0 && " \u00b7 "}
+                      {mcpCount > 0 && `${mcpCount} MCP servers`}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
 
             <div className="flex items-center gap-2 pt-2">
               <Link

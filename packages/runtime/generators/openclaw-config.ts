@@ -57,7 +57,7 @@ export function generateOpenClawConfig(
     );
 
     const model =
-      (agent.modelProfile as { model?: string }).model || "claude-sonnet";
+      (agent.modelProfile as { model?: string }).model || "claude-sonnet-4-6";
 
     return {
       id: vpsAgentId,
