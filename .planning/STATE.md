@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 11 -- Sub-Agent Management
+**Current focus:** Phase 12 -- Integrations Catalog & Setup
 
 ## Current Position
 
-Phase: 11 of 11 (Sub-Agent Management)
-Plan: 2 of 2 in current phase (2 complete)
-Status: Phase 11 Complete -- All Phases Complete
-Last activity: 2026-03-29 -- Completed 11-02-PLAN.md (Sidebar Panel, Drag-and-Drop Reparenting & Mobile Fallback)
+Phase: 12 of 12 (Integrations Catalog & Setup)
+Plan: 1 of 2 in current phase (1 complete)
+Status: Executing Phase 12
+Last activity: 2026-03-29 -- Completed 12-01-PLAN.md (Catalog Data, Schema Migration, Dialog UI, and Page Updates)
 
-Progress: [██████████████████████████████] 100% (38/38 plans)
+Progress: [███████████████████████████████] 100% (39/40 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 38
+- Total plans completed: 39
 - Average duration: 6min
-- Total execution time: 3.7 hours
+- Total execution time: 3.85 hours
 
 **By Phase:**
 
@@ -40,9 +40,10 @@ Progress: [███████████████████████
 | 10 | 3 | 14min | 5min |
 
 | 11 | 2 | 10min | 5min |
+| 12 | 1 | 9min | 9min |
 
 **Recent Trend:**
-- Last 5 plans: 10-02 (5min), 10-03 (3min), 11-01 (5min), 11-02 (5min)
+- Last 5 plans: 10-03 (3min), 11-01 (5min), 11-02 (5min), 12-01 (9min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -84,6 +85,7 @@ Progress: [███████████████████████
 | Phase 10 P03 | 3min | 2 tasks | 6 files |
 | Phase 11 P01 | 5min | 2 tasks | 10 files |
 | Phase 11 P02 | 5min | 2 tasks | 5 files |
+| Phase 12 P01 | 9min | 3 tasks | 30 files |
 
 ## Accumulated Context
 
@@ -242,6 +244,9 @@ Recent decisions affecting current work:
 - [11-02]: Agent node click opens sidebar panel instead of navigating to detail page (changed from 11-01 behavior)
 - [11-02]: Confirmation toast with Confirm/Cancel before committing reparent operation (not modal dialog)
 - [11-02]: Lead agents are both draggable and droppable; sub-agents are draggable only
+- [12-01]: Check-then-insert pattern for bulkCreateIntegrations because partial unique indexes don't work with Supabase upsert onConflict
+- [12-01]: Lazy department inheritance: department_id set + agent_id NULL, queried via OR filter for effective integrations
+- [12-01]: AgentDetailTabs receives departments and allAgents props from server page for catalog dialog target picker
 
 ### Pending Todos
 
@@ -254,5 +259,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-29
-Stopped at: Completed 11-02-PLAN.md (Sidebar Panel, Drag-and-Drop Reparenting & Mobile Fallback) -- ALL PHASES COMPLETE
-Resume file: .planning/phases/11-sub-agent-management/11-02-SUMMARY.md
+Stopped at: Completed 12-01-PLAN.md (Catalog Data, Schema Migration, Dialog UI, and Page Updates)
+Resume file: .planning/phases/12-integrations-catalog-setup/12-01-SUMMARY.md
