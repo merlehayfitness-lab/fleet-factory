@@ -176,5 +176,8 @@ export {
 export { compileSkills } from "./skill/skill-compiler";
 export { parseGitHubUrl, fetchGitHubFile, fetchGitHubDirectory } from "./skill/github-import";
 
+// Tool profile validation (server-only -- uses fetch)
+export { validateMcpServerUrl } from "./agent/tool-profile-schema";
+
 // OpenClaw workspace generator (re-exported for server-only use in web app)
 export { generateOpenClawWorkspace } from "@agency-factory/runtime";

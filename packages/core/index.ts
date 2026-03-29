@@ -201,5 +201,25 @@ export type {
   GitHubImportResult,
 } from "./skill/skill-types";
 
+// Model constants (client-safe)
+export type { ClaudeModel } from "./agent/model-constants";
+export {
+  CLAUDE_MODELS,
+  DEPARTMENT_DEFAULT_MODELS,
+  getModelById,
+  getModelFriendlyName,
+  getLatestModels,
+  getDefaultModelForDepartment,
+} from "./agent/model-constants";
+
+// Tool profile types and constants (client-safe)
+export type { McpServerConfig, ToolProfileShape } from "./agent/tool-profile-schema";
+export type { KnownMcpServer } from "./agent/tool-profile-schema";
+export {
+  EMPTY_TOOL_PROFILE,
+  KNOWN_MCP_SERVERS,
+  DEPARTMENT_DEFAULT_TOOL_PROFILES,
+} from "./agent/tool-profile-schema";
+
 // NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker, approval service)
 // are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.
