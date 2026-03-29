@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 10 -- Template Profiles & Model Configuration
+**Current focus:** Phase 11 -- Sub-Agent Management
 
 ## Current Position
 
-Phase: 10 of 10 (Template Profiles & Model Configuration)
-Plan: 3 of 3 in current phase (3 complete)
-Status: Phase 10 Complete -- All phases complete
-Last activity: 2026-03-29 -- Completed 10-03-PLAN.md (Sync from Template Dialog & Model Display)
+Phase: 11 of 11 (Sub-Agent Management)
+Plan: 1 of 2 in current phase (1 complete)
+Status: Executing Phase 11
+Last activity: 2026-03-29 -- Completed 11-01-PLAN.md (Reparent Service & Agent Tree Visualization)
 
-Progress: [██████████████████████████████] 100% (36/36 plans)
+Progress: [██████████████████████████████] 97% (37/38 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 36
+- Total plans completed: 37
 - Average duration: 6min
-- Total execution time: 3.5 hours
+- Total execution time: 3.6 hours
 
 **By Phase:**
 
@@ -39,8 +39,10 @@ Progress: [███████████████████████
 
 | 10 | 3 | 14min | 5min |
 
+| 11 | 1 | 5min | 5min |
+
 **Recent Trend:**
-- Last 5 plans: 09-04 (4min), 10-01 (6min), 10-02 (5min), 10-03 (3min)
+- Last 5 plans: 10-01 (6min), 10-02 (5min), 10-03 (3min), 11-01 (5min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -80,6 +82,7 @@ Progress: [███████████████████████
 | Phase 10 P01 | 6min | 2 tasks | 10 files |
 | Phase 10 P02 | 5min | 2 tasks | 7 files |
 | Phase 10 P03 | 3min | 2 tasks | 6 files |
+| Phase 11 P01 | 5min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -232,6 +235,9 @@ Recent decisions affecting current work:
 - [10-03]: Dialog pre-fetches diff data before opening to show loading state on trigger button
 - [10-03]: Template list uses IIFE pattern to compute model/tool variables within JSX map
 - [10-03]: openclaw-config uses string literal fallback to avoid circular dependency between runtime and core
+- [11-01]: Explicit type cast on Supabase query result in wouldCreateCycle to avoid TS7022 self-referential type inference
+- [11-01]: Agent pill click navigates to agent detail page (router.push) rather than sidebar panel (deferred to 11-02)
+- [11-01]: Empty departments still render as header nodes with '+' button for creating first agent
 
 ### Pending Todos
 
@@ -244,5 +250,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-29
-Stopped at: Completed 10-03-PLAN.md (Sync from Template Dialog & Model Display) -- All phases complete
-Resume file: .planning/phases/10-template-profiles-model-configuration/10-03-SUMMARY.md
+Stopped at: Completed 11-01-PLAN.md (Reparent Service & Agent Tree Visualization)
+Resume file: .planning/phases/11-sub-agent-management/11-01-SUMMARY.md

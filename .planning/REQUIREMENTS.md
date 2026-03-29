@@ -170,9 +170,9 @@
 
 ### Sub-Agent Management
 
-- [ ] **SUBAG-01**: Sub-agents can be created under department lead agents with named roles
-- [ ] **SUBAG-02**: Agent tree UI visualizes parent-child hierarchy within departments
-- [ ] **SUBAG-03**: Agent list and detail pages show hierarchy grouping with collapsible department sections
+- [x] **SUBAG-01**: Sub-agents can be created under department lead agents with named roles
+- [x] **SUBAG-02**: Agent tree UI visualizes parent-child hierarchy within departments
+- [x] **SUBAG-03**: Agent list and detail pages show hierarchy grouping with collapsible department sections
 
 ### Integrations Catalog & Setup
 
