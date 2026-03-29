@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: Skill Management & Deployment** - Skill editor UI, GitHub repo import, department-level skills, skill template library (completed 2026-03-28)
 - [x] **Phase 10: Template Profiles & Model Configuration** - Tool/Model Profile JSON on templates, model dropdown on agent config (completed 2026-03-29)
 - [x] **Phase 11: Sub-Agent Management** - Sub-agent creation under departments, visual hierarchy tree UI (completed 2026-03-29)
-- [ ] **Phase 12: Integrations Catalog & Setup** - Integration catalog with add button, department/agent assignment, AI-generated setup guides
+- [x] **Phase 12: Integrations Catalog & Setup** - Integration catalog with add button, department/agent assignment, AI-generated setup guides (completed 2026-03-29)
 - [ ] **Phase 13: Secrets Management UX** - Integration-first secrets flow, dynamic credential fields, grouped secrets page
 - [ ] **Phase 14: Slack Integration & Chat Replacement** - Slack API routing, embedded feed in admin panel, replace custom chat
 - [ ] **Phase 15: AITMPL Template Catalog** - Wizard suggestions for Skills/Agents/Commands/Settings/Hooks/MCPs/Plugins from AITMPL
@@ -367,7 +367,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 9. Skill Management & Deployment | 4/4 | Complete | 2026-03-28 |
 | 10. Template Profiles & Model Configuration | 3/3 | Complete    | 2026-03-29 |
 | 11. Sub-Agent Management | 2/2 | Complete    | 2026-03-29 |
-| 12. Integrations Catalog & Setup | 1/2 | In Progress|  |
+| 12. Integrations Catalog & Setup | 2/2 | Complete   | 2026-03-29 |
 | 13. Secrets Management UX | 0/? | Not started | - |
 | 14. Slack Integration & Chat Replacement | 0/? | Not started | - |
 | 15. AITMPL Template Catalog | 0/? | Not started | - |

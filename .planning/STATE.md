@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 12 of 12 (Integrations Catalog & Setup)
-Plan: 1 of 2 in current phase (1 complete)
-Status: Executing Phase 12
-Last activity: 2026-03-29 -- Completed 12-01-PLAN.md (Catalog Data, Schema Migration, Dialog UI, and Page Updates)
+Plan: 2 of 2 in current phase (2 complete)
+Status: All phases complete
+Last activity: 2026-03-29 -- Completed 12-02-PLAN.md (AI Streaming Setup Instructions)
 
-Progress: [███████████████████████████████] 100% (39/40 plans)
+Progress: [████████████████████████████████] 100% (40/40 plans)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 39
+- Total plans completed: 40
 - Average duration: 6min
-- Total execution time: 3.85 hours
+- Total execution time: 3.95 hours
 
 **By Phase:**
 
@@ -40,10 +40,10 @@ Progress: [███████████████████████
 | 10 | 3 | 14min | 5min |
 
 | 11 | 2 | 10min | 5min |
-| 12 | 1 | 9min | 9min |
+| 12 | 2 | 15min | 8min |
 
 **Recent Trend:**
-- Last 5 plans: 10-03 (3min), 11-01 (5min), 11-02 (5min), 12-01 (9min)
+- Last 5 plans: 11-01 (5min), 11-02 (5min), 12-01 (9min), 12-02 (6min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -86,6 +86,7 @@ Progress: [███████████████████████
 | Phase 11 P01 | 5min | 2 tasks | 10 files |
 | Phase 11 P02 | 5min | 2 tasks | 5 files |
 | Phase 12 P01 | 9min | 3 tasks | 30 files |
+| Phase 12 P02 | 6min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -247,6 +248,10 @@ Recent decisions affecting current work:
 - [12-01]: Check-then-insert pattern for bulkCreateIntegrations because partial unique indexes don't work with Supabase upsert onConflict
 - [12-01]: Lazy department inheritance: department_id set + agent_id NULL, queried via OR filter for effective integrations
 - [12-01]: AgentDetailTabs receives departments and allAgents props from server page for catalog dialog target picker
+- [12-02]: Raw MessageStreamEvent iteration with content_block_delta/text_delta filtering for async generator compatibility
+- [12-02]: text/plain streaming (not SSE) for simpler client consumption via response.body.getReader()
+- [12-02]: API route persists full accumulated instructions to DB after stream completes (primary save path)
+- [12-02]: CatalogInstructionsPanel conditionally renders only when setupOpen=true to prevent streaming on card mount
 
 ### Pending Todos
 
@@ -259,5 +264,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-29
-Stopped at: Completed 12-01-PLAN.md (Catalog Data, Schema Migration, Dialog UI, and Page Updates)
-Resume file: .planning/phases/12-integrations-catalog-setup/12-01-SUMMARY.md
+Stopped at: Completed 12-02-PLAN.md (AI Streaming Setup Instructions) -- ALL PHASES COMPLETE
+Resume file: .planning/phases/12-integrations-catalog-setup/12-02-SUMMARY.md

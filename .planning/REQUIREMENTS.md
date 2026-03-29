@@ -178,7 +178,7 @@
 
 - [x] **INTG-ENH-01**: "Add Integration" button opens browsable catalog of available integrations
 - [x] **INTG-ENH-02**: Adding an integration assigns it to a specific department or agent
-- [ ] **INTG-ENH-03**: AI-generated setup instructions based on integration type
+- [x] **INTG-ENH-03**: AI-generated setup instructions based on integration type
 - [x] **INTG-ENH-04**: Category field auto-populates based on integration selection
 
 ### Secrets Management UX
