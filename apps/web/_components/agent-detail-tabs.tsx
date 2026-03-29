@@ -73,6 +73,18 @@ interface RelatedAgent {
   role: string | null;
 }
 
+interface Department {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface AgentTarget {
+  id: string;
+  name: string;
+  department_id: string;
+}
+
 interface AgentDetailTabsProps {
   agent: Agent;
   auditLogs: AuditLog[];
@@ -82,6 +94,8 @@ interface AgentDetailTabsProps {
   configIntegrations: IntegrationItem[];
   parentAgent?: RelatedAgent;
   childAgents?: RelatedAgent[];
+  departments: Department[];
+  allAgents: AgentTarget[];
 }
 
 /**
@@ -99,6 +113,8 @@ export function AgentDetailTabs({
   configIntegrations,
   parentAgent,
   childAgents,
+  departments,
+  allAgents,
 }: AgentDetailTabsProps) {
   return (
     <Tabs defaultValue="overview">
@@ -147,6 +163,8 @@ export function AgentDetailTabs({
           agentId={agent.id}
           businessId={businessId}
           integrations={integrations}
+          departments={departments}
+          agents={allAgents}
         />
       </TabsContent>
 

@@ -105,6 +105,31 @@ export default async function AgentDetailPage({
     role: (a.role as string) ?? null,
   }));
 
+  // Fetch departments for the catalog dialog
+  const { data: departmentsData } = await supabase
+    .from("departments")
+    .select("id, name, type")
+    .eq("business_id", businessId)
+    .order("name");
+
+  const departments = (departmentsData ?? []).map((d) => ({
+    id: d.id as string,
+    name: d.name as string,
+    type: d.type as string,
+  }));
+
+  // Fetch all agents in business (for catalog target picker)
+  const { data: allAgentsData } = await supabase
+    .from("agents")
+    .select("id, name, department_id")
+    .eq("business_id", businessId);
+
+  const allAgents = (allAgentsData ?? []).map((a) => ({
+    id: a.id as string,
+    name: a.name as string,
+    department_id: a.department_id as string,
+  }));
+
   // Build config-friendly integration list
   const configIntegrations = (integrations ?? []).map((i) => ({
     id: i.id as string,
@@ -157,6 +182,8 @@ export default async function AgentDetailPage({
         configIntegrations={configIntegrations}
         parentAgent={parentAgent ?? undefined}
         childAgents={childAgents.length > 0 ? childAgents : undefined}
+        departments={departments}
+        allAgents={allAgents}
       />
     </div>
   );

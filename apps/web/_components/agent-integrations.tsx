@@ -26,6 +26,7 @@ import {
   saveIntegrationAction,
   deleteIntegrationAction,
 } from "@/_actions/integration-actions";
+import { IntegrationCatalogDialog } from "@/_components/integration-catalog-dialog";
 
 interface Integration {
   id: string;
@@ -39,10 +40,24 @@ interface Integration {
   updated_at: string;
 }
 
+interface Department {
+  id: string;
+  name: string;
+  type: string;
+}
+
+interface AgentTarget {
+  id: string;
+  name: string;
+  department_id: string;
+}
+
 interface AgentIntegrationsProps {
   agentId: string;
   businessId: string;
   integrations: Integration[];
+  departments: Department[];
+  agents: AgentTarget[];
 }
 
 const INTEGRATION_TYPES: { type: IntegrationType; label: string }[] = [
@@ -96,22 +111,37 @@ function statusColor(status: string): string {
  * Per-agent Integrations tab content.
  *
  * Shows 5 integration type sections (CRM, Email, Helpdesk, Calendar, Messaging).
- * Each configured integration shows a provider dropdown, status badge,
- * capabilities, and sample data preview.
+ * Configured integrations show provider dropdown, status, capabilities, and sample data.
+ * Unconfigured types show a prompt to use the "Add from Catalog" button.
  */
 export function AgentIntegrations({
   agentId,
   businessId,
   integrations,
+  departments,
+  agents,
 }: AgentIntegrationsProps) {
   return (
     <div className="space-y-6 pt-4">
-      <div>
-        <h3 className="text-lg font-semibold">Integration Configuration</h3>
-        <p className="text-sm text-muted-foreground">
-          Configure integration providers for each type. Mock adapters are
-          functional for development.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Integration Configuration</h3>
+          <p className="text-sm text-muted-foreground">
+            Configure integration providers for each type.
+          </p>
+        </div>
+        <IntegrationCatalogDialog
+          businessId={businessId}
+          departments={departments}
+          agents={agents}
+          preSelectedAgentId={agentId}
+          trigger={
+            <Button size="sm" variant="outline">
+              <Plus className="mr-1.5 size-3.5" />
+              Add from Catalog
+            </Button>
+          }
+        />
       </div>
 
       {INTEGRATION_TYPES.map(({ type, label }) => {
@@ -178,19 +208,6 @@ function IntegrationTypeSection({
     });
   }
 
-  function handleAddMock() {
-    setSelectedProvider("mock");
-    startTransition(async () => {
-      const result = await saveIntegrationAction(businessId, agentId, type, "mock");
-      if (result.error) {
-        toast.error(result.error);
-      } else {
-        toast.success("Mock integration added");
-        router.refresh();
-      }
-    });
-  }
-
   function handleDelete() {
     if (!integration) return;
     startTransition(async () => {
@@ -211,21 +228,10 @@ function IntegrationTypeSection({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base">{label}</CardTitle>
-              <CardDescription>Not configured</CardDescription>
+              <CardDescription>
+                Not configured -- use Add from Catalog above
+              </CardDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleAddMock}
-              disabled={isPending}
-            >
-              {isPending ? (
-                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-              ) : (
-                <Plus className="mr-1.5 size-3.5" />
-              )}
-              Add Mock
-            </Button>
           </div>
         </CardHeader>
       </Card>

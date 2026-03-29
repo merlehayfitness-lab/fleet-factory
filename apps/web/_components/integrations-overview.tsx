@@ -15,14 +15,17 @@ import type { IntegrationType } from "@agency-factory/core";
 interface Integration {
   id: string;
   business_id: string;
-  agent_id: string;
+  agent_id: string | null;
+  department_id?: string | null;
   type: string;
   provider: string;
+  name?: string | null;
   config: Record<string, unknown> | null;
   status: string;
   created_at: string;
   updated_at: string;
   agents: { id: string; name: string } | null;
+  departments?: { id: string; name: string } | null;
 }
 
 interface Agent {
@@ -49,15 +52,19 @@ const INTEGRATION_TYPES: { type: IntegrationType; label: string }[] = [
  * Business-wide integrations overview.
  *
  * Groups all integrations by type, shows summary stats,
- * and indicates which agents lack configuration for each type.
+ * and handles both agent-level and department-level integrations.
  */
 export function IntegrationsOverview({
   integrations,
   agents,
   businessId,
 }: IntegrationsOverviewProps) {
+  const agentIntegrations = integrations.filter((i) => i.agent_id);
+  const departmentIntegrations = integrations.filter(
+    (i) => !i.agent_id && i.department_id
+  );
   const agentsWithIntegrations = new Set(
-    integrations.map((i) => i.agent_id)
+    agentIntegrations.map((i) => i.agent_id)
   );
   const agentsWithoutIntegrations = agents.filter(
     (a) => !agentsWithIntegrations.has(a.id)
@@ -72,7 +79,7 @@ export function IntegrationsOverview({
             No integrations configured yet.
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Visit an agent&apos;s detail page to add integrations.
+            Use the &quot;Add Integration&quot; button above to get started.
           </p>
         </CardContent>
       </Card>
@@ -82,7 +89,7 @@ export function IntegrationsOverview({
   return (
     <div className="space-y-6">
       {/* Summary stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
         <Card>
           <CardHeader>
             <CardDescription>Total Integrations</CardDescription>
@@ -91,8 +98,14 @@ export function IntegrationsOverview({
         </Card>
         <Card>
           <CardHeader>
-            <CardDescription>Agents with Integrations</CardDescription>
-            <CardTitle>{agentsWithIntegrations.size}</CardTitle>
+            <CardDescription>Agent-level</CardDescription>
+            <CardTitle>{agentIntegrations.length}</CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardDescription>Department-level</CardDescription>
+            <CardTitle>{departmentIntegrations.length}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -109,7 +122,7 @@ export function IntegrationsOverview({
           (i) => i.type === type
         );
         const configuredAgentIds = new Set(
-          typeIntegrations.map((i) => i.agent_id)
+          typeIntegrations.filter((i) => i.agent_id).map((i) => i.agent_id)
         );
         const unconfiguredAgents = agents.filter(
           (a) => !configuredAgentIds.has(a.id)
@@ -127,8 +140,7 @@ export function IntegrationsOverview({
             {typeIntegrations.length === 0 ? (
               <Card>
                 <CardContent className="py-6 text-center text-sm text-muted-foreground">
-                  No agents have {label.toLowerCase()} integrations
-                  configured.
+                  No {label.toLowerCase()} integrations configured.
                 </CardContent>
               </Card>
             ) : (
