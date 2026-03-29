@@ -2,11 +2,13 @@
 
 import { useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Settings } from "lucide-react";
 import { updateAgentConfigAction } from "@/_actions/agent-actions";
 import { saveRoleDefinitionAction } from "@/_actions/prompt-generator-actions";
 import { RoleDefinitionCard } from "@/_components/role-definition-card";
@@ -14,11 +16,15 @@ import { SkillDefinitionCard } from "@/_components/skill-definition-card";
 import { ContextSuggestionUI } from "@/_components/context-suggestion-ui";
 import { PromptRefinementPanel } from "@/_components/prompt-refinement-panel";
 import { TestChatDialog } from "@/_components/test-chat-dialog";
+import { ModelSelector } from "@/_components/model-selector";
+import { ProfileEditorDrawer } from "@/_components/profile-editor-drawer";
 import type {
   RoleDefinition,
   GenerationResult,
   PromptSections,
+  ToolProfileShape,
 } from "@agency-factory/core";
+import { getModelFriendlyName, EMPTY_TOOL_PROFILE } from "@agency-factory/core";
 
 interface Template {
   id: string;
@@ -96,11 +102,31 @@ function parseSections(prompt: string): PromptSections | null {
   return null;
 }
 
+/** Extract model ID from a model_profile object. */
+function extractModelId(mp: Record<string, unknown>): string {
+  const model = mp?.model;
+  return typeof model === "string" ? model : "";
+}
+
+/** Parse Record into ToolProfileShape. */
+function parseToolProfile(tp: Record<string, unknown>): ToolProfileShape {
+  if (!tp || typeof tp !== "object") return EMPTY_TOOL_PROFILE;
+  return {
+    allowed_tools: Array.isArray(tp.allowed_tools)
+      ? (tp.allowed_tools as string[])
+      : EMPTY_TOOL_PROFILE.allowed_tools,
+    mcp_servers: Array.isArray(tp.mcp_servers)
+      ? (tp.mcp_servers as ToolProfileShape["mcp_servers"])
+      : EMPTY_TOOL_PROFILE.mcp_servers,
+  };
+}
+
 /**
  * Config tab for the agent detail page.
  *
  * Includes Role Definition, Context Suggestions, System Prompt (with refinement
- * and test chat), SKILL.md, Template Reference, Differences, Tool/Model Profiles.
+ * and test chat), SKILL.md, Template Reference, Differences, Tool/Model Profiles
+ * with ModelSelector dropdown and ProfileEditorDrawer.
  */
 export function AgentConfig({
   agent,
@@ -109,6 +135,8 @@ export function AgentConfig({
   knowledgeDocs,
   integrations,
 }: AgentConfigProps) {
+  const router = useRouter();
+
   // Role definition state
   const initialRoleDef = agent.role_definition as RoleDefinition | null;
   const [roleDefinition, setRoleDefinition] = useState<RoleDefinition | null>(
@@ -137,6 +165,18 @@ export function AgentConfig({
   const [editedPrompt, setEditedPrompt] = useState(agent.system_prompt);
   const [isSaving, setIsSaving] = useState(false);
   const [isSavingAll, setIsSavingAll] = useState(false);
+
+  // Model state
+  const [currentModelId, setCurrentModelId] = useState(
+    extractModelId(agent.model_profile),
+  );
+  const [savingModel, setSavingModel] = useState(false);
+
+  // Tool profile state
+  const [toolProfile, setToolProfile] = useState<ToolProfileShape>(
+    parseToolProfile(agent.tool_profile),
+  );
+  const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
 
   // Calculate template drift
   const promptDiffers = template
@@ -226,9 +266,68 @@ export function AgentConfig({
     setIsRefinementOpen(false);
   }
 
+  // Handle model change
+  async function handleModelChange(newModelId: string) {
+    setSavingModel(true);
+    setCurrentModelId(newModelId);
+    try {
+      const result = await updateAgentConfigAction(agent.id, businessId, {
+        model_profile: { ...agent.model_profile, model: newModelId },
+      });
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        const friendlyName = getModelFriendlyName(newModelId);
+        toast(`Model updated to ${friendlyName}`, {
+          action: {
+            label: "Redeploy",
+            onClick: () =>
+              router.push(`/businesses/${businessId}/deployments`),
+          },
+        });
+      }
+    } catch {
+      toast.error("Failed to update model");
+    } finally {
+      setSavingModel(false);
+    }
+  }
+
+  // Handle tool profile save from drawer
+  async function handleToolProfileSave(updated: ToolProfileShape) {
+    setToolProfile(updated);
+    try {
+      const result = await updateAgentConfigAction(agent.id, businessId, {
+        tool_profile: updated as unknown as Record<string, unknown>,
+      });
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast("Tool profile updated", {
+          action: {
+            label: "Redeploy",
+            onClick: () =>
+              router.push(`/businesses/${businessId}/deployments`),
+          },
+        });
+      }
+    } catch {
+      toast.error("Failed to update tool profile");
+    }
+  }
+
   const currentPrompt = promptSections
     ? joinSections(promptSections)
     : agent.system_prompt;
+
+  // Tool profile summary
+  const toolCount = toolProfile.allowed_tools.includes("*")
+    ? "All"
+    : String(toolProfile.allowed_tools.length);
+  const mcpCount = toolProfile.mcp_servers.length;
+  const displayTools = toolProfile.allowed_tools
+    .filter((t) => t !== "*")
+    .slice(0, 5);
 
   return (
     <div className="space-y-6 pt-4">
@@ -446,39 +545,81 @@ export function AgentConfig({
         </Card>
       )}
 
-      {/* Tool profile */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Tool Profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {Object.keys(agent.tool_profile).length > 0 ? (
-            <pre className="whitespace-pre-wrap rounded-lg bg-muted p-4 font-mono text-sm">
-              {JSON.stringify(agent.tool_profile, null, 2)}
-            </pre>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              No tools configured
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Model profile */}
+      {/* Model profile -- ModelSelector dropdown */}
       <Card>
         <CardHeader>
           <CardTitle>Model Profile</CardTitle>
         </CardHeader>
         <CardContent>
-          {Object.keys(agent.model_profile).length > 0 ? (
-            <pre className="whitespace-pre-wrap rounded-lg bg-muted p-4 font-mono text-sm">
-              {JSON.stringify(agent.model_profile, null, 2)}
-            </pre>
-          ) : (
-            <p className="text-sm text-muted-foreground">Default model</p>
+          <ModelSelector
+            value={currentModelId}
+            onValueChange={handleModelChange}
+            disabled={savingModel}
+          />
+          {savingModel && (
+            <p className="mt-2 text-xs text-muted-foreground">Saving...</p>
           )}
         </CardContent>
       </Card>
+
+      {/* Tool profile -- Summary card with Edit button */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Tool Profile</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setToolDrawerOpen(true)}
+            >
+              Edit
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm">
+                {toolCount} tools allowed, {mcpCount} MCP server
+                {mcpCount !== 1 ? "s" : ""} configured
+              </span>
+            </div>
+            {displayTools.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {displayTools.map((tool) => (
+                  <Badge key={tool} variant="secondary" className="text-xs">
+                    {tool}
+                  </Badge>
+                ))}
+                {toolProfile.allowed_tools.length > 5 && (
+                  <Badge variant="secondary" className="text-xs">
+                    +{toolProfile.allowed_tools.length - 5} more
+                  </Badge>
+                )}
+              </div>
+            )}
+            {toolProfile.allowed_tools.includes("*") && (
+              <Badge
+                variant="secondary"
+                className="bg-emerald-100 text-emerald-800 text-xs dark:bg-emerald-900/30 dark:text-emerald-400"
+              >
+                All tools allowed
+              </Badge>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tool Profile Drawer */}
+      <ProfileEditorDrawer
+        isOpen={toolDrawerOpen}
+        onClose={() => setToolDrawerOpen(false)}
+        title="Edit Tool Profile"
+        profile={toolProfile}
+        onSave={handleToolProfileSave}
+        businessId={businessId}
+      />
     </div>
   );
 }
