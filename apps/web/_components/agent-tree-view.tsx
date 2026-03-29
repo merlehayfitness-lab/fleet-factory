@@ -2,10 +2,19 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
 import { AgentTreeDepartment } from "@/_components/agent-tree-department";
 import { AgentTreeNode } from "@/_components/agent-tree-node";
 import { AgentTreeLines } from "@/_components/agent-tree-lines";
 import { AgentTreeSidebar } from "@/_components/agent-tree-sidebar";
+import { reparentAgentAction } from "@/_actions/agent-actions";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export interface TreeAgent {
@@ -172,6 +181,10 @@ export function AgentTreeView({
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
   const [selectedDeptId, setSelectedDeptId] = useState<string | null>(null);
 
+  // Drag-and-drop state
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [isReparenting, setIsReparenting] = useState(false);
+
   // Load collapse state from localStorage
   useEffect(() => {
     try {
@@ -282,6 +295,73 @@ export function AgentTreeView({
     setSelectedDeptId(null);
   }, []);
 
+  // Drag-and-drop handlers
+  const draggedAgent = useMemo(
+    () => (activeDragId ? findAgentInTree(treeDepartments, activeDragId) : null),
+    [activeDragId, treeDepartments],
+  );
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveDragId(event.active.id as string);
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveDragId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const agentId = active.id as string;
+    const targetId = over.id as string;
+
+    // Determine if drop target is a department or an agent
+    const targetDept = treeDepartments.find((d) => d.id === targetId);
+    const targetAgent = findAgentInTree(treeDepartments, targetId);
+
+    if (targetDept) {
+      // Dropping on department = make lead agent in that department
+      handleReparent(agentId, null, targetDept.id, targetDept.name);
+    } else if (targetAgent) {
+      // Dropping on agent = make sub-agent of that agent
+      const parentDept = treeDepartments.find((d) =>
+        d.leads.some(
+          (l) => l.id === targetId || l.children.some((c) => c.id === targetId),
+        ),
+      );
+      if (parentDept) {
+        handleReparent(agentId, targetId, parentDept.id, `under ${targetAgent.name}`);
+      }
+    }
+  }
+
+  function handleReparent(
+    agentId: string,
+    newParentId: string | null,
+    newDeptId: string,
+    targetLabel: string,
+  ) {
+    const draggedName = findAgentInTree(treeDepartments, agentId)?.name ?? "Agent";
+    toast(`Move ${draggedName} to ${targetLabel}?`, {
+      action: {
+        label: "Confirm",
+        onClick: async () => {
+          setIsReparenting(true);
+          const result = await reparentAgentAction(agentId, businessId, newParentId, newDeptId);
+          setIsReparenting(false);
+          if (result?.error) {
+            toast.error(result.error);
+          } else {
+            toast.success(`${draggedName} moved successfully`);
+          }
+        },
+      },
+      cancel: {
+        label: "Cancel",
+        onClick: () => {},
+      },
+      duration: 5000,
+    });
+  }
+
   // Compute selected node data for sidebar
   const selectedAgent = useMemo(() => {
     if (!selectedAgentId) return null;
@@ -379,71 +459,86 @@ export function AgentTreeView({
         </div>
       )}
 
-      {/* Desktop: full tree with SVG lines */}
+      {/* Desktop: full tree with SVG lines and DndContext */}
       {!isMobile && (
-        <div className="relative" ref={containerRef}>
-          <AgentTreeLines
-            nodePositions={nodeRefs.current}
-            connections={connections}
-            containerRect={containerRect}
-          />
-          <div className="space-y-8">
-            {treeDepartments.map((dept) => (
-              <div key={dept.id}>
-                <AgentTreeDepartment
-                  department={dept}
-                  businessId={businessId}
-                  agentCount={countAgentsInDept(dept)}
-                  isCollapsed={dept.isCollapsed}
-                  onToggleCollapse={() => toggleCollapse(dept.id)}
-                  onSelect={() => handleSelectDept(dept.id)}
-                  registerRef={registerNodeRef}
-                />
-                {!dept.isCollapsed && (
-                  <div className="mt-4 flex flex-wrap justify-center gap-x-10 gap-y-6 pl-8">
-                    {dept.leads.map((lead) => (
-                      <div key={lead.id} className="flex flex-col items-center">
-                        <AgentTreeNode
-                          agent={lead}
-                          businessId={businessId}
-                          departmentId={dept.id}
-                          isLead={true}
-                          isCollapsed={lead.isCollapsed}
-                          childCount={lead.children.length}
-                          onToggleCollapse={() => toggleCollapse(lead.id)}
-                          onSelect={handleSelectAgent}
-                          registerRef={registerNodeRef}
-                        />
-                        {!lead.isCollapsed && lead.children.length > 0 && (
-                          <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-4">
-                            {lead.children.map((child) => (
-                              <AgentTreeNode
-                                key={child.id}
-                                agent={child}
-                                businessId={businessId}
-                                departmentId={dept.id}
-                                isLead={false}
-                                isCollapsed={false}
-                                childCount={0}
-                                onSelect={handleSelectAgent}
-                                registerRef={registerNodeRef}
-                              />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {dept.leads.length === 0 && (
-                      <p className="py-4 text-xs text-muted-foreground">
-                        No agents in this department
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+        <DndContext
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="relative" ref={containerRef}>
+            <AgentTreeLines
+              nodePositions={nodeRefs.current}
+              connections={connections}
+              containerRect={containerRect}
+            />
+            <div className="space-y-8">
+              {treeDepartments.map((dept) => (
+                <div key={dept.id}>
+                  <AgentTreeDepartment
+                    department={dept}
+                    businessId={businessId}
+                    agentCount={countAgentsInDept(dept)}
+                    isCollapsed={dept.isCollapsed}
+                    onToggleCollapse={() => toggleCollapse(dept.id)}
+                    onSelect={() => handleSelectDept(dept.id)}
+                    registerRef={registerNodeRef}
+                  />
+                  {!dept.isCollapsed && (
+                    <div className="mt-4 flex flex-wrap justify-center gap-x-10 gap-y-6 pl-8">
+                      {dept.leads.map((lead) => (
+                        <div key={lead.id} className="flex flex-col items-center">
+                          <AgentTreeNode
+                            agent={lead}
+                            businessId={businessId}
+                            departmentId={dept.id}
+                            isLead={true}
+                            isCollapsed={lead.isCollapsed}
+                            childCount={lead.children.length}
+                            onToggleCollapse={() => toggleCollapse(lead.id)}
+                            onSelect={handleSelectAgent}
+                            registerRef={registerNodeRef}
+                          />
+                          {!lead.isCollapsed && lead.children.length > 0 && (
+                            <div className="mt-4 flex flex-wrap justify-center gap-x-6 gap-y-4">
+                              {lead.children.map((child) => (
+                                <AgentTreeNode
+                                  key={child.id}
+                                  agent={child}
+                                  businessId={businessId}
+                                  departmentId={dept.id}
+                                  isLead={false}
+                                  isCollapsed={false}
+                                  childCount={0}
+                                  onSelect={handleSelectAgent}
+                                  registerRef={registerNodeRef}
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {dept.leads.length === 0 && (
+                        <p className="py-4 text-xs text-muted-foreground">
+                          No agents in this department
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+
+          <DragOverlay>
+            {draggedAgent && (
+              <div className="inline-flex items-center gap-2 rounded-full border bg-popover px-3 py-1.5 text-sm shadow-lg">
+                <span className={cn("size-2 rounded-full", statusColor(draggedAgent.status))} />
+                {draggedAgent.name}
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {/* Right sidebar panel */}

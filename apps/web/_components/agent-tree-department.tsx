@@ -2,7 +2,9 @@
 
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useDroppable } from "@dnd-kit/core";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TreeDepartment {
   id: string;
@@ -35,6 +37,7 @@ interface AgentTreeDepartmentProps {
 /**
  * Bold header node for a department in the agent tree.
  * Shows department name, agent count, collapse chevron, and '+' button.
+ * Drop target via @dnd-kit/core for agent reparenting.
  */
 export function AgentTreeDepartment({
   department,
@@ -47,11 +50,16 @@ export function AgentTreeDepartment({
 }: AgentTreeDepartmentProps) {
   const router = useRouter();
 
-  const refCallback = useCallback(
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: department.id,
+  });
+
+  const setRef = useCallback(
     (el: HTMLElement | null) => {
+      setDropRef(el);
       registerRef(department.id, el);
     },
-    [department.id, registerRef],
+    [department.id, setDropRef, registerRef],
   );
 
   const handleAdd = useCallback(() => {
@@ -62,9 +70,12 @@ export function AgentTreeDepartment({
 
   return (
     <div
-      ref={refCallback}
+      ref={setRef}
       data-node-id={department.id}
-      className="group relative z-10 flex items-center gap-3 rounded-lg border-2 border-foreground/20 bg-muted/50 px-4 py-3"
+      className={cn(
+        "group relative z-10 flex items-center gap-3 rounded-lg border-2 border-foreground/20 bg-muted/50 px-4 py-3",
+        isOver && "ring-2 ring-primary border-primary bg-primary/5",
+      )}
     >
       {/* Collapse chevron */}
       <button

@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ const STATUS_COLORS: Record<string, string> = {
 /**
  * Compact pill node for an agent in the tree view.
  * Shows status dot (Slack-style), name, collapse chevron for leads, and '+' button.
+ * Draggable via @dnd-kit/core. Lead agents are also drop targets.
  */
 export function AgentTreeNode({
   agent,
@@ -55,11 +57,25 @@ export function AgentTreeNode({
 }: AgentTreeNodeProps) {
   const router = useRouter();
 
-  const refCallback = useCallback(
+  const {
+    attributes,
+    listeners,
+    setNodeRef: setDragRef,
+    isDragging,
+  } = useDraggable({ id: agent.id });
+
+  const { setNodeRef: setDropRef, isOver } = useDroppable({
+    id: agent.id,
+    disabled: !isLead,
+  });
+
+  const setRef = useCallback(
     (el: HTMLElement | null) => {
+      setDragRef(el);
+      if (isLead) setDropRef(el);
       registerRef(agent.id, el);
     },
-    [agent.id, registerRef],
+    [agent.id, isLead, setDragRef, setDropRef, registerRef],
   );
 
   const handleClick = useCallback(
@@ -67,6 +83,8 @@ export function AgentTreeNode({
       // Don't trigger select if clicking chevron or plus button
       const target = e.target as HTMLElement;
       if (target.closest("[data-action]")) return;
+      // Don't trigger select during drag
+      if (e.defaultPrevented) return;
       onSelect(agent.id);
     },
     [agent.id, onSelect],
@@ -96,12 +114,16 @@ export function AgentTreeNode({
 
   return (
     <div
-      ref={refCallback}
+      ref={setRef}
       data-node-id={agent.id}
+      {...attributes}
+      {...listeners}
       onClick={handleClick}
       className={cn(
-        "group relative z-10 inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors hover:bg-accent",
+        "group relative z-10 inline-flex cursor-grab items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-all hover:bg-accent",
         isLead && "border-foreground/20",
+        isDragging && "cursor-grabbing opacity-50",
+        isOver && isLead && "ring-2 ring-primary border-primary bg-primary/5",
       )}
     >
       {/* Status dot */}
