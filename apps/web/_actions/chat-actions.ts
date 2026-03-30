@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@/_lib/supabase/server";
+import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -15,6 +16,8 @@ import {
   getVpsChatWsUrl,
   isVpsConfigured,
   selectAgent,
+  getSlackClient,
+  getChannelMappings,
 } from "@agency-factory/core/server";
 import type { ChatMessage, ChatConversation, DepartmentChannel } from "@agency-factory/core";
 
@@ -39,6 +42,9 @@ export async function sendMessageAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     // Get or create conversation for this department
@@ -193,6 +199,9 @@ export async function archiveConversationAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     await archiveConversation(supabase, conversationId);
   } catch (err) {
@@ -206,6 +215,120 @@ export async function archiveConversationAction(
 
   revalidatePath(`/businesses/${businessId}/chat`);
   return { success: true };
+}
+
+/**
+ * Send a message via Slack.
+ * Posts the message to the mapped Slack channel AND stores it in Supabase.
+ * Agent response comes asynchronously via Slack events + polling (not returned here).
+ *
+ * Flow:
+ * 1. Auth check
+ * 2. Get Slack client for business
+ * 3. Look up channel mapping for this department
+ * 4. Get or create conversation
+ * 5. Store user message in Supabase with Slack metadata
+ * 6. Post message to Slack channel
+ * 7. Update stored message with Slack ts
+ * 8. Return { userMessage } -- agent response comes via Slack events
+ */
+export async function sendSlackMessageAction(
+  businessId: string,
+  departmentId: string,
+  content: string,
+  fileMetadata?: { name: string; size: number; type: string },
+): Promise<{ userMessage: ChatMessage } | { error: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
+  try {
+    // Get Slack client
+    const client = await getSlackClient(supabase, businessId);
+    if (!client) {
+      return { error: "Slack is not connected for this business" };
+    }
+
+    // Look up channel mapping for this department
+    const mappings = await getChannelMappings(supabase, businessId);
+    const mapping = mappings.find(
+      (m) => m.departmentId === departmentId && m.agentId === null,
+    );
+    if (!mapping) {
+      return { error: "No Slack channel mapped for this department" };
+    }
+
+    // Get or create conversation
+    const conversation = await getOrCreateConversation(
+      supabase,
+      businessId,
+      departmentId,
+      user.id,
+    );
+
+    // Build metadata
+    const metadata: Record<string, unknown> = {
+      source: "admin_panel",
+      slackChannelId: mapping.slackChannelId,
+    };
+    if (fileMetadata) {
+      metadata.file = {
+        name: fileMetadata.name,
+        size: fileMetadata.size,
+        type: fileMetadata.type,
+        url: "pending",
+      };
+    }
+
+    // Store user message in Supabase
+    const userMessage = await sendMessage(
+      supabase,
+      businessId,
+      conversation.id,
+      content,
+      "user",
+      undefined,
+      undefined,
+      metadata,
+    );
+
+    // Post message to Slack channel
+    try {
+      const result = await client.chat.postMessage({
+        channel: mapping.slackChannelId,
+        text: content,
+      });
+
+      // Update message record with Slack ts for deduplication
+      if (result.ts) {
+        await supabase
+          .from("messages")
+          .update({
+            slack_ts: result.ts,
+            slack_channel_id: mapping.slackChannelId,
+          })
+          .eq("id", userMessage.id);
+      }
+    } catch (slackErr) {
+      // Message is stored in Supabase even if Slack post fails
+      console.error("Failed to post message to Slack:", slackErr);
+    }
+
+    revalidatePath(`/businesses/${businessId}/chat`);
+    return { userMessage };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to send Slack message",
+    };
+  }
 }
 
 /**

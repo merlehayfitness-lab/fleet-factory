@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@/_lib/supabase/server";
+import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
@@ -113,6 +114,9 @@ export async function createProvisionalAgentAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   if (!name.trim()) {
     return { error: "Agent name is required" };
   }
@@ -208,6 +212,9 @@ export async function finalizeAgentAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     const updatePayload: Record<string, unknown> = {
       status: "active",
@@ -268,6 +275,9 @@ export async function deleteProvisionalAgentAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     // Verify agent is in provisioning status

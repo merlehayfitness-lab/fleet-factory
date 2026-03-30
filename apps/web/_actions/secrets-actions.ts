@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@/_lib/supabase/server";
+import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -62,6 +63,9 @@ export async function saveSecretAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     await saveSecret(supabase, businessId, key, value, category, integrationType);
     revalidatePath(`/businesses/${businessId}/settings/secrets`);
@@ -88,6 +92,9 @@ export async function deleteSecretAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     await deleteSecret(supabase, businessId, secretId);
@@ -286,6 +293,9 @@ export async function saveProviderCredentialsAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     await saveProviderCredentials(supabase, businessId, provider, credentials);
     revalidatePath(`/businesses/${businessId}/settings`);
@@ -314,6 +324,9 @@ export async function deleteProviderSecretsAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     await deleteProviderSecrets(supabase, businessId, provider);

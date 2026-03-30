@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@/_lib/supabase/server";
+import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -49,6 +50,9 @@ export async function createSkillAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   if (!data.name.trim()) {
     return { error: "Skill name is required" };
   }
@@ -92,6 +96,9 @@ export async function updateSkillAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     const skill = await updateSkill(supabase, skillId, businessId, {
       name: data.name?.trim(),
@@ -125,6 +132,9 @@ export async function deleteSkillAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     await softDeleteSkill(supabase, skillId, businessId);
     revalidatePath(`/businesses/${businessId}`);
@@ -152,6 +162,9 @@ export async function assignSkillAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   if (!target.agent_id && !target.department_id) {
     return { error: "Must provide either agent_id or department_id" };
@@ -183,6 +196,9 @@ export async function unassignSkillAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     await unassignSkill(supabase, assignmentId);
@@ -261,6 +277,9 @@ export async function createSkillFromTemplateAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     const skill = await createSkillFromTemplate(supabase, businessId, templateId);
@@ -440,6 +459,9 @@ export async function importFromGitHubAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   const info = parseGitHubUrl(url);
   if (!info) {

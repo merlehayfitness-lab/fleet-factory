@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@/_lib/supabase/server";
+import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createTaskSchema } from "@agency-factory/core";
@@ -32,6 +33,9 @@ export async function createTaskAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   const parsed = createTaskSchema.safeParse(input);
   if (!parsed.success) {
@@ -146,6 +150,9 @@ export async function updateTaskStatusAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     const task = await updateTaskStatus(supabase, taskId, newStatus, updates);
     revalidatePath(`/businesses/${businessId}/tasks`);
@@ -177,6 +184,9 @@ export async function quickAddTaskAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   const input = {
     title,
@@ -241,6 +251,9 @@ export async function respondToAssistanceAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     await respondToAssistanceRequest(supabase, requestId, response, user.id);

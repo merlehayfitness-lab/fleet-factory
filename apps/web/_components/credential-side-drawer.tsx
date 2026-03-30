@@ -202,7 +202,7 @@ export function CredentialSideDrawer({
     );
     setSaving(false);
 
-    if (result.error) {
+    if ("error" in result) {
       toast.error(result.error);
       return;
     }

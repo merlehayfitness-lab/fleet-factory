@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@/_lib/supabase/server";
+import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { ApprovalStatus, RiskLevel } from "@agency-factory/core";
@@ -87,6 +88,9 @@ export async function approveActionHandler(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     const approval = await approveAction(supabase, approvalId, user.id, decisionNote);
 
@@ -129,6 +133,9 @@ export async function rejectActionHandler(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     await rejectAction(supabase, approvalId, user.id, decisionNote);
     revalidatePath(`/businesses/${businessId}/approvals`);
@@ -160,6 +167,9 @@ export async function provideGuidanceAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     await provideGuidance(supabase, approvalId, user.id, guidance);
     revalidatePath(`/businesses/${businessId}/approvals`);
@@ -190,6 +200,9 @@ export async function bulkApproveAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     const results = await bulkApprove(
@@ -226,6 +239,9 @@ export async function bulkRejectAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     const results = await bulkReject(

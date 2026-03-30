@@ -63,7 +63,7 @@ export function RollbackDialog({ businessId, deployments }: RollbackDialogProps)
     setIsRollingBack(true);
     try {
       const result = await rollbackDeploymentAction(businessId, selectedVersion);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success(`Rolled back to v${selectedVersion}`);

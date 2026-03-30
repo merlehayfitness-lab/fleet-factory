@@ -98,7 +98,7 @@ export function ApprovalsList({
     const result = await bulkApproveAction(ids, businessId);
     setBulkLoading(false);
 
-    if (result.error) {
+    if ("error" in result) {
       toast.error(result.error);
     } else {
       toast.success(`${ids.length} action(s) approved`);
@@ -118,7 +118,7 @@ export function ApprovalsList({
     const result = await bulkRejectAction(ids, businessId);
     setBulkLoading(false);
 
-    if (result.error) {
+    if ("error" in result) {
       toast.error(result.error);
     } else {
       toast.success(`${ids.length} action(s) rejected`);

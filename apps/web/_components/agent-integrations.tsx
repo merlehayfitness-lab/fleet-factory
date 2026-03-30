@@ -199,7 +199,7 @@ function IntegrationTypeSection({
   function handleSave() {
     startTransition(async () => {
       const result = await saveIntegrationAction(businessId, agentId, type, selectedProvider);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("Integration saved");
@@ -212,7 +212,7 @@ function IntegrationTypeSection({
     if (!integration) return;
     startTransition(async () => {
       const result = await deleteIntegrationAction(businessId, integration.id);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("Integration removed");

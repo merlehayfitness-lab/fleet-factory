@@ -39,7 +39,7 @@ export function DeployButton({
     setIsDeploying(true);
     try {
       const result = await deployAction(businessId);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("Deployment started");

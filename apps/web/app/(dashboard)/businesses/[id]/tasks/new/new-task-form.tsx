@@ -64,7 +64,7 @@ export function NewTaskForm({
   async function onSubmit(data: CreateTaskInput) {
     const result = await createTaskAction(businessId, data);
 
-    if (result.error) {
+    if ("error" in result) {
       toast.error(result.error);
       return;
     }

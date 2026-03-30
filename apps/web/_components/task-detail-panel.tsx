@@ -51,7 +51,7 @@ export function TaskDetailPanel({
     const result = await updateTaskStatusAction(task.id, newStatus, businessId);
     setLoading(false);
 
-    if (result.error) {
+    if ("error" in result) {
       toast.error(result.error);
     } else {
       toast.success(`Task marked as ${newStatus}`);

@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@/_lib/supabase/server";
+import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -28,6 +29,9 @@ export async function deployAction(businessId: string) {
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     const deployment = await triggerDeployment(supabase, businessId, user.id);
     revalidatePath(`/businesses/${businessId}/deployments`);
@@ -53,6 +57,9 @@ export async function retryDeploymentAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     const deployment = await retryDeployment(
@@ -87,6 +94,9 @@ export async function rollbackDeploymentAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     const deployment = await rollbackDeployment(
@@ -168,6 +178,9 @@ export async function deployAgentAction(businessId: string, agentId: string) {
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   if (!isVpsConfigured()) {
     return { error: "VPS is not configured. Set VPS_API_URL and VPS_API_KEY." };

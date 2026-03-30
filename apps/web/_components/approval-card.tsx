@@ -63,7 +63,7 @@ export function ApprovalCard({
       approval.business_id,
     );
     setLoading(false);
-    if (result.error) {
+    if ("error" in result) {
       toast.error(result.error);
     } else {
       toast.success("Action approved");
@@ -78,7 +78,7 @@ export function ApprovalCard({
       approval.business_id,
     );
     setLoading(false);
-    if (result.error) {
+    if ("error" in result) {
       toast.error(result.error);
     } else {
       toast.success("Action rejected");
@@ -98,7 +98,7 @@ export function ApprovalCard({
       guidance,
     );
     setLoading(false);
-    if (result.error) {
+    if ("error" in result) {
       toast.error(result.error);
     } else {
       toast.success("Guidance sent");

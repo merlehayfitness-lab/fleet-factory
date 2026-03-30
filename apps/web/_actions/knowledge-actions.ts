@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@/_lib/supabase/server";
+import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -53,6 +54,9 @@ export async function uploadDocumentAction(
   if (!businessId) {
     return { error: "Business ID is required" };
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   if (!file || !(file instanceof File)) {
     return { error: "File is required" };
@@ -140,6 +144,9 @@ export async function triggerProcessingAction(
       return { error: "Document not found" };
     }
 
+    const guard = await requireActiveBusiness(doc.business_id as string);
+    if (guard) return guard;
+
     let fileBuffer: Buffer;
 
     if (doc.storage_path) {
@@ -205,6 +212,9 @@ export async function pasteTextAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   if (!title.trim()) {
     return { error: "Title is required" };
   }
@@ -266,6 +276,9 @@ export async function deleteDocumentAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     await deleteDocument(supabase, documentId);
   } catch (err) {
@@ -293,6 +306,9 @@ export async function reIndexDocumentAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     const result = await reIndexDocument(supabase, documentId);

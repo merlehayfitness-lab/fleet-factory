@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@/_lib/supabase/server";
+import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -20,6 +21,9 @@ export async function freezeAgent(agentId: string, businessId: string) {
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     await transitionAgentStatus(supabase, agentId, businessId, "frozen");
@@ -46,6 +50,9 @@ export async function pauseAgent(agentId: string, businessId: string) {
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     await transitionAgentStatus(supabase, agentId, businessId, "paused");
   } catch (err) {
@@ -71,6 +78,9 @@ export async function resumeAgent(agentId: string, businessId: string) {
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     await transitionAgentStatus(supabase, agentId, businessId, "active");
   } catch (err) {
@@ -95,6 +105,9 @@ export async function retireAgent(agentId: string, businessId: string) {
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     await transitionAgentStatus(supabase, agentId, businessId, "retired");
@@ -128,6 +141,9 @@ export async function updateAgentConfigAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     await updateAgentConfig(supabase, agentId, businessId, config);
@@ -224,6 +240,9 @@ export async function syncFromTemplateAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   try {
     const { syncFromTemplate } = await import("@agency-factory/core/server");
     const { before, after } = await syncFromTemplate(
@@ -261,6 +280,9 @@ export async function reparentAgentAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     const { reparentAgent } = await import("@agency-factory/core/server");

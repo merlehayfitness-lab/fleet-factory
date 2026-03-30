@@ -170,7 +170,7 @@ export function DeploymentDetail({
     setIsRetrying(true);
     try {
       const result = await retryDeploymentAction(businessId, deployment!.id);
-      if (result.error) {
+      if ("error" in result) {
         toast.error(result.error);
       } else {
         toast.success("Retry deployment started");

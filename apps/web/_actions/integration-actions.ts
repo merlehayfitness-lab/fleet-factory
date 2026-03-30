@@ -1,6 +1,7 @@
 "use server";
 
 import { createServerClient } from "@/_lib/supabase/server";
+import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getCatalogEntry, bulkCreateIntegrations } from "@agency-factory/core";
@@ -16,7 +17,7 @@ export async function saveSetupInstructionsAction(
   integrationId: string,
   businessId: string,
   instructions: string,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string } | { error: string }> {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -25,6 +26,9 @@ export async function saveSetupInstructionsAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     const { error } = await supabase
@@ -132,6 +136,9 @@ export async function addCatalogIntegrationAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   const entry = getCatalogEntry(catalogEntryId);
   if (!entry) {
     return { error: `Unknown catalog entry: ${catalogEntryId}` };
@@ -207,6 +214,9 @@ export async function saveIntegrationAction(
     redirect("/sign-in");
   }
 
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
   const effectiveStatus = provider.startsWith("mock") ? "mock" : "inactive";
 
   try {
@@ -268,6 +278,9 @@ export async function deleteIntegrationAction(
   if (!user) {
     redirect("/sign-in");
   }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
 
   try {
     const { error } = await supabase
