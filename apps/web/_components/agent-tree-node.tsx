@@ -102,7 +102,7 @@ export function AgentTreeNode({
       {...listeners}
       onClick={handleClick}
       className={cn(
-        "group relative z-10 flex min-w-[140px] max-w-[180px] cursor-grab flex-col items-center gap-1 rounded-lg border bg-card px-4 py-3 text-center shadow-sm transition-all hover:shadow-md",
+        "group relative z-10 flex min-w-[140px] max-w-[180px] cursor-grab flex-col items-center gap-1 rounded-lg border bg-card px-4 py-3 text-center shadow-sm transition-[box-shadow,opacity] hover:shadow-md",
         isDragging && "cursor-grabbing opacity-50",
         isOver && "ring-2 ring-primary border-primary bg-primary/5",
         node.type === "root" && "min-w-[160px] border-primary/40 bg-primary/5",
