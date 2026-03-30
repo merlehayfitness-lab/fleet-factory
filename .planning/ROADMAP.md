@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 10: Template Profiles & Model Configuration** - Tool/Model Profile JSON on templates, model dropdown on agent config (completed 2026-03-29)
 - [x] **Phase 11: Sub-Agent Management** - Sub-agent creation under departments, visual hierarchy tree UI (completed 2026-03-29)
 - [x] **Phase 12: Integrations Catalog & Setup** - Integration catalog with add button, department/agent assignment, AI-generated setup guides (completed 2026-03-29)
-- [ ] **Phase 13: Secrets Management UX** - Integration-first secrets flow, dynamic credential fields, grouped secrets page
+- [x] **Phase 13: Secrets Management UX** - Integration-first secrets flow, dynamic credential fields, grouped secrets page (completed 2026-03-30)
 - [ ] **Phase 14: Slack Integration & Chat Replacement** - Slack API routing, embedded feed in admin panel, replace custom chat
 - [ ] **Phase 15: AITMPL Template Catalog** - Wizard suggestions for Skills/Agents/Commands/Settings/Hooks/MCPs/Plugins from AITMPL
 - [ ] **Phase 16: Tenant Disable Fix & Dashboard Freeze** - Fix 404 on disable, frozen dashboard banner, stop VPS activity
@@ -372,7 +372,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 10. Template Profiles & Model Configuration | 3/3 | Complete    | 2026-03-29 |
 | 11. Sub-Agent Management | 2/3 | Gap closure    | 2026-03-29 |
 | 12. Integrations Catalog & Setup | 2/2 | Complete    | 2026-03-29 |
-| 13. Secrets Management UX | 2/3 | In Progress|  |
+| 13. Secrets Management UX | 3/3 | Complete   | 2026-03-30 |
 | 14. Slack Integration & Chat Replacement | 0/? | Not started | - |
 | 15. AITMPL Template Catalog | 0/? | Not started | - |
 | 16. Tenant Disable Fix & Dashboard Freeze | 0/? | Not started | - |

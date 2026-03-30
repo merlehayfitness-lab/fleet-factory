@@ -90,6 +90,7 @@ Progress: [███████████████████████
 | Phase 12 P02 | 6min | 2 tasks | 7 files |
 | Phase 13 P01 | 4min | 2 tasks | 7 files |
 | Phase 13 P03 | 4min | 2 tasks | 3 files |
+| Phase 13 P02 | 7min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -262,6 +263,8 @@ Recent decisions affecting current work:
 - [13-03]: Inline credential form fields instead of importing from Plan 02 (not yet built) -- same interface for easy swap
 - [13-03]: Test Connection button disabled until credentials exist (hasExisting) to prevent empty-credential test calls
 - [13-03]: onConfigure prop optional on IntegrationConfigCard for backward compatibility
+- [Phase 13-02]: Eye toggle uses 5-second auto-re-mask with client-side cache during reveal window
+- [Phase 13-02]: CredentialForm tracks modified fields via local Set state, only sending changed values on save
 
 ### Pending Todos
 
