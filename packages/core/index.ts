@@ -240,5 +240,20 @@ export type {
   SlackConnectionStatus,
 } from "./slack/slack-types";
 
+// AITMPL catalog types (client-safe)
+export type {
+  AitmplComponentType,
+  CatalogSearchResult,
+  AitmplImportOptions,
+  AitmplImportResult,
+} from "./aitmpl/catalog-types";
+
+// AITMPL category mapping (client-safe static data)
+export {
+  DEPARTMENT_CATEGORY_MAP,
+  getRecommendedCategories,
+  isDepartmentRecommended,
+} from "./aitmpl/category-mapping";
+
 // NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker, approval service)
 // are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.

@@ -229,5 +229,18 @@ export {
   disconnectSlack,
 } from "./slack/slack-oauth";
 
+// AITMPL catalog service (server-only -- fetches external API, caches in memory)
+export {
+  getCatalog,
+  searchComponents,
+  getComponentDetail,
+  getComponentsByType,
+  getCatalogStats,
+  clearCatalogCache,
+} from "./aitmpl/catalog-service";
+
+// AITMPL import service (server-only -- database writes)
+export { importFromAitmpl } from "./aitmpl/import-service";
+
 // OpenClaw workspace generator (re-exported for server-only use in web app)
 export { generateOpenClawWorkspace } from "@agency-factory/runtime";
