@@ -183,9 +183,9 @@
 
 ### Secrets Management UX
 
-- [ ] **SECR-ENH-01**: Integration-first secrets flow (pick integration, category auto-fills, relevant fields appear)
+- [x] **SECR-ENH-01**: Integration-first secrets flow (pick integration, category auto-fills, relevant fields appear)
 - [ ] **SECR-ENH-02**: Secrets accessible from business settings page via link to dedicated secrets page
-- [ ] **SECR-ENH-03**: Dynamic credential fields adapt to integration type (API key, OAuth, username/password, etc.)
+- [x] **SECR-ENH-03**: Dynamic credential fields adapt to integration type (API key, OAuth, username/password, etc.)
 - [ ] **SECR-ENH-04**: Secrets page displays credentials grouped by integration
 
 ### Slack Integration

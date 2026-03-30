@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 12 -- Integrations Catalog & Setup
+**Current focus:** Phase 13 -- Secrets Management UX
 
 ## Current Position
 
-Phase: 12 of 12 (Integrations Catalog & Setup)
-Plan: 2 of 2 in current phase (2 complete)
-Status: All phases complete
-Last activity: 2026-03-29 -- Completed 12-02-PLAN.md (AI Streaming Setup Instructions)
+Phase: 13 of 17 (Secrets Management UX)
+Plan: 1 of 3 in current phase (1 complete)
+Status: In progress
+Last activity: 2026-03-29 -- Completed 13-01-PLAN.md (Schema & Service Foundation)
 
-Progress: [████████████████████████████████] 100% (40/40 plans)
+Progress: [█████████████████████████████░░░] 95% (41/43 plans)
 
 ## Performance Metrics
 
@@ -41,9 +41,10 @@ Progress: [███████████████████████
 
 | 11 | 2 | 10min | 5min |
 | 12 | 2 | 15min | 8min |
+| 13 | 1 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 11-01 (5min), 11-02 (5min), 12-01 (9min), 12-02 (6min)
+- Last 5 plans: 11-02 (5min), 12-01 (9min), 12-02 (6min), 13-01 (4min)
 - Trend: stable
 
 *Updated after each plan completion*
@@ -87,6 +88,7 @@ Progress: [███████████████████████
 | Phase 11 P02 | 5min | 2 tasks | 5 files |
 | Phase 12 P01 | 9min | 3 tasks | 30 files |
 | Phase 12 P02 | 6min | 2 tasks | 7 files |
+| Phase 13 P01 | 4min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -252,6 +254,10 @@ Recent decisions affecting current work:
 - [12-02]: text/plain streaming (not SSE) for simpler client consumption via response.body.getReader()
 - [12-02]: API route persists full accumulated instructions to DB after stream completes (primary save path)
 - [12-02]: CatalogInstructionsPanel conditionally renders only when setupOpen=true to prevent streaming on card mount
+- [13-01]: Provider credential field definitions stored in DB (not hardcoded TypeScript) -- enables dynamic forms
+- [13-01]: saveProviderCredentials auto-creates/activates integration record; deleteProviderSecrets deactivates to mock
+- [13-01]: testConnection uses switch/case with mock success for all 15 providers -- real implementations slot in per case
+- [13-01]: Provider-scoped unique index on (business_id, provider, key) WHERE provider IS NOT NULL preserves backward compatibility
 
 ### Pending Todos
 
@@ -264,5 +270,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-29
-Stopped at: Completed 12-02-PLAN.md (AI Streaming Setup Instructions) -- ALL PHASES COMPLETE
-Resume file: .planning/phases/12-integrations-catalog-setup/12-02-SUMMARY.md
+Stopped at: Completed 13-01-PLAN.md (Schema & Service Foundation)
+Resume file: .planning/phases/13-secrets-management-ux/13-01-SUMMARY.md
