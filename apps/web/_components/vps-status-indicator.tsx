@@ -85,6 +85,15 @@ export function VpsStatusIndicator({ initialStatus }: VpsStatusIndicatorProps) {
     refreshHealth();
   }, [refreshHealth]);
 
+  // Auto-poll VPS health every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      refreshHealth();
+    }, 30_000);
+
+    return () => clearInterval(interval);
+  }, [refreshHealth]);
+
   // Not configured
   if (!status) {
     return (
