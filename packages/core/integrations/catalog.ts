@@ -135,7 +135,7 @@ export const INTEGRATION_CATALOG: CatalogEntry[] = [
     category: "messaging",
     provider: "slack",
     logoUrl: "/integrations/slack.svg",
-    isReal: false,
+    isReal: true,
   },
   {
     id: "teams",

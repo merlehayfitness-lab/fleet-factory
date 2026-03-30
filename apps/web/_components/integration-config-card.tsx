@@ -16,9 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, BookOpen, Settings2 } from "lucide-react";
+import { Building2, BookOpen, Settings2, Trash2 } from "lucide-react";
 import { getAdapter } from "@agency-factory/core";
 import type { IntegrationType } from "@agency-factory/core";
+import { deleteIntegrationAction } from "@/_actions/integration-actions";
 import { CatalogInstructionsPanel } from "@/_components/catalog-instructions-panel";
 
 interface Integration {
@@ -132,6 +133,17 @@ export function IntegrationConfigCard({
               >
                 <BookOpen className="size-3" />
                 View Setup
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-muted-foreground hover:text-destructive"
+                onClick={async () => {
+                  if (!window.confirm(`Delete "${displayName}" integration?`)) return;
+                  await deleteIntegrationAction(businessId, integration.id);
+                }}
+              >
+                <Trash2 className="size-3" />
               </Button>
               <Badge
                 variant="outline"
