@@ -272,10 +272,13 @@ Plans:
   2. Wizard suggests relevant skills, agents, and commands based on department type and industry
   3. Tool configurations can be imported from AITMPL agent-tool-builder to populate tool_profile JSON
   4. Catalog covers all AITMPL categories: Skills, Agents, Commands, Settings, Hooks, MCPs, Plugins
-**Plans**: TBD
+**Plans**: 4 plans (3 original + 1 gap closure)
 
 Plans:
-- [ ] 15-01: TBD
+- [x] 15-01: Catalog service, search/import actions, and AITMPL type definitions
+- [x] 15-02: AITMPL catalog browser dialog, target picker, and agent detail integration
+- [x] 15-03: AITMPL suggestion banner and Skill Template Browser integration
+- [ ] 15-04: UAT gap closure -- Banner dismiss persistence fix and target picker friendly names
 
 ### Phase 16: Tenant Disable Fix & Dashboard Freeze
 **Goal**: Disabling a tenant freezes the dashboard with a suspended banner and stops all VPS activity instead of showing a 404 error
@@ -376,6 +379,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 12. Integrations Catalog & Setup | 2/2 | Complete    | 2026-03-29 |
 | 13. Secrets Management UX | 3/3 | Complete    | 2026-03-30 |
 | 14. Slack Integration & Chat Replacement | 3/3 | Complete    | 2026-03-30 |
-| 15. AITMPL Template Catalog | 3/3 | Complete    | 2026-03-30 |
+| 15. AITMPL Template Catalog | 3/4 | In Progress | |
 | 16. Tenant Disable Fix & Dashboard Freeze | 3/3 | Complete    | 2026-03-30 |
 | 17. VPS Activation & Embedded Terminal | 3/3 | Complete   | 2026-03-30 |
