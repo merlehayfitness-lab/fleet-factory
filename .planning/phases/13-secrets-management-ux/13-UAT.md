@@ -52,15 +52,13 @@ result: pass
 
 ### 10. Credential Side Drawer
 expected: The side drawer shows the provider name/description and a dynamic credential form. Filling in fields and clicking Save stores the credentials and auto-activates the integration.
-result: issue
-reported: "ENCRYPTION_KEY environment variable is not set error when saving credentials"
-severity: minor
+result: pass
 
 ## Summary
 
 total: 10
-passed: 8
-issues: 2
+passed: 9
+issues: 1
 pending: 0
 skipped: 0
 
@@ -83,13 +81,16 @@ skipped: 0
 
 - truth: "Saving credentials stores them encrypted"
   status: fixed
-  reason: "User reported: ENCRYPTION_KEY environment variable is not set error when saving credentials"
+  reason: "User reported: ENCRYPTION_KEY env var missing, then ON CONFLICT partial index error"
   severity: minor
   test: 10
-  root_cause: "ENCRYPTION_KEY not present in apps/web/.env.local"
+  root_cause: "1) ENCRYPTION_KEY missing from .env.local. 2) Partial unique index (WHERE provider IS NOT NULL) incompatible with ON CONFLICT upsert"
   artifacts:
     - path: "apps/web/.env.local"
       issue: "Missing ENCRYPTION_KEY environment variable"
+    - path: "packages/db/schema/040_secrets_provider_column.sql"
+      issue: "Partial unique index can't be used by ON CONFLICT"
   missing:
     - "Add ENCRYPTION_KEY to .env.local"
+    - "Replace partial index with full unique index on (business_id, provider, key)"
   debug_session: ""
