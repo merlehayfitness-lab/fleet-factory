@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 17 -- VPS Activation & Embedded Terminal
+**Current focus:** Phase 15 UAT gap closure complete
 
 ## Current Position
 
 Phase: 17 of 17 (VPS Activation & Embedded Terminal)
 Plan: 3 of 3 in current phase (3 complete)
 Status: Phase complete
-Last activity: 2026-03-30 -- Completed 17-03-PLAN.md (E2E Verification Wiring)
+Last activity: 2026-03-30 -- Completed 15-04-PLAN.md (UAT Gap Closure)
 
-Progress: [███████████████████████████████████] 100% (53/53 plans)
+Progress: [███████████████████████████████████] 100% (54/54 plans)
 
 ## Performance Metrics
 
@@ -104,6 +104,7 @@ Progress: [███████████████████████
 | Phase 17 P01 | 4min | 2 tasks | 9 files |
 | Phase 17 P02 | 4min | 2 tasks | 8 files |
 | Phase 17 P03 | 3min | 2 tasks | 2 files |
+| Phase 15 P04 | 2min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -322,6 +323,8 @@ Recent decisions affecting current work:
 - [Phase 17]: [Phase 17-02]: TerminalInfoBar uses businessId prop with useRouter for disconnect navigation instead of onDisconnect callback
 - [Phase 17]: [Phase 17-02]: VPS health fetch in terminal page is best-effort with try/catch (falls back to offline status)
 - [Phase 17]: [Phase 17-03]: Auto-poll uses mount-refresh + 30s setInterval with cleanup on unmount (matches health-dashboard pattern)
+- [15-04]: businessId guard added to both useEffect and dismiss handler for consistent localStorage key protection
+- [15-04]: Supabase departments join returns object (belongsTo not array) -- used unknown cast for type safety
 
 ### Pending Todos
 
@@ -334,5 +337,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 17-03-PLAN.md (E2E Verification Wiring) -- Phase 17 complete
-Resume file: .planning/phases/17-vps-activation-embedded-terminal/17-03-SUMMARY.md
+Stopped at: Completed 15-04-PLAN.md (UAT Gap Closure) -- Phase 15 UAT gaps closed
+Resume file: .planning/phases/15-aitmpl-template-catalog/15-04-SUMMARY.md
