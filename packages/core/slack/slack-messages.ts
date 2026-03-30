@@ -4,19 +4,22 @@
 import type { WebClient } from "@slack/web-api";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { SlackMessageEvent } from "./slack-types";
+import type { ChatMessage, ToolCallTrace } from "../chat/chat-types";
 import { getDepartmentForChannel } from "./slack-channels";
 import { getSlackClient } from "./slack-client";
 import { getOrCreateConversation, routeAndRespond } from "../chat/chat-service";
+import {
+  formatAgentResponseBlocks,
+  formatToolCallAttachment,
+  getAgentEmoji,
+} from "./slack-blocks";
 
 /**
  * Handle an inbound Slack message event.
- * 1. Look up business_id and department_id from channel mapping
- * 2. Check for duplicate (idempotent via slack_ts)
- * 3. Get or create conversation
- * 4. Store inbound message with Slack metadata
- * 5. Route to agent via routeAndRespond pipeline
- * 6. Post agent response back to Slack
- * 7. Update agent message record with Slack ts
+ *
+ * Per user decision: agents respond ONLY when @mentioned.
+ * - If message does NOT contain @mention: store in Supabase (for admin panel display) but do NOT route to agent.
+ * - If message DOES contain @mention: store in Supabase AND route to agent via routeAndRespond, then post response back.
  *
  * This function is fire-and-forget (void) to meet Slack's 3-second timeout.
  */
@@ -53,31 +56,41 @@ export async function handleInboundSlackMessage(
     }
 
     // 3. Get or create conversation for this department
-    // Use a system user ID for Slack-originated messages (the Slack user)
-    // We use a deterministic ID based on the business for the "slack bot user"
     const conversation = await getOrCreateConversation(
       supabase,
       businessId,
       departmentId,
       // Use a deterministic pseudo-user-id for Slack messages
-      // The real Slack user identity is stored in message metadata
       "00000000-0000-0000-0000-000000000000",
     );
 
-    // 4. Store inbound user message with Slack metadata
+    // 4. Detect @mention: check if message contains <@{botUserId}>
+    const botUserId = await lookupBotUserId(supabase, businessId);
+    const messageText = event.text ?? "";
+    const isMentioned = botUserId
+      ? messageText.includes(`<@${botUserId}>`)
+      : false;
+
+    // Strip @mention from text before routing to agent (clean input)
+    const cleanedText = botUserId
+      ? messageText.replace(new RegExp(`<@${botUserId}>`, "g"), "").trim()
+      : messageText;
+
+    // 5. Store inbound user message with Slack metadata
     const { error: insertError } = await supabase
       .from("messages")
       .insert({
         conversation_id: conversation.id,
         business_id: businessId,
         role: "user",
-        content: event.text ?? "",
+        content: messageText,
         slack_ts: event.ts,
         slack_channel_id: event.channel,
         metadata: {
           slackUser: event.user,
           slackThreadTs: event.thread_ts,
           source: "slack",
+          mentioned: isMentioned,
         },
       });
 
@@ -100,27 +113,42 @@ export async function handleInboundSlackMessage(
       // Best-effort
     }
 
-    // 5. Route to agent via existing pipeline
+    // 6. If NOT @mentioned, stop here -- message is stored but agent does NOT respond
+    if (!isMentioned) {
+      return;
+    }
+
+    // 7. Route to agent via existing pipeline (only when @mentioned)
     const agentMessage = await routeAndRespond(
       supabase,
       businessId,
       departmentId,
       conversation.id,
-      event.text ?? "",
+      cleanedText,
     );
 
-    // 6. Post agent response back to Slack
+    // 8. Get department type for agent emoji
+    const { data: dept } = await supabase
+      .from("departments")
+      .select("type")
+      .eq("id", departmentId)
+      .single();
+    const departmentType = (dept?.type as string) ?? "custom";
+
+    // 9. Post agent response back to Slack with Block Kit formatting and agent identity
     const client = await getSlackClient(supabase, businessId);
     if (client) {
       const slackTs = await postAgentResponseToSlack(
         client,
         event.channel,
         agentMessage.agentName ?? "Agent",
+        departmentType,
         agentMessage.content,
+        agentMessage.toolCalls,
         event.thread_ts,
       );
 
-      // 7. Update agent message record with Slack ts
+      // 10. Update agent message record with Slack ts
       if (slackTs) {
         await supabase
           .from("messages")
@@ -138,21 +166,33 @@ export async function handleInboundSlackMessage(
 
 /**
  * Post an agent response to a Slack channel.
- * Uses chat.postMessage with username override for agent identity.
+ * Uses Block Kit formatting for rich messages and per-agent username/emoji for identity.
  * Returns the message ts (timestamp) from Slack for record linking.
  */
 export async function postAgentResponseToSlack(
   client: WebClient,
   channelId: string,
   agentName: string,
+  departmentType: string,
   content: string,
+  toolCalls?: ToolCallTrace[],
   threadTs?: string,
 ): Promise<string | undefined> {
+  const { blocks, text } = formatAgentResponseBlocks(content, toolCalls);
+
+  // Build attachments from tool calls
+  const attachments = toolCalls && toolCalls.length > 0
+    ? toolCalls.map(formatToolCallAttachment) as Array<Record<string, unknown>>
+    : undefined;
+
   const result = await client.chat.postMessage({
     channel: channelId,
-    text: content,
+    text,
+    blocks,
     username: agentName,
+    icon_emoji: getAgentEmoji(departmentType),
     thread_ts: threadTs,
+    attachments: attachments as never,
   });
   return result.ts;
 }
@@ -188,4 +228,106 @@ export async function syncMessageToSupabase(
   if (error) {
     throw new Error(`Failed to sync message to Supabase: ${error.message}`);
   }
+}
+
+/**
+ * Fetch Slack-synced messages for a department.
+ * Returns only messages that have slack_ts set (i.e., Slack-synced messages).
+ * Data source for the "embedded Slack feed view" in the admin panel.
+ */
+export async function getSlackFeedMessages(
+  supabase: SupabaseClient,
+  businessId: string,
+  departmentId: string,
+  limit = 50,
+  before?: string,
+): Promise<ChatMessage[]> {
+  // Find conversations for this department
+  const { data: conversations } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("business_id", businessId)
+    .eq("department_id", departmentId)
+    .eq("status", "active");
+
+  if (!conversations || conversations.length === 0) {
+    return [];
+  }
+
+  const conversationIds = conversations.map((c) => c.id as string);
+
+  // Fetch messages with slack_ts (Slack-synced only)
+  let query = supabase
+    .from("messages")
+    .select(
+      "id, conversation_id, business_id, role, agent_id, content, tool_calls, metadata, created_at, slack_ts, slack_channel_id",
+    )
+    .in("conversation_id", conversationIds)
+    .not("slack_ts", "is", null)
+    .order("created_at", { ascending: true })
+    .limit(limit);
+
+  if (before) {
+    query = query.lt("created_at", before);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(`Failed to fetch Slack feed messages: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  // Batch fetch agent names for agent messages
+  const agentIds = [
+    ...new Set(
+      data
+        .filter((m) => m.agent_id)
+        .map((m) => m.agent_id as string),
+    ),
+  ];
+  const agentNameMap = new Map<string, string>();
+  if (agentIds.length > 0) {
+    const { data: agents } = await supabase
+      .from("agents")
+      .select("id, name")
+      .in("id", agentIds);
+    for (const agent of agents ?? []) {
+      agentNameMap.set(agent.id as string, agent.name as string);
+    }
+  }
+
+  return data.map((m) => ({
+    id: m.id as string,
+    conversationId: m.conversation_id as string,
+    businessId: m.business_id as string,
+    role: m.role as "user" | "agent" | "system",
+    agentId: (m.agent_id as string) ?? null,
+    agentName: m.agent_id
+      ? agentNameMap.get(m.agent_id as string) ?? null
+      : null,
+    content: m.content as string,
+    toolCalls: (m.tool_calls as ToolCallTrace[]) ?? [],
+    metadata: (m.metadata as Record<string, unknown>) ?? {},
+    createdAt: m.created_at as string,
+  }));
+}
+
+/**
+ * Look up the bot_user_id from slack_installations for @mention detection.
+ */
+async function lookupBotUserId(
+  supabase: SupabaseClient,
+  businessId: string,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("slack_installations")
+    .select("bot_user_id")
+    .eq("business_id", businessId)
+    .maybeSingle();
+
+  return (data?.bot_user_id as string) ?? null;
 }

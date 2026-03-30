@@ -215,7 +215,13 @@ export {
   handleInboundSlackMessage,
   postAgentResponseToSlack,
   syncMessageToSupabase,
+  getSlackFeedMessages,
 } from "./slack/slack-messages";
+export {
+  formatAgentResponseBlocks,
+  formatToolCallAttachment,
+  getAgentEmoji,
+} from "./slack/slack-blocks";
 export {
   getSlackInstallUrl,
   handleSlackOAuthCallback,
