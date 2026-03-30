@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { createServerClient } from "@/_lib/supabase/server";
 import { IntegrationsOverview } from "@/_components/integrations-overview";
 import { IntegrationCatalogDialog } from "@/_components/integration-catalog-dialog";
+import { SlackConnectCard } from "@/_components/slack-connect-card";
+import { getSlackStatusAction } from "@/_actions/slack-actions";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
@@ -60,6 +62,13 @@ export default async function IntegrationsPage({
     .eq("business_id", businessId)
     .order("name");
 
+  // Fetch Slack connection status
+  const slackStatusResult = await getSlackStatusAction(businessId);
+  const slackStatus =
+    "status" in slackStatusResult
+      ? slackStatusResult.status
+      : { connected: false as const };
+
   const agentsList = (agents ?? []).map((a) => ({
     id: a.id as string,
     name: a.name as string,
@@ -94,6 +103,17 @@ export default async function IntegrationsPage({
           }
         />
       </div>
+
+      {/* Workspace-level integrations */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+          Workspace Integrations
+        </h2>
+        <SlackConnectCard
+          businessId={businessId}
+          initialStatus={slackStatus}
+        />
+      </section>
 
       <IntegrationsOverview
         integrations={integrations ?? []}
