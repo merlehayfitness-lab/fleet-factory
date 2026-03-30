@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 15 of 17 (AITMPL Template Catalog)
-Plan: 1 of 3 in current phase (1 complete)
+Plan: 2 of 3 in current phase (2 complete)
 Status: In progress
-Last activity: 2026-03-30 -- Completed 15-01-PLAN.md (AITMPL Catalog Service Foundation)
+Last activity: 2026-03-30 -- Completed 15-02-PLAN.md (AITMPL Catalog Browser & Import UI)
 
-Progress: [████████████████████████████████░░] 96% (48/50 plans)
+Progress: [█████████████████████████████████░] 98% (49/50 plans)
 
 ## Performance Metrics
 
@@ -99,6 +99,7 @@ Progress: [███████████████████████
 | Phase 16 P03 | 4min | 2 tasks | 9 files |
 | Phase 14 P03 | 6min | 2 tasks | 9 files |
 | Phase 15 P01 | 3min | 2 tasks | 6 files |
+| Phase 15 P02 | 6min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -303,6 +304,9 @@ Recent decisions affecting current work:
 - [15-01]: Removed Next.js fetch revalidate option from catalog-service; 24h TTL handled by module-level cache
 - [15-01]: Plugin import returns decomposition error with constituent paths rather than auto-importing
 - [15-01]: Department filtering puts recommended items first rather than excluding non-matching items
+- [Phase 15-02]: AitmplCatalogBrowser renders target picker outside Dialog to avoid nested dialog DOM issues
+- [Phase 15-02]: MCP import uses two-step confirmation: JSON preview then target picker selection
+- [Phase 15-02]: Category filter built client-side from search results rather than pre-fetching all categories
 
 ### Pending Todos
 
@@ -315,5 +319,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 15-01-PLAN.md (AITMPL Catalog Service Foundation)
-Resume file: .planning/phases/15-aitmpl-template-catalog/15-01-SUMMARY.md
+Stopped at: Completed 15-02-PLAN.md (AITMPL Catalog Browser & Import UI)
+Resume file: .planning/phases/15-aitmpl-template-catalog/15-02-SUMMARY.md

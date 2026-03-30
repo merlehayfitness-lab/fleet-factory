@@ -376,6 +376,6 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 12. Integrations Catalog & Setup | 2/2 | Complete    | 2026-03-29 |
 | 13. Secrets Management UX | 3/3 | Complete    | 2026-03-30 |
 | 14. Slack Integration & Chat Replacement | 3/3 | Complete    | 2026-03-30 |
-| 15. AITMPL Template Catalog | 1/3 | In Progress|  |
+| 15. AITMPL Template Catalog | 2/3 | In Progress|  |
 | 16. Tenant Disable Fix & Dashboard Freeze | 3/3 | Complete    | 2026-03-30 |
 | 17. VPS Activation & Embedded Terminal | 0/? | Not started | - |
