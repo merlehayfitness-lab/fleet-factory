@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 15 of 17 (AITMPL Template Catalog)
-Plan: 2 of 3 in current phase (2 complete)
-Status: In progress
-Last activity: 2026-03-30 -- Completed 15-02-PLAN.md (AITMPL Catalog Browser & Import UI)
+Plan: 3 of 3 in current phase (3 complete)
+Status: Phase complete
+Last activity: 2026-03-30 -- Completed 15-03-PLAN.md (AITMPL Suggestion Banner & Final Integration)
 
-Progress: [█████████████████████████████████░] 98% (49/50 plans)
+Progress: [██████████████████████████████████] 100% (50/50 plans)
 
 ## Performance Metrics
 
@@ -100,6 +100,7 @@ Progress: [███████████████████████
 | Phase 14 P03 | 6min | 2 tasks | 9 files |
 | Phase 15 P01 | 3min | 2 tasks | 6 files |
 | Phase 15 P02 | 6min | 2 tasks | 6 files |
+| Phase 15 P03 | 5min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -307,6 +308,9 @@ Recent decisions affecting current work:
 - [Phase 15-02]: AitmplCatalogBrowser renders target picker outside Dialog to avoid nested dialog DOM issues
 - [Phase 15-02]: MCP import uses two-step confirmation: JSON preview then target picker selection
 - [Phase 15-02]: Category filter built client-side from search results rather than pre-fetching all categories
+- [Phase 15-03]: Banner defaults to dismissed=true on mount to prevent SSR flash; reads localStorage in useEffect
+- [Phase 15-03]: useRef tracks import state across dialog open/close without triggering re-renders
+- [Phase 15-03]: Browse AITMPL Skills button conditionally renders only when agents prop is non-empty
 
 ### Pending Todos
 
@@ -319,5 +323,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 15-02-PLAN.md (AITMPL Catalog Browser & Import UI)
-Resume file: .planning/phases/15-aitmpl-template-catalog/15-02-SUMMARY.md
+Stopped at: Completed 15-03-PLAN.md (AITMPL Suggestion Banner & Final Integration)
+Resume file: .planning/phases/15-aitmpl-template-catalog/15-03-SUMMARY.md
