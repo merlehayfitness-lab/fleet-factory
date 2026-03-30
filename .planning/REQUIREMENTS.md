@@ -204,10 +204,10 @@
 
 ### Tenant Disable Fix
 
-- [ ] **TFIX-01**: Disabled tenant shows frozen dashboard with "Suspended" banner instead of 404
-- [ ] **TFIX-02**: Disabling tenant stops all VPS activity (pause containers, halt deployments)
-- [ ] **TFIX-03**: Admin panel blocks interaction with VPS when tenant disabled
-- [ ] **TFIX-04**: Admin can still view business in read-only frozen state
+- [x] **TFIX-01**: Disabled tenant shows frozen dashboard with "Suspended" banner instead of 404
+- [x] **TFIX-02**: Disabling tenant stops all VPS activity (pause containers, halt deployments)
+- [x] **TFIX-03**: Admin panel blocks interaction with VPS when tenant disabled
+- [x] **TFIX-04**: Admin can still view business in read-only frozen state
 
 ### VPS Activation & Embedded Terminal
 
