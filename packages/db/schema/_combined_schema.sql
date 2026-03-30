@@ -1262,3 +1262,63 @@ ALTER TABLE public.secrets ADD COLUMN IF NOT EXISTS provider text;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_secrets_business_provider_field
   ON public.secrets (business_id, provider, key) WHERE provider IS NOT NULL;
+
+-- 041: Slack integration tables
+CREATE TABLE IF NOT EXISTS public.slack_installations (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  slack_team_id text NOT NULL,
+  slack_team_name text,
+  bot_user_id text NOT NULL,
+  installed_at timestamptz DEFAULT now() NOT NULL,
+  UNIQUE(business_id),
+  UNIQUE(slack_team_id)
+);
+ALTER TABLE public.slack_installations ENABLE ROW LEVEL SECURITY;
+CREATE INDEX IF NOT EXISTS idx_slack_installations_team_id
+  ON public.slack_installations (slack_team_id);
+CREATE POLICY "slack_installations_select_member"
+  ON public.slack_installations FOR SELECT TO authenticated
+  USING (public.is_business_member(business_id));
+CREATE POLICY "slack_installations_insert_admin"
+  ON public.slack_installations FOR INSERT TO authenticated
+  WITH CHECK (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+CREATE POLICY "slack_installations_update_admin"
+  ON public.slack_installations FOR UPDATE TO authenticated
+  USING (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'))
+  WITH CHECK (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+
+CREATE TABLE IF NOT EXISTS public.slack_channel_mappings (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
+  department_id uuid NOT NULL REFERENCES public.departments ON DELETE CASCADE,
+  agent_id uuid REFERENCES public.agents ON DELETE SET NULL,
+  slack_channel_id text NOT NULL,
+  slack_channel_name text NOT NULL,
+  created_at timestamptz DEFAULT now() NOT NULL
+);
+ALTER TABLE public.slack_channel_mappings ENABLE ROW LEVEL SECURITY;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_slack_channel_mappings_business_channel
+  ON public.slack_channel_mappings (business_id, slack_channel_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_slack_channel_mappings_business_dept
+  ON public.slack_channel_mappings (business_id, department_id) WHERE agent_id IS NULL;
+CREATE POLICY "slack_channel_mappings_select_member"
+  ON public.slack_channel_mappings FOR SELECT TO authenticated
+  USING (public.is_business_member(business_id));
+CREATE POLICY "slack_channel_mappings_insert_admin"
+  ON public.slack_channel_mappings FOR INSERT TO authenticated
+  WITH CHECK (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+CREATE POLICY "slack_channel_mappings_update_admin"
+  ON public.slack_channel_mappings FOR UPDATE TO authenticated
+  USING (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'))
+  WITH CHECK (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+CREATE POLICY "slack_channel_mappings_delete_admin"
+  ON public.slack_channel_mappings FOR DELETE TO authenticated
+  USING (public.has_role_on_business(business_id, 'owner') OR public.has_role_on_business(business_id, 'admin'));
+
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS slack_ts text;
+ALTER TABLE public.messages ADD COLUMN IF NOT EXISTS slack_channel_id text;
+CREATE INDEX IF NOT EXISTS idx_messages_slack_ts
+  ON public.messages (slack_ts) WHERE slack_ts IS NOT NULL;
+
+ALTER TABLE public.conversations ADD COLUMN IF NOT EXISTS slack_channel_id text;
