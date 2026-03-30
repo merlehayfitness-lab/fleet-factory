@@ -39,13 +39,27 @@ interface Secret {
   encrypted_value: string;
   category: string;
   integration_type: string | null;
+  provider?: string | null;
   created_at: string;
   updated_at: string;
 }
 
+interface CredentialField {
+  id: string;
+  provider: string;
+  field_name: string;
+  field_type: "password" | "text" | "url";
+  display_label: string;
+  placeholder: string | null;
+  help_text: string | null;
+  field_order: number;
+}
+
 interface SecretsManagerProps {
-  secrets: Secret[];
+  secrets?: Secret[];
   businessId: string;
+  groupedSecrets?: Record<string, Secret[]>;
+  providerFields?: Record<string, CredentialField[]>;
 }
 
 const CATEGORY_CONFIG = {
@@ -70,7 +84,7 @@ function formatTimestamp(dateStr: string): string {
  * Categorized secret management UI (Vercel env vars style).
  * Secrets are encrypted server-side and never decrypted client-side.
  */
-export function SecretsManager({ secrets, businessId }: SecretsManagerProps) {
+export function SecretsManager({ secrets = [], businessId, groupedSecrets, providerFields }: SecretsManagerProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [newKey, setNewKey] = useState("");
   const [newValue, setNewValue] = useState("");

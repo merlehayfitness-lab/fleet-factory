@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, BookOpen } from "lucide-react";
+import { Building2, BookOpen, Settings2 } from "lucide-react";
 import { getAdapter } from "@agency-factory/core";
 import type { IntegrationType } from "@agency-factory/core";
 import { CatalogInstructionsPanel } from "@/_components/catalog-instructions-panel";
@@ -41,6 +41,7 @@ interface Integration {
 interface IntegrationConfigCardProps {
   integration: Integration;
   businessId: string;
+  onConfigure?: (provider: string) => void;
 }
 
 function statusColor(status: string): string {
@@ -65,6 +66,7 @@ const MAX_VISIBLE_CAPABILITIES = 3;
 export function IntegrationConfigCard({
   integration,
   businessId,
+  onConfigure,
 }: IntegrationConfigCardProps) {
   const [setupOpen, setSetupOpen] = useState(false);
   const isDepartmentLevel = !integration.agent_id && integration.departments;
@@ -111,6 +113,17 @@ export function IntegrationConfigCard({
               </Link>
             )}
             <div className="flex items-center gap-1.5">
+              {onConfigure && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground"
+                  onClick={() => onConfigure(integration.provider)}
+                >
+                  <Settings2 className="size-3" />
+                  Configure
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"

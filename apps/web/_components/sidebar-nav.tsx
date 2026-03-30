@@ -16,6 +16,7 @@ import {
   ScrollText,
   MessageSquare,
   BookOpen,
+  Settings,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -127,6 +128,12 @@ function getBusinessSubNav(businessId: string) {
       href: `/businesses/${businessId}/knowledge`,
       label: "Knowledge Base",
       icon: BookOpen,
+      enabled: true,
+    },
+    {
+      href: `/businesses/${businessId}/settings`,
+      label: "Settings",
+      icon: Settings,
       enabled: true,
     },
     {

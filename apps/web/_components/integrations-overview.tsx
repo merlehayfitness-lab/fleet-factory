@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -10,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { IntegrationConfigCard } from "@/_components/integration-config-card";
+import { CredentialSideDrawer } from "@/_components/credential-side-drawer";
 import type { IntegrationType } from "@agency-factory/core";
 
 interface Integration {
@@ -59,6 +62,21 @@ export function IntegrationsOverview({
   agents,
   businessId,
 }: IntegrationsOverviewProps) {
+  const router = useRouter();
+  const [drawerProvider, setDrawerProvider] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleConfigure = useCallback((provider: string) => {
+    setDrawerProvider(provider);
+    setIsDrawerOpen(true);
+  }, []);
+
+  const handleDrawerClose = useCallback(() => {
+    setIsDrawerOpen(false);
+    setDrawerProvider(null);
+    router.refresh();
+  }, [router]);
+
   const agentIntegrations = integrations.filter((i) => i.agent_id);
   const departmentIntegrations = integrations.filter(
     (i) => !i.agent_id && i.department_id
@@ -150,6 +168,7 @@ export function IntegrationsOverview({
                     key={integration.id}
                     integration={integration}
                     businessId={businessId}
+                    onConfigure={handleConfigure}
                   />
                 ))}
               </div>
@@ -173,6 +192,14 @@ export function IntegrationsOverview({
           </div>
         );
       })}
+
+      {/* Credential side drawer */}
+      <CredentialSideDrawer
+        isOpen={isDrawerOpen}
+        onClose={handleDrawerClose}
+        provider={drawerProvider}
+        businessId={businessId}
+      />
     </div>
   );
 }

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Rocket,
   Bot,
@@ -15,8 +14,6 @@ import {
   Zap,
   Clock,
   Settings,
-  Power,
-  RotateCcw,
 } from "lucide-react";
 import {
   Card,
@@ -25,27 +22,11 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuLabel,
-} from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "@/_components/status-badge";
 import { UsageSummary, type UsageSummaryData } from "@/_components/usage-summary";
 import { AgentHealthGrid } from "@/_components/agent-health-grid";
-import { TypeToConfirmDialog } from "@/_components/type-to-confirm-dialog";
 import { VpsStatusIndicator } from "@/_components/vps-status-indicator";
 import { getHealthDashboard } from "@/_actions/health-actions";
-import {
-  disableTenantAction,
-  restoreTenantAction,
-} from "@/_actions/emergency-actions";
-import { toast } from "sonner";
 import type { SystemHealth } from "@agency-factory/core/server";
 
 interface HealthDashboardProps {
@@ -101,9 +82,6 @@ export function HealthDashboard({
   vpsStatus,
 }: HealthDashboardProps) {
   const [health, setHealth] = useState<SystemHealth>(initialHealth);
-  const [showDisableTenant, setShowDisableTenant] = useState(false);
-  const [isPending, setIsPending] = useState(false);
-  const router = useRouter();
 
   // Poll for fresh health data every 30 seconds
   useEffect(() => {
@@ -117,49 +95,15 @@ export function HealthDashboard({
     return () => clearInterval(interval);
   }, [business.id]);
 
-  const handleDisableTenant = useCallback(
-    async (reason: string) => {
-      setIsPending(true);
-      const result = await disableTenantAction(business.id, reason);
-      setIsPending(false);
-      setShowDisableTenant(false);
-
-      if ("error" in result) {
-        toast.error(result.error);
-      } else {
-        toast.success("Tenant disabled. All agents have been frozen.");
-        router.refresh();
-      }
-    },
-    [business.id, router],
-  );
-
-  const handleRestoreTenant = useCallback(async () => {
-    setIsPending(true);
-    const result = await restoreTenantAction(business.id);
-    setIsPending(false);
-
-    if ("error" in result) {
-      toast.error(result.error);
-    } else {
-      toast.success(
-        "Tenant restored. Agents remain frozen for manual review.",
-      );
-      router.refresh();
-    }
-  }, [business.id, router]);
-
   const errorRatePercent = Math.round(health.errorRate.rate * 100);
   const totalAgents = health.agentHealth.departments.reduce(
     (sum, dept) => sum + dept.agents.length,
     0,
   );
 
-  const isDisabled = business.status === "disabled";
-
   return (
     <div className="space-y-6">
-      {/* Page header with settings dropdown */}
+      {/* Page header with settings link */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight">{business.name}</h1>
@@ -167,50 +111,14 @@ export function HealthDashboard({
           <VpsStatusIndicator initialStatus={vpsStatus} />
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1 text-sm font-medium hover:bg-muted transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50">
-            <Settings className="size-4" />
-            Settings
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" side="bottom" sideOffset={4}>
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>Emergency Controls</DropdownMenuLabel>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            {isDisabled ? (
-              <DropdownMenuItem
-                onClick={handleRestoreTenant}
-                disabled={isPending}
-              >
-                <RotateCcw className="size-4 text-emerald-600" />
-                <span>Restore Tenant</span>
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => setShowDisableTenant(true)}
-                disabled={isPending}
-              >
-                <Power className="size-4" />
-                <span>Disable Tenant</span>
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <Link
+          href={`/businesses/${business.id}/settings`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1 text-sm font-medium hover:bg-muted transition-colors"
+        >
+          <Settings className="size-4" />
+          Settings
+        </Link>
       </div>
-
-      {/* Tenant disable confirmation dialog */}
-      <TypeToConfirmDialog
-        open={showDisableTenant}
-        onOpenChange={setShowDisableTenant}
-        title="Disable Tenant"
-        description={`This will disable the entire "${business.name}" business and freeze all active agents. Users will lose access until the tenant is restored. Agents will remain frozen for manual review after restoration.`}
-        confirmPhrase="DISABLE ALL"
-        actionLabel="Disable Tenant"
-        variant="destructive"
-        onConfirm={handleDisableTenant}
-        isPending={isPending}
-      />
 
       {/* VPS warning banner */}
       {vpsStatus?.status === "offline" && (
