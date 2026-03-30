@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -120,16 +120,21 @@ export function WizardPromptGenerationStep({
       ].join("\n\n")
     : "";
 
-  // Context docs/integrations for the checkbox panel
-  const contextDocs = knowledgeDocTitles.map((t, i) => ({
-    id: `doc-${i}`,
-    title: t,
-  }));
-  const contextInts = integrationNames.map((n, i) => ({
-    id: `int-${i}`,
-    name: n.split(" (")[0],
-    type: n.includes("(") ? n.split("(")[1].replace(")", "") : "unknown",
-  }));
+  // Context docs/integrations for the checkbox panel — memoized to avoid
+  // infinite re-render loop (new arrays would retrigger ContextSuggestionUI's effect)
+  const contextDocs = useMemo(
+    () => knowledgeDocTitles.map((t, i) => ({ id: `doc-${i}`, title: t })),
+    [knowledgeDocTitles],
+  );
+  const contextInts = useMemo(
+    () =>
+      integrationNames.map((n, i) => ({
+        id: `int-${i}`,
+        name: n.split(" (")[0],
+        type: n.includes("(") ? n.split("(")[1].replace(")", "") : "unknown",
+      })),
+    [integrationNames],
+  );
 
   return (
     <div className="space-y-6">

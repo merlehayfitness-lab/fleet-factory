@@ -168,28 +168,43 @@ function buildOrgChart(
         (DEPARTMENT_ORDER[a.type] ?? 99) - (DEPARTMENT_ORDER[b.type] ?? 99),
     );
 
-  // Build children of root: other department leads + owner sub-agents
+  // Build department lead nodes
+  const deptLeadNodes: OrgChartNode[] = [];
+  for (const dept of otherDepts) {
+    const leads = leadsByDept.get(dept.id) ?? [];
+    for (const lead of leads) {
+      deptLeadNodes.push(toOrgNode(lead, "lead"));
+    }
+  }
+
+  // Build children of root
   const rootChildren: OrgChartNode[] = [];
 
-  // Owner's sub-agents (if owner lead exists, its subs are siblings of other dept leads)
+  // Owner's sub-agents act as intermediate management level
+  // Department leads nest under the first owner sub-agent (e.g., CEO)
   if (ownerLead) {
     const ownerSubs = subsByParent.get(ownerLead.id) ?? [];
-    for (const sub of ownerSubs) {
-      rootChildren.push(toOrgNode(sub, "sub-agent"));
+    if (ownerSubs.length > 0) {
+      // First owner sub-agent gets dept leads as its children
+      const primarySub = toOrgNode(ownerSubs[0], "sub-agent");
+      primarySub.children = [...primarySub.children, ...deptLeadNodes];
+      rootChildren.push(primarySub);
+
+      // Additional owner sub-agents are direct root children
+      for (let i = 1; i < ownerSubs.length; i++) {
+        rootChildren.push(toOrgNode(ownerSubs[i], "sub-agent"));
+      }
+    } else {
+      // No owner sub-agents — dept leads are direct root children
+      rootChildren.push(...deptLeadNodes);
     }
+  } else {
+    rootChildren.push(...deptLeadNodes);
   }
 
   // Additional owner leads (beyond the first) as children
   for (let i = 1; i < ownerLeads.length; i++) {
     rootChildren.push(toOrgNode(ownerLeads[i], "lead"));
-  }
-
-  // Other department leads as children of root
-  for (const dept of otherDepts) {
-    const leads = leadsByDept.get(dept.id) ?? [];
-    for (const lead of leads) {
-      rootChildren.push(toOrgNode(lead, "lead"));
-    }
   }
 
   // Create root node
