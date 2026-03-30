@@ -190,9 +190,9 @@
 
 ### Slack Integration
 
-- [ ] **SLACK-01**: Slack API integration routes messages to/from department agents
+- [x] **SLACK-01**: Slack API integration routes messages to/from department agents
 - [ ] **SLACK-02**: Embedded Slack feed view in admin panel per department/agent
-- [ ] **SLACK-03**: Messages viewable both in admin panel and directly in Slack
+- [x] **SLACK-03**: Messages viewable both in admin panel and directly in Slack
 - [ ] **SLACK-04**: Custom chat page replaced with Slack-powered interface
 
 ### AITMPL Template Catalog

@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 16 -- Tenant Disable Fix & Dashboard Freeze
+**Current focus:** Phase 14 -- Slack Integration & Chat Replacement
 
 ## Current Position
 
-Phase: 16 of 17 (Tenant Disable Fix & Dashboard Freeze)
+Phase: 14 of 17 (Slack Integration & Chat Replacement)
 Plan: 1 of 3 in current phase (1 complete)
 Status: In progress
-Last activity: 2026-03-30 -- Completed 16-01-PLAN.md (VPS Lifecycle, Mutation Guard, Status Context/Banner)
+Last activity: 2026-03-30 -- Completed 14-01-PLAN.md (Slack Foundation - DB, Services, API Routes)
 
-Progress: [██████████████████████████████░░] 98% (44/46 plans)
+Progress: [██████████████████████████████░░] 98% (45/46 plans)
 
 ## Performance Metrics
 
@@ -93,6 +93,7 @@ Progress: [███████████████████████
 | Phase 13 P02 | 7min | 2 tasks | 8 files |
 | Phase 11 P03 | 15min | 2 tasks | 6 files |
 | Phase 16 P01 | 2min | 1 tasks | 6 files |
+| Phase 14 P01 | 9min | 3 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -274,6 +275,12 @@ Recent decisions affecting current work:
 - [11-03]: Agent dependency array (not agents.length) ensures lines recalculate on data changes
 - [Phase 16]: VPS lifecycle uses catch-all error handling returning result objects instead of throwing
 - [Phase 16]: SuspendedBanner uses inline confirm/cancel buttons instead of window.confirm for better UX
+- [14-01]: Used @slack/web-api directly instead of Bolt framework (Bolt incompatible with App Router)
+- [14-01]: Events API webhook uses service_role client (SECR-05 exception for external system auth)
+- [14-01]: Fire-and-forget pattern for Slack event processing to meet 3-second timeout
+- [14-01]: Bot echo loop prevented by checking bot_id and bot_message subtype
+- [14-01]: OAuth state parameter carries businessId for tenant mapping
+- [14-01]: Channel naming uses {business-slug}-{dept-type} pattern with name_taken fallback
 
 ### Pending Todos
 
@@ -286,5 +293,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 16-01-PLAN.md (VPS Lifecycle, Mutation Guard, Status Context/Banner)
-Resume file: .planning/phases/16-tenant-disable-fix-dashboard-freeze/16-01-SUMMARY.md
+Stopped at: Completed 14-01-PLAN.md (Slack Foundation - DB, Services, API Routes)
+Resume file: .planning/phases/14-slack-integration-chat-replacement/14-01-SUMMARY.md
