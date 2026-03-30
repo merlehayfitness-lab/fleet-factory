@@ -28,7 +28,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 14: Slack Integration & Chat Replacement** - Slack API routing, embedded feed in admin panel, replace custom chat (completed 2026-03-30)
 - [x] **Phase 15: AITMPL Template Catalog** - Wizard suggestions for Skills/Agents/Commands/Settings/Hooks/MCPs/Plugins from AITMPL (completed 2026-03-30)
 - [x] **Phase 16: Tenant Disable Fix & Dashboard Freeze** - Fix 404 on disable, frozen dashboard banner, stop VPS activity (completed 2026-03-30)
-- [ ] **Phase 17: VPS Activation & Embedded Terminal** - First real VPS deployment, gear icon to terminal page, embedded SSH terminal
+- [x] **Phase 17: VPS Activation & Embedded Terminal** - First real VPS deployment, gear icon to terminal page, embedded SSH terminal (completed 2026-03-30)
 
 ## Phase Details
 
@@ -378,4 +378,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 14. Slack Integration & Chat Replacement | 3/3 | Complete    | 2026-03-30 |
 | 15. AITMPL Template Catalog | 3/3 | Complete    | 2026-03-30 |
 | 16. Tenant Disable Fix & Dashboard Freeze | 3/3 | Complete    | 2026-03-30 |
-| 17. VPS Activation & Embedded Terminal | 2/3 | In Progress|  |
+| 17. VPS Activation & Embedded Terminal | 3/3 | Complete   | 2026-03-30 |

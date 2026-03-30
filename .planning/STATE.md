@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 17 of 17 (VPS Activation & Embedded Terminal)
-Plan: 2 of 3 in current phase (2 complete)
-Status: In progress
-Last activity: 2026-03-30 -- Completed 17-02-PLAN.md (Embedded Terminal)
+Plan: 3 of 3 in current phase (3 complete)
+Status: Phase complete
+Last activity: 2026-03-30 -- Completed 17-03-PLAN.md (E2E Verification Wiring)
 
-Progress: [███████████████████████████████████] 100% (52/53 plans)
+Progress: [███████████████████████████████████] 100% (53/53 plans)
 
 ## Performance Metrics
 
@@ -103,6 +103,7 @@ Progress: [███████████████████████
 | Phase 15 P03 | 5min | 2 tasks | 4 files |
 | Phase 17 P01 | 4min | 2 tasks | 9 files |
 | Phase 17 P02 | 4min | 2 tasks | 8 files |
+| Phase 17 P03 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -320,6 +321,7 @@ Recent decisions affecting current work:
 - [Phase 17]: [Phase 17-02]: Dynamic CSS import for xterm.css with @ts-expect-error suppression (bundler handles at runtime)
 - [Phase 17]: [Phase 17-02]: TerminalInfoBar uses businessId prop with useRouter for disconnect navigation instead of onDisconnect callback
 - [Phase 17]: [Phase 17-02]: VPS health fetch in terminal page is best-effort with try/catch (falls back to offline status)
+- [Phase 17]: [Phase 17-03]: Auto-poll uses mount-refresh + 30s setInterval with cleanup on unmount (matches health-dashboard pattern)
 
 ### Pending Todos
 
@@ -332,5 +334,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 17-02-PLAN.md (Embedded Terminal)
-Resume file: .planning/phases/17-vps-activation-embedded-terminal/17-02-SUMMARY.md
+Stopped at: Completed 17-03-PLAN.md (E2E Verification Wiring) -- Phase 17 complete
+Resume file: .planning/phases/17-vps-activation-embedded-terminal/17-03-SUMMARY.md
