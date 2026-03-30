@@ -372,7 +372,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 10. Template Profiles & Model Configuration | 3/3 | Complete    | 2026-03-29 |
 | 11. Sub-Agent Management | 2/3 | Gap closure    | 2026-03-29 |
 | 12. Integrations Catalog & Setup | 2/2 | Complete    | 2026-03-29 |
-| 13. Secrets Management UX | 1/3 | In Progress|  |
+| 13. Secrets Management UX | 2/3 | In Progress|  |
 | 14. Slack Integration & Chat Replacement | 0/? | Not started | - |
 | 15. AITMPL Template Catalog | 0/? | Not started | - |
 | 16. Tenant Disable Fix & Dashboard Freeze | 0/? | Not started | - |

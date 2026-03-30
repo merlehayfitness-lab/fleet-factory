@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 13 of 17 (Secrets Management UX)
-Plan: 1 of 3 in current phase (1 complete)
+Plan: 3 of 3 in current phase (3 complete)
 Status: In progress
-Last activity: 2026-03-29 -- Completed 13-01-PLAN.md (Schema & Service Foundation)
+Last activity: 2026-03-29 -- Completed 13-03-PLAN.md (Credential Side Drawer)
 
-Progress: [█████████████████████████████░░░] 95% (41/43 plans)
+Progress: [██████████████████████████████░░] 97% (43/43 plans)
 
 ## Performance Metrics
 
@@ -89,6 +89,7 @@ Progress: [███████████████████████
 | Phase 12 P01 | 9min | 3 tasks | 30 files |
 | Phase 12 P02 | 6min | 2 tasks | 7 files |
 | Phase 13 P01 | 4min | 2 tasks | 7 files |
+| Phase 13 P03 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -258,6 +259,9 @@ Recent decisions affecting current work:
 - [13-01]: saveProviderCredentials auto-creates/activates integration record; deleteProviderSecrets deactivates to mock
 - [13-01]: testConnection uses switch/case with mock success for all 15 providers -- real implementations slot in per case
 - [13-01]: Provider-scoped unique index on (business_id, provider, key) WHERE provider IS NOT NULL preserves backward compatibility
+- [13-03]: Inline credential form fields instead of importing from Plan 02 (not yet built) -- same interface for easy swap
+- [13-03]: Test Connection button disabled until credentials exist (hasExisting) to prevent empty-credential test calls
+- [13-03]: onConfigure prop optional on IntegrationConfigCard for backward compatibility
 
 ### Pending Todos
 
@@ -270,5 +274,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-29
-Stopped at: Completed 13-01-PLAN.md (Schema & Service Foundation)
-Resume file: .planning/phases/13-secrets-management-ux/13-01-SUMMARY.md
+Stopped at: Completed 13-03-PLAN.md (Credential Side Drawer)
+Resume file: .planning/phases/13-secrets-management-ux/13-03-SUMMARY.md
