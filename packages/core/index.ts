@@ -233,5 +233,12 @@ export {
   DEPARTMENT_DEFAULT_TOOL_PROFILES,
 } from "./agent/tool-profile-schema";
 
+// Slack types (client-safe)
+export type {
+  SlackInstallation,
+  SlackChannelMapping,
+  SlackConnectionStatus,
+} from "./slack/slack-types";
+
 // NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker, approval service)
 // are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.

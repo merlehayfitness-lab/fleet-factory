@@ -195,5 +195,33 @@ export { syncFromTemplate, reparentAgent } from "./agent/service";
 // Integration setup instructions (server-only -- Anthropic streaming API)
 export { streamSetupInstructions } from "./integrations/instructions-service";
 
+// Slack integration (server-only -- Slack SDK + crypto + DB operations)
+export { getSlackClient, createSlackClient } from "./slack/slack-client";
+export {
+  verifySlackSignature,
+  parseSlackEvent,
+  isMessageEvent,
+  isBotMessage,
+  getSigningSecret,
+} from "./slack/slack-events";
+export {
+  createDepartmentChannels,
+  getChannelMappings,
+  getChannelMapping,
+  getDepartmentForChannel,
+  saveChannelMapping,
+} from "./slack/slack-channels";
+export {
+  handleInboundSlackMessage,
+  postAgentResponseToSlack,
+  syncMessageToSupabase,
+} from "./slack/slack-messages";
+export {
+  getSlackInstallUrl,
+  handleSlackOAuthCallback,
+  getSlackInstallation,
+  disconnectSlack,
+} from "./slack/slack-oauth";
+
 // OpenClaw workspace generator (re-exported for server-only use in web app)
 export { generateOpenClawWorkspace } from "@agency-factory/runtime";
