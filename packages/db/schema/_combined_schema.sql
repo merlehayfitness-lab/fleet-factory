@@ -162,15 +162,13 @@ ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
 CREATE INDEX IF NOT EXISTS idx_audit_logs_business_created ON public.audit_logs (business_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_logs_business_action ON public.audit_logs (business_id, action);
 
--- 009: RLS Helpers
+-- 009: RLS Helpers (disabled businesses still visible — mutation blocking at app layer)
 CREATE OR REPLACE FUNCTION public.is_business_member(p_business_id uuid)
 RETURNS boolean LANGUAGE sql SECURITY DEFINER SET search_path = '' AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.business_users bu
-    JOIN public.businesses b ON b.id = bu.business_id
     WHERE bu.user_id = (SELECT auth.uid())
       AND bu.business_id = p_business_id
-      AND b.status != 'disabled'
   );
 $$;
 
@@ -178,10 +176,8 @@ CREATE OR REPLACE FUNCTION public.has_role_on_business(p_business_id uuid, p_rol
 RETURNS boolean LANGUAGE sql SECURITY DEFINER SET search_path = '' AS $$
   SELECT EXISTS (
     SELECT 1 FROM public.business_users bu
-    JOIN public.businesses b ON b.id = bu.business_id
     WHERE bu.user_id = (SELECT auth.uid())
       AND bu.business_id = p_business_id
-      AND b.status != 'disabled'
       AND (p_role IS NULL OR bu.role = p_role)
   );
 $$;
