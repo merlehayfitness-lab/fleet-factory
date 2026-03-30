@@ -340,12 +340,27 @@ export function AgentTreeView({
     [],
   );
 
-  // Shared position recalculation
+  // Counter bumped on drag end to trigger position recalculation
+  const [dragEndCount, setDragEndCount] = useState(0);
+
+  // Shared position recalculation — accounts for container scroll offset
   const recalculatePositions = useCallback(() => {
     if (!containerRef.current) return;
-    setContainerRect(containerRef.current.getBoundingClientRect());
+    const container = containerRef.current;
+    const cRect = container.getBoundingClientRect();
 
-    const nodes = containerRef.current.querySelectorAll("[data-node-id]");
+    // Build a rect representing the full content area origin
+    // so lines are positioned relative to scroll content, not viewport
+    setContainerRect(
+      new DOMRect(
+        cRect.left - container.scrollLeft,
+        cRect.top - container.scrollTop,
+        container.scrollWidth,
+        container.scrollHeight,
+      ),
+    );
+
+    const nodes = container.querySelectorAll("[data-node-id]");
     const newPositions = new Map<string, DOMRect>();
     nodes.forEach((node) => {
       const id = (node as HTMLElement).dataset.nodeId;
@@ -355,21 +370,26 @@ export function AgentTreeView({
     setPositionVersion((v) => v + 1);
   }, []);
 
-  // Recalculate positions after render and on resize
+  // Recalculate positions after render, on resize, scroll, and drag end
   useEffect(() => {
     const timer = setTimeout(recalculatePositions, 50);
 
     const observer = new ResizeObserver(recalculatePositions);
-    if (containerRef.current) observer.observe(containerRef.current);
+    const container = containerRef.current;
+    if (container) {
+      observer.observe(container);
+      container.addEventListener("scroll", recalculatePositions);
+    }
 
     window.addEventListener("resize", recalculatePositions);
 
     return () => {
       clearTimeout(timer);
       observer.disconnect();
+      if (container) container.removeEventListener("scroll", recalculatePositions);
       window.removeEventListener("resize", recalculatePositions);
     };
-  }, [collapsed, agents.length, recalculatePositions]);
+  }, [collapsed, agents.length, dragEndCount, recalculatePositions]);
 
   // Node select: open sidebar
   const handleSelectNode = useCallback((nodeId: string) => {
@@ -392,8 +412,8 @@ export function AgentTreeView({
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveDragId(null);
-    // Recalculate line positions after drag completes
-    setTimeout(recalculatePositions, 50);
+    // Bump counter to trigger position recalculation via the effect
+    setDragEndCount((c) => c + 1);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 

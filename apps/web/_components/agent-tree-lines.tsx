@@ -135,9 +135,10 @@ export function AgentTreeLines({
 
   return (
     <svg
-      className="pointer-events-none absolute inset-0 z-0"
+      className="pointer-events-none absolute left-0 top-0 z-0"
       width={containerRect.width}
       height={containerRect.height}
+      overflow="visible"
     >
       {elements}
     </svg>
