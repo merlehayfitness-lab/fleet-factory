@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // Generate install URL and redirect
-  const installUrl = getSlackInstallUrl(businessId);
+  // Generate install URL and redirect (pass supabase for DB credential lookup)
+  const installUrl = await getSlackInstallUrl(businessId, supabase);
   return NextResponse.redirect(installUrl);
 }

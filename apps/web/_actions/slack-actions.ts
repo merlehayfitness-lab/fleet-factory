@@ -9,6 +9,7 @@ import {
   disconnectSlack,
   getChannelMappings,
   getSlackFeedMessages,
+  saveProviderCredentials,
 } from "@agency-factory/core/server";
 import type { SlackConnectionStatus, SlackChannelMapping, ChatMessage } from "@agency-factory/core";
 
@@ -57,7 +58,7 @@ export async function getSlackStatusAction(
  */
 export async function connectSlackAction(
   businessId: string,
-): Promise<{ url: string } | { error: string }> {
+): Promise<{ url: string } | { error: string; code?: string }> {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -68,11 +69,48 @@ export async function connectSlackAction(
   }
 
   try {
-    const url = getSlackInstallUrl(businessId);
+    const url = await getSlackInstallUrl(businessId, supabase as Parameters<typeof getSlackInstallUrl>[1]);
     return { url };
   } catch (err) {
+    const msg = err instanceof Error ? err.message : "Failed to generate Slack install URL";
+    if (msg === "SLACK_APP_NOT_CONFIGURED") {
+      return { error: msg, code: "SLACK_APP_NOT_CONFIGURED" };
+    }
+    return { error: msg };
+  }
+}
+
+/**
+ * Save Slack app credentials (client_id + client_secret) for a business.
+ * These are entered once to enable the OAuth flow.
+ */
+export async function saveSlackAppCredentialsAction(
+  businessId: string,
+  clientId: string,
+  clientSecret: string,
+): Promise<{ success: true } | { error: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  if (!clientId.trim() || !clientSecret.trim()) {
+    return { error: "Both Client ID and Client Secret are required." };
+  }
+
+  try {
+    await saveProviderCredentials(supabase, businessId, "slack", {
+      client_id: clientId.trim(),
+      client_secret: clientSecret.trim(),
+    });
+    return { success: true };
+  } catch (err) {
     return {
-      error: err instanceof Error ? err.message : "Failed to generate Slack install URL",
+      error: err instanceof Error ? err.message : "Failed to save Slack credentials",
     };
   }
 }

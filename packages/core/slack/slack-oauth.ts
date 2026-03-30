@@ -17,29 +17,64 @@ const SLACK_BOT_SCOPES = [
 ].join(",");
 
 /**
- * Get the SLACK_CLIENT_ID env var. Throws if missing.
+ * Get Slack Client ID — checks DB secrets first, then falls back to env var.
+ * When supabase + businessId provided, reads from provider secrets.
  */
-export function getSlackClientId(): string {
+export async function getSlackClientId(
+  supabase?: SupabaseClient,
+  businessId?: string,
+): Promise<string> {
+  // Try DB first if context provided
+  if (supabase && businessId) {
+    const { decrypt } = await import("../crypto/encryption");
+    const { data } = await supabase
+      .from("secrets")
+      .select("encrypted_value")
+      .eq("business_id", businessId)
+      .eq("provider", "slack")
+      .eq("key", "client_id")
+      .maybeSingle();
+
+    if (data?.encrypted_value) {
+      return decrypt(data.encrypted_value as string);
+    }
+  }
+
+  // Fall back to env var
   const clientId = process.env.SLACK_CLIENT_ID;
   if (!clientId) {
-    throw new Error(
-      "Missing SLACK_CLIENT_ID environment variable. " +
-        "Set it in .env.local with your Slack app's Client ID.",
-    );
+    throw new Error("SLACK_APP_NOT_CONFIGURED");
   }
   return clientId;
 }
 
 /**
- * Get the SLACK_CLIENT_SECRET env var. Throws if missing.
+ * Get Slack Client Secret — checks DB secrets first, then falls back to env var.
  */
-export function getSlackClientSecret(): string {
+export async function getSlackClientSecret(
+  supabase?: SupabaseClient,
+  businessId?: string,
+): Promise<string> {
+  // Try DB first if context provided
+  if (supabase && businessId) {
+    const { decrypt } = await import("../crypto/encryption");
+    const { data } = await supabase
+      .from("secrets")
+      .select("encrypted_value")
+      .eq("business_id", businessId)
+      .eq("provider", "slack")
+      .eq("key", "client_secret")
+      .maybeSingle();
+
+    if (data?.encrypted_value) {
+      return decrypt(data.encrypted_value as string);
+    }
+  }
+
+  // Fall back to env var
   const clientSecret = process.env.SLACK_CLIENT_SECRET;
   if (!clientSecret) {
-    throw new Error(
-      "Missing SLACK_CLIENT_SECRET environment variable. " +
-        "Set it in .env.local with your Slack app's Client Secret.",
-    );
+    throw new Error("SLACK_APP_NOT_CONFIGURED");
   }
   return clientSecret;
 }
@@ -47,10 +82,14 @@ export function getSlackClientSecret(): string {
 /**
  * Generate the Slack OAuth authorize URL for installing the app.
  * Uses state=businessId for mapping the callback to the correct business.
+ * Reads client_id from DB secrets first, then env var.
  */
-export function getSlackInstallUrl(businessId: string): string {
-  const clientId = getSlackClientId();
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/slack/oauth/callback`;
+export async function getSlackInstallUrl(
+  businessId: string,
+  supabase?: SupabaseClient,
+): Promise<string> {
+  const clientId = await getSlackClientId(supabase, businessId);
+  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/slack/oauth/callback`;
 
   const params = new URLSearchParams({
     client_id: clientId,
@@ -70,9 +109,9 @@ export async function handleSlackOAuthCallback(
   code: string,
   businessId: string,
 ): Promise<SlackInstallation> {
-  const clientId = getSlackClientId();
-  const clientSecret = getSlackClientSecret();
-  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/slack/oauth/callback`;
+  const clientId = await getSlackClientId(supabase, businessId);
+  const clientSecret = await getSlackClientSecret(supabase, businessId);
+  const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/slack/oauth/callback`;
 
   // Exchange code for bot token via oauth.v2.access
   const tempClient = new WebClient();
