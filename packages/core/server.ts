@@ -117,6 +117,9 @@ export {
 // Chat stub (server-only -- simulated responses)
 export { generateStubResponse } from "./chat/chat-stub";
 
+// VPS lifecycle (server-only -- container pause/resume)
+export { pauseTenantContainers, resumeTenantContainers } from "./vps/vps-lifecycle";
+
 // VPS client (server-only -- HTTP calls to VPS)
 export { vpsPost, vpsGet, createVpsWebSocket } from "./vps/vps-client";
 export {

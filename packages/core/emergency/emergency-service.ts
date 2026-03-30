@@ -11,6 +11,7 @@
 
 import type { AgentStatus } from "../types/index";
 import { assertTransition } from "../agent/lifecycle";
+import { pauseTenantContainers, resumeTenantContainers } from "../vps/vps-lifecycle";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SupabaseClient = any;
@@ -320,7 +321,26 @@ export async function disableTenant(
     }
   }
 
-  // 5. Audit log (best-effort)
+  // 5. Stop VPS containers (best-effort)
+  let vpsStoppedCount = 0;
+  try {
+    const { data: biz } = await supabase
+      .from("businesses")
+      .select("slug")
+      .eq("id", businessId)
+      .single();
+    if (biz?.slug) {
+      const stopResult = await pauseTenantContainers(businessId, biz.slug as string);
+      if (!stopResult.success) {
+        console.warn("VPS container stop failed (best-effort):", stopResult.error);
+      }
+      vpsStoppedCount = stopResult.stoppedCount ?? 0;
+    }
+  } catch (err) {
+    console.warn("VPS container stop error (best-effort):", err);
+  }
+
+  // 6. Audit log (best-effort)
   try {
     await supabase.from("audit_logs").insert({
       business_id: businessId,
@@ -331,6 +351,8 @@ export async function disableTenant(
       metadata: {
         reason,
         agents_frozen_count: agentsFrozenCount,
+        vps_stopped_count: vpsStoppedCount,
+        vps_warning: vpsStoppedCount === 0 ? "VPS containers may still be running" : undefined,
         business_name: business.name,
       },
     });
@@ -378,9 +400,28 @@ export async function restoreTenant(
     throw new Error(`Failed to restore tenant: ${updateError.message}`);
   }
 
-  // 3. Do NOT auto-unfreeze agents -- admin must manually review
+  // 3. Resume VPS containers (best-effort)
+  let vpsResumedCount = 0;
+  try {
+    const { data: biz } = await supabase
+      .from("businesses")
+      .select("slug")
+      .eq("id", businessId)
+      .single();
+    if (biz?.slug) {
+      const resumeResult = await resumeTenantContainers(businessId, biz.slug as string);
+      if (!resumeResult.success) {
+        console.warn("VPS container resume failed (best-effort):", resumeResult.error);
+      }
+      vpsResumedCount = resumeResult.resumedCount ?? 0;
+    }
+  } catch (err) {
+    console.warn("VPS container resume error (best-effort):", err);
+  }
 
-  // 4. Audit log (best-effort)
+  // 4. Do NOT auto-unfreeze agents -- admin must manually review
+
+  // 5. Audit log (best-effort)
   try {
     await supabase.from("audit_logs").insert({
       business_id: businessId,
@@ -390,6 +431,7 @@ export async function restoreTenant(
       actor_id: actorId,
       metadata: {
         business_name: business.name,
+        vps_resumed_count: vpsResumedCount,
         note: "Agents remain frozen for manual review",
       },
     });
