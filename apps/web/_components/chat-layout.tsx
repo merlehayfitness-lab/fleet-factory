@@ -8,6 +8,7 @@ import { ChatMessageList } from "./chat-message-list";
 import { ChatMessageInput } from "./chat-message-input";
 import { SlackConnectPrompt } from "./slack-connect-prompt";
 import { SlackChannelHeader } from "./slack-channel-header";
+import { useBusinessStatus } from "@/_components/business-status-provider";
 import {
   getMessagesAction,
   getDepartmentChannelsAction,
@@ -99,6 +100,7 @@ function SlackChatUI({
   slackChannels: SlackChannelWithDept[];
   slackTeamId: string;
 }) {
+  const { isDisabled } = useBusinessStatus();
   const searchParams = useSearchParams();
   const departmentParam = searchParams.get("department");
 
@@ -331,11 +333,13 @@ function SlackChatUI({
 
             <ChatMessageInput
               onSendMessage={handleSendMessage}
-              disabled={isAgentFrozen}
+              disabled={isDisabled || isAgentFrozen}
               disabledReason={
-                isAgentFrozen
-                  ? "Agent is frozen -- emergency action is active"
-                  : undefined
+                isDisabled
+                  ? "Business is suspended"
+                  : isAgentFrozen
+                    ? "Agent is frozen -- emergency action is active"
+                    : undefined
               }
               isSending={isSending}
               channelName={channelDisplayName}

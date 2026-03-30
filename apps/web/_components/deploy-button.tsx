@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { deployAction } from "@/_actions/deployment-actions";
+import { useBusinessStatus } from "@/_components/business-status-provider";
 
 interface DeployButtonProps {
   businessId: string;
@@ -32,6 +33,7 @@ export function DeployButton({
   hasLiveDeployment,
   agentCount,
 }: DeployButtonProps) {
+  const { isDisabled } = useBusinessStatus();
   const [isDeploying, setIsDeploying] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -64,12 +66,15 @@ export function DeployButton({
     <>
       <Button
         onClick={handleClick}
-        disabled={isDeploying}
+        disabled={isDisabled || isDeploying}
+        title={isDisabled ? "Business is suspended" : undefined}
         variant={hasLiveDeployment ? "outline" : "default"}
         className={
-          hasLiveDeployment
-            ? undefined
-            : "bg-emerald-600 text-white hover:bg-emerald-700"
+          isDisabled
+            ? "opacity-50 cursor-not-allowed"
+            : hasLiveDeployment
+              ? undefined
+              : "bg-emerald-600 text-white hover:bg-emerald-700"
         }
       >
         {isDeploying ? (

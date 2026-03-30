@@ -33,6 +33,23 @@ export default async function BusinessPage({
   // Fetch combined health payload via the health service
   const health = await getSystemHealth(supabase, id);
 
+  // If business is disabled/suspended, check for VPS warning in latest disable audit log
+  let vpsWarning: string | null = null;
+  const isBusinessDisabled =
+    business.status === "disabled" || business.status === "suspended";
+  if (isBusinessDisabled) {
+    const { data: lastDisableLog } = await supabase
+      .from("audit_logs")
+      .select("metadata")
+      .eq("business_id", business.id)
+      .eq("action", "tenant_disabled")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    const meta = lastDisableLog?.metadata as Record<string, unknown> | null;
+    vpsWarning = (meta?.vps_warning as string) ?? null;
+  }
+
   // Fetch usage summary: aggregate from usage_records grouped by agent
   const { data: usageRecords } = await supabase
     .from("usage_records")
@@ -99,6 +116,7 @@ export default async function BusinessPage({
       initialHealth={health}
       usageSummary={usageSummary}
       vpsStatus={health.vpsStatus}
+      vpsWarning={vpsWarning}
     />
   );
 }

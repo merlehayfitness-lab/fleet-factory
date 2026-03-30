@@ -49,6 +49,7 @@ interface DeploymentDetailProps {
   businessId: string;
   vpsWsUrl: string | null;
   vpsConfigured: boolean;
+  isDisabled?: boolean;
 }
 
 const STAGES = ["Queued", "Building", "Deploying", "Live"] as const;
@@ -145,6 +146,7 @@ export function DeploymentDetail({
   businessId,
   vpsWsUrl,
   vpsConfigured,
+  isDisabled = false,
 }: DeploymentDetailProps) {
   const [isRetrying, setIsRetrying] = useState(false);
   const [snapshotOpen, setSnapshotOpen] = useState(false);
@@ -270,7 +272,9 @@ export function DeploymentDetail({
                       variant="outline"
                       size="sm"
                       onClick={handleRetry}
-                      disabled={isRetrying}
+                      disabled={isDisabled || isRetrying}
+                      title={isDisabled ? "Business is suspended" : undefined}
+                      className={isDisabled ? "opacity-50 cursor-not-allowed" : undefined}
                     >
                       {isRetrying ? (
                         <Loader2 className="mr-1.5 size-3.5 animate-spin" />

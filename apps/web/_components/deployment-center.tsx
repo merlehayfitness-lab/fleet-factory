@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { DeploymentList } from "@/_components/deployment-list";
 import { DeploymentDetail } from "@/_components/deployment-detail";
+import { useBusinessStatus } from "@/_components/business-status-provider";
 
 interface Deployment {
   id: string;
@@ -35,6 +36,7 @@ export function DeploymentCenter({
   vpsConfigured,
   activeDeploymentId,
 }: DeploymentCenterProps) {
+  const { isDisabled } = useBusinessStatus();
   const [selectedId, setSelectedId] = useState<string | null>(
     deployments[0]?.id ?? null
   );
@@ -60,6 +62,7 @@ export function DeploymentCenter({
           businessId={businessId}
           vpsWsUrl={selectedDeployment?.id === activeDeploymentId ? vpsWsUrl : null}
           vpsConfigured={vpsConfigured}
+          isDisabled={isDisabled}
         />
       </div>
     </div>

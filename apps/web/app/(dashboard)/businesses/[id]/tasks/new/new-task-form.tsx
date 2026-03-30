@@ -25,6 +25,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { createTaskAction } from "@/_actions/task-actions";
+import { useBusinessStatus } from "@/_components/business-status-provider";
 
 interface NewTaskFormProps {
   businessId: string;
@@ -42,6 +43,7 @@ export function NewTaskForm({
   agents,
 }: NewTaskFormProps) {
   const router = useRouter();
+  const { isDisabled } = useBusinessStatus();
   const {
     register,
     handleSubmit,
@@ -79,6 +81,11 @@ export function NewTaskForm({
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardHeader>
           <CardTitle>Task Details</CardTitle>
+          {isDisabled && (
+            <p className="text-sm text-destructive">
+              Cannot create tasks while business is suspended.
+            </p>
+          )}
         </CardHeader>
 
         <CardContent className="space-y-4">
@@ -173,7 +180,12 @@ export function NewTaskForm({
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            disabled={isDisabled || isSubmitting}
+            title={isDisabled ? "Business is suspended" : undefined}
+            className={isDisabled ? "opacity-50 cursor-not-allowed" : undefined}
+          >
             {isSubmitting && (
               <Loader2 className="mr-1.5 size-3.5 animate-spin" />
             )}

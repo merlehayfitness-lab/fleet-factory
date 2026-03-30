@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
 import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useBusinessStatus } from "@/_components/business-status-provider";
 import type { OrgChartNode } from "@/_components/agent-tree-view";
 
 interface AgentTreeNodeProps {
@@ -37,6 +38,7 @@ export function AgentTreeNode({
   registerRef,
 }: AgentTreeNodeProps) {
   const router = useRouter();
+  const { isDisabled } = useBusinessStatus();
 
   const {
     attributes,
@@ -144,12 +146,19 @@ export function AgentTreeNode({
         </button>
       )}
 
-      {/* '+' add child button (on hover) */}
+      {/* '+' add child button (on hover, disabled when business is suspended) */}
       {(node.type === "root" || node.type === "lead") && (
         <button
           data-action="add"
-          onClick={handleAddChild}
-          className="absolute -bottom-3 left-1/2 -translate-x-1/2 inline-flex size-6 items-center justify-center rounded-full border bg-card text-muted-foreground opacity-0 shadow-sm transition-opacity hover:bg-primary hover:text-primary-foreground group-hover:opacity-100"
+          onClick={isDisabled ? undefined : handleAddChild}
+          disabled={isDisabled}
+          title={isDisabled ? "Business is suspended" : undefined}
+          className={cn(
+            "absolute -bottom-3 left-1/2 -translate-x-1/2 inline-flex size-6 items-center justify-center rounded-full border bg-card text-muted-foreground shadow-sm transition-opacity",
+            isDisabled
+              ? "opacity-50 cursor-not-allowed"
+              : "opacity-0 hover:bg-primary hover:text-primary-foreground group-hover:opacity-100",
+          )}
         >
           <Plus className="size-3" />
         </button>
