@@ -37,6 +37,8 @@ import type { Skill } from "@agency-factory/core";
 interface SkillLibraryProps {
   businessId: string;
   initialSkills: Skill[];
+  agents?: Array<{ id: string; name: string; department_name?: string }>;
+  departments?: Array<{ id: string; name: string }>;
 }
 
 const SOURCE_OPTIONS = ["All", "manual", "imported", "template"] as const;
@@ -152,7 +154,7 @@ function SkillCard({
 /**
  * Business skill library card grid with search, source filter, and CRUD actions.
  */
-export function SkillLibrary({ businessId, initialSkills }: SkillLibraryProps) {
+export function SkillLibrary({ businessId, initialSkills, agents, departments }: SkillLibraryProps) {
   const [skills, setSkills] = useState<Skill[]>(initialSkills);
   const [search, setSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState("All");
@@ -507,6 +509,8 @@ export function SkillLibrary({ businessId, initialSkills }: SkillLibraryProps) {
         }}
         open={templateBrowserOpen}
         onOpenChange={setTemplateBrowserOpen}
+        agents={agents}
+        departments={departments}
       />
 
       {/* GitHub import */}

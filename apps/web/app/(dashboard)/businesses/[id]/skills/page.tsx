@@ -38,17 +38,43 @@ export default async function SkillsPage({
     notFound();
   }
 
-  // Fetch all non-deleted skills for this business
-  const { data: skills, error } = await supabase
-    .from("skills")
-    .select("*")
-    .eq("business_id", id)
-    .is("deleted_at", null)
-    .order("name", { ascending: true });
+  // Fetch skills, agents, and departments in parallel
+  const [skillsResult, agentsResult, departmentsResult] = await Promise.all([
+    supabase
+      .from("skills")
+      .select("*")
+      .eq("business_id", id)
+      .is("deleted_at", null)
+      .order("name", { ascending: true }),
+    supabase
+      .from("agents")
+      .select("id, name, departments(name)")
+      .eq("business_id", id)
+      .is("deleted_at", null)
+      .order("name"),
+    supabase
+      .from("departments")
+      .select("id, name")
+      .eq("business_id", id)
+      .order("name"),
+  ]);
+
+  const { data: skills, error } = skillsResult;
 
   if (error) {
     throw new Error(`Failed to load skills: ${error.message}`);
   }
+
+  const agents = (agentsResult.data ?? []).map((a) => ({
+    id: a.id,
+    name: a.name,
+    department_name: (a.departments as unknown as { name: string } | null)?.name,
+  }));
+
+  const departments = (departmentsResult.data ?? []).map((d) => ({
+    id: d.id,
+    name: d.name,
+  }));
 
   return (
     <div className="space-y-6">
@@ -62,6 +88,8 @@ export default async function SkillsPage({
       <SkillLibrary
         businessId={id}
         initialSkills={(skills ?? []) as unknown as Skill[]}
+        agents={agents}
+        departments={departments}
       />
     </div>
   );
