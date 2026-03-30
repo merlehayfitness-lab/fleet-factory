@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 16 -- Tenant Disable Fix & Dashboard Freeze
+**Current focus:** Phase 15 -- AITMPL Template Catalog
 
 ## Current Position
 
-Phase: 16 of 17 (Tenant Disable Fix & Dashboard Freeze)
-Plan: 3 of 3 in current phase (3 complete)
-Status: Phase complete
-Last activity: 2026-03-30 -- Completed 14-03-PLAN.md (Slack Complete Integration)
+Phase: 15 of 17 (AITMPL Template Catalog)
+Plan: 1 of 3 in current phase (1 complete)
+Status: In progress
+Last activity: 2026-03-30 -- Completed 15-01-PLAN.md (AITMPL Catalog Service Foundation)
 
-Progress: [████████████████████████████████] 100% (47/47 plans)
+Progress: [████████████████████████████████░░] 96% (48/50 plans)
 
 ## Performance Metrics
 
@@ -98,6 +98,7 @@ Progress: [███████████████████████
 | Phase 16 P02 | 5min | 2 tasks | 8 files |
 | Phase 16 P03 | 4min | 2 tasks | 9 files |
 | Phase 14 P03 | 6min | 2 tasks | 9 files |
+| Phase 15 P01 | 3min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -299,6 +300,9 @@ Recent decisions affecting current work:
 - [16-03]: VPS warning fetched server-side in page.tsx and passed as prop (Option A) to avoid client-side audit log fetch
 - [16-03]: isDisabled layered on top of existing disabled conditions (e.g. isAgentFrozen) rather than replacing them
 - [16-03]: Agent tree '+' buttons show at reduced opacity when disabled instead of hiding entirely
+- [15-01]: Removed Next.js fetch revalidate option from catalog-service; 24h TTL handled by module-level cache
+- [15-01]: Plugin import returns decomposition error with constituent paths rather than auto-importing
+- [15-01]: Department filtering puts recommended items first rather than excluding non-matching items
 
 ### Pending Todos
 
@@ -311,5 +315,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 14-03-PLAN.md (Slack Complete Integration)
-Resume file: .planning/phases/14-slack-integration-chat-replacement/14-03-SUMMARY.md
+Stopped at: Completed 15-01-PLAN.md (AITMPL Catalog Service Foundation)
+Resume file: .planning/phases/15-aitmpl-template-catalog/15-01-SUMMARY.md

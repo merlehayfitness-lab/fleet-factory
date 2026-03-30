@@ -197,10 +197,10 @@
 
 ### AITMPL Template Catalog
 
-- [ ] **AITMPL-01**: Browse and select from AITMPL catalog within business setup wizard
-- [ ] **AITMPL-02**: Wizard suggests skills, agents, commands based on department/industry
-- [ ] **AITMPL-03**: Import tool configurations from AITMPL agent-tool-builder for tool_profile JSON
-- [ ] **AITMPL-04**: Catalog covers Skills, Agents, Commands, Settings, Hooks, MCPs, Plugins
+- [x] **AITMPL-01**: Browse and select from AITMPL catalog within business setup wizard
+- [x] **AITMPL-02**: Wizard suggests skills, agents, commands based on department/industry
+- [x] **AITMPL-03**: Import tool configurations from AITMPL agent-tool-builder for tool_profile JSON
+- [x] **AITMPL-04**: Catalog covers Skills, Agents, Commands, Settings, Hooks, MCPs, Plugins
 
 ### Tenant Disable Fix
 
