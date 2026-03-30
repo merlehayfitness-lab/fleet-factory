@@ -13,6 +13,7 @@ import {
  * and redirects back to the integrations page.
  */
 export async function GET(request: NextRequest) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || request.url;
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state"); // businessId
   const error = request.nextUrl.searchParams.get("error");
@@ -22,12 +23,12 @@ export async function GET(request: NextRequest) {
     const redirectUrl = state
       ? `/businesses/${state}/integrations?slack_error=${error}`
       : "/businesses";
-    return NextResponse.redirect(new URL(redirectUrl, request.url));
+    return NextResponse.redirect(new URL(redirectUrl, baseUrl));
   }
 
   if (!code || !state) {
     return NextResponse.redirect(
-      new URL("/businesses?slack_error=missing_params", request.url),
+      new URL("/businesses?slack_error=missing_params", baseUrl),
     );
   }
 
@@ -57,17 +58,16 @@ export async function GET(request: NextRequest) {
       console.error("Failed to auto-create Slack channels:", channelErr);
     }
 
-    // Redirect back to integrations page with success indicator
-    return NextResponse.redirect(
-      new URL(`/businesses/${businessId}/integrations?success=slack`, request.url),
+    // Return self-closing page — parent window is polling for connection status
+    return new NextResponse(
+      `<html><body><script>window.close();</script><p>Slack connected! You can close this window.</p></body></html>`,
+      { headers: { "Content-Type": "text/html" } },
     );
   } catch (err) {
     console.error("Slack OAuth callback failed:", err);
-    return NextResponse.redirect(
-      new URL(
-        `/businesses/${businessId}/integrations?slack_error=oauth_failed`,
-        request.url,
-      ),
+    return new NextResponse(
+      `<html><body><script>window.close();</script><p>Connection failed. You can close this window and try again.</p></body></html>`,
+      { headers: { "Content-Type": "text/html" } },
     );
   }
 }

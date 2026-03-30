@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import Link from "next/link";
+
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -139,13 +139,6 @@ export function IntegrationsOverview({
         const typeIntegrations = integrations.filter(
           (i) => i.type === type
         );
-        const configuredAgentIds = new Set(
-          typeIntegrations.filter((i) => i.agent_id).map((i) => i.agent_id)
-        );
-        const unconfiguredAgents = agents.filter(
-          (a) => !configuredAgentIds.has(a.id)
-        );
-
         return (
           <div key={type} className="space-y-3">
             <div className="flex items-center gap-2">
@@ -174,21 +167,6 @@ export function IntegrationsOverview({
               </div>
             )}
 
-            {/* Unconfigured agents for this type */}
-            {unconfiguredAgents.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <span>Not configured:</span>
-                {unconfiguredAgents.map((agent) => (
-                  <Link
-                    key={agent.id}
-                    href={`/businesses/${businessId}/agents/${agent.id}`}
-                    className="rounded-md border px-2 py-0.5 transition-colors hover:bg-accent/50"
-                  >
-                    {agent.name}
-                  </Link>
-                ))}
-              </div>
-            )}
           </div>
         );
       })}

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquare, ExternalLink, Unlink, Hash, Loader2, AlertCircle, X, KeyRound } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -88,7 +89,7 @@ export function SlackConnectCard({
 
     let elapsed = 0;
     pollRef.current = setInterval(async () => {
-      elapsed += 2000;
+      elapsed += 1000;
       const statusResult = await getSlackStatusAction(businessId);
       if ("status" in statusResult && statusResult.status.connected) {
         if (pollRef.current) {
@@ -97,17 +98,24 @@ export function SlackConnectCard({
         }
         setStatus(statusResult.status);
         setIsConnecting(false);
+        const teamName = statusResult.status.teamName ?? "Slack";
+        toast.success(`Connected to ${teamName}`, {
+          description: "Slack workspace linked successfully. Department channels are being created.",
+        });
         router.refresh();
         return;
       }
-      if (elapsed >= 30000) {
+      if (elapsed >= 60000) {
         if (pollRef.current) {
           clearInterval(pollRef.current);
           pollRef.current = null;
         }
         setIsConnecting(false);
+        toast.error("Connection timed out", {
+          description: "The popup may have been closed. Try again.",
+        });
       }
-    }, 2000);
+    }, 1000);
   }, [businessId, router]);
 
   const handleSaveSetup = useCallback(async () => {
