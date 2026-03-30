@@ -14,6 +14,7 @@ import {
   Zap,
   Clock,
   Settings,
+  Terminal,
 } from "lucide-react";
 import {
   Card,
@@ -116,6 +117,15 @@ export function HealthDashboard({
           <h1 className="text-2xl font-bold tracking-tight">{business.name}</h1>
           <StatusBadge status={business.status} />
           <VpsStatusIndicator initialStatus={vpsStatus} />
+          {vpsStatus && (
+            <Link
+              href={`/businesses/${business.id}/terminal`}
+              className="inline-flex items-center justify-center rounded-full border border-border bg-background p-1.5 text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              title="Open VPS Terminal"
+            >
+              <Terminal className="size-3.5" />
+            </Link>
+          )}
         </div>
 
         <Link
