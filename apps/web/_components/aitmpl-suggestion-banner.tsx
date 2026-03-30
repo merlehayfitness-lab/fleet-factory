@@ -26,11 +26,13 @@ export function AitmplSuggestionBanner({
 
   // Read localStorage on mount (client only)
   useEffect(() => {
+    if (!businessId) return;
     const stored = localStorage.getItem(storageKey(businessId));
     setDismissed(stored === "true");
   }, [businessId]);
 
   function dismiss() {
+    if (!businessId) return;
     setDismissed(true);
     localStorage.setItem(storageKey(businessId), "true");
   }
