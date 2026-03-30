@@ -211,11 +211,11 @@
 
 ### VPS Activation & Embedded Terminal
 
-- [ ] **VPS-TERM-01**: First real department/agent deployed and running on Hostinger VPS
-- [ ] **VPS-TERM-02**: Gear icon next to VPS status badge links to standalone terminal page
-- [ ] **VPS-TERM-03**: Embedded real-time SSH terminal for direct VPS access from admin panel
-- [ ] **VPS-TERM-04**: Admin can access deployed agents and Docker containers from embedded terminal
-- [ ] **VPS-TERM-05**: End-to-end VPS deployment pipeline verified with real agents
+- [x] **VPS-TERM-01**: First real department/agent deployed and running on Hostinger VPS
+- [x] **VPS-TERM-02**: Gear icon next to VPS status badge links to standalone terminal page
+- [x] **VPS-TERM-03**: Embedded real-time SSH terminal for direct VPS access from admin panel
+- [x] **VPS-TERM-04**: Admin can access deployed agents and Docker containers from embedded terminal
+- [x] **VPS-TERM-05**: End-to-end VPS deployment pipeline verified with real agents
 
 ## v2 Requirements
 

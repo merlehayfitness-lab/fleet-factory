@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 15 -- AITMPL Template Catalog
+**Current focus:** Phase 17 -- VPS Activation & Embedded Terminal
 
 ## Current Position
 
-Phase: 15 of 17 (AITMPL Template Catalog)
-Plan: 3 of 3 in current phase (3 complete)
-Status: Phase complete
-Last activity: 2026-03-30 -- Completed 15-03-PLAN.md (AITMPL Suggestion Banner & Final Integration)
+Phase: 17 of 17 (VPS Activation & Embedded Terminal)
+Plan: 1 of 3 in current phase (1 complete)
+Status: In progress
+Last activity: 2026-03-30 -- Completed 17-01-PLAN.md (VPS API Proxy Activation)
 
-Progress: [██████████████████████████████████] 100% (50/50 plans)
+Progress: [███████████████████████████████████] 100% (51/53 plans)
 
 ## Performance Metrics
 
@@ -101,6 +101,7 @@ Progress: [███████████████████████
 | Phase 15 P01 | 3min | 2 tasks | 6 files |
 | Phase 15 P02 | 6min | 2 tasks | 6 files |
 | Phase 15 P03 | 5min | 2 tasks | 4 files |
+| Phase 17 P01 | 4min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -311,6 +312,10 @@ Recent decisions affecting current work:
 - [Phase 15-03]: Banner defaults to dismissed=true on mount to prevent SSR flash; reads localStorage in useEffect
 - [Phase 15-03]: useRef tracks import state across dialog open/close without triggering re-renders
 - [Phase 15-03]: Browse AITMPL Skills button conditionally renders only when agents prop is non-empty
+- [Phase 17]: Async deploy pipeline returns deployId immediately, runs steps 1-4 in background with EventEmitter progress
+- [Phase 17]: Chat WebSocket streaming falls back to HTTP POST when gateway WS unavailable
+- [Phase 17]: Agent containers use 512MB memory and 0.5 CPU limits with unless-stopped restart policy
+- [Phase 17]: Terminal WebSocket path registered in api-server.ts but bridge deferred to Plan 02
 
 ### Pending Todos
 
@@ -323,5 +328,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 15-03-PLAN.md (AITMPL Suggestion Banner & Final Integration)
-Resume file: .planning/phases/15-aitmpl-template-catalog/15-03-SUMMARY.md
+Stopped at: Completed 17-01-PLAN.md (VPS API Proxy Activation)
+Resume file: .planning/phases/17-vps-activation-embedded-terminal/17-01-SUMMARY.md

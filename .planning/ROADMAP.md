@@ -378,4 +378,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 14. Slack Integration & Chat Replacement | 3/3 | Complete    | 2026-03-30 |
 | 15. AITMPL Template Catalog | 3/3 | Complete    | 2026-03-30 |
 | 16. Tenant Disable Fix & Dashboard Freeze | 3/3 | Complete    | 2026-03-30 |
-| 17. VPS Activation & Embedded Terminal | 0/? | Not started | - |
+| 17. VPS Activation & Embedded Terminal | 1/3 | In Progress|  |
