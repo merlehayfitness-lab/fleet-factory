@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 14 of 17 (Slack Integration & Chat Replacement)
-Plan: 1 of 3 in current phase (1 complete)
+Plan: 2 of 3 in current phase (2 complete)
 Status: In progress
-Last activity: 2026-03-30 -- Completed 14-01-PLAN.md (Slack Foundation - DB, Services, API Routes)
+Last activity: 2026-03-30 -- Completed 14-02-PLAN.md (Slack Chat Page & Integrations UI)
 
 Progress: [██████████████████████████████░░] 98% (45/46 plans)
 
@@ -94,6 +94,7 @@ Progress: [███████████████████████
 | Phase 11 P03 | 15min | 2 tasks | 6 files |
 | Phase 16 P01 | 2min | 1 tasks | 6 files |
 | Phase 14 P01 | 9min | 3 tasks | 15 files |
+| Phase 14 P02 | 6min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -281,6 +282,12 @@ Recent decisions affecting current work:
 - [14-01]: Bot echo loop prevented by checking bot_id and bot_message subtype
 - [14-01]: OAuth state parameter carries businessId for tenant mapping
 - [14-01]: Channel naming uses {business-slug}-{dept-type} pattern with name_taken fallback
+- [14-02]: SlackConnectCard uses OAuth popup with 2s polling (30s timeout) for connection detection
+- [14-02]: SlackConnectPrompt directs to integrations page (not OAuth directly) per user decision
+- [14-02]: Open in Slack deep links use channel+team params for channel-specific navigation
+- [14-02]: Flat Slack-like message layout replaces bubble-style; all messages left-aligned
+- [14-02]: sendSlackMessageAction returns only userMessage; agent response via Slack events + polling
+- [14-02]: WebSocket streaming and stub typing indicator removed when Slack is connected
 
 ### Pending Todos
 
@@ -293,5 +300,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 14-01-PLAN.md (Slack Foundation - DB, Services, API Routes)
-Resume file: .planning/phases/14-slack-integration-chat-replacement/14-01-SUMMARY.md
+Stopped at: Completed 14-02-PLAN.md (Slack Chat Page & Integrations UI)
+Resume file: .planning/phases/14-slack-integration-chat-replacement/14-02-SUMMARY.md
