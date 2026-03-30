@@ -20,7 +20,14 @@ export {
   saveSecret,
   deleteSecret,
   decryptSecretsForDeployment,
+  getSecretsByProvider,
+  revealSecret,
+  saveProviderCredentials,
+  deleteProviderSecrets,
 } from "./secrets/service";
+
+// Test connection service (mock for MVP)
+export { testConnection } from "./secrets/test-connection";
 
 // Task service (CRUD operations for tasks and assistance requests)
 export {
