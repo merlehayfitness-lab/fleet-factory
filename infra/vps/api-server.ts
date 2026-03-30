@@ -17,6 +17,7 @@ import type { IncomingMessage } from "node:http";
 import apiRoutes, { deployEvents } from "./api-routes.js";
 import { streamChatFromAgent } from "./openclaw-client.js";
 import { loadDeploymentState } from "./deploy-state.js";
+import { bridgeTerminal } from "./terminal-bridge.js";
 import type { DeployProgressEvent, ChatStreamEvent } from "./api-types.js";
 
 const app = express();
@@ -171,8 +172,7 @@ wss.on(
     } else if (route.type === "chat") {
       handleChatWebSocket(ws, route.conversationId!, route.agentId);
     } else if (route.type === "terminal") {
-      // Terminal handling will be wired in Plan 02
-      ws.send("Terminal support loading...\r\n");
+      handleTerminalWebSocket(ws, route.businessSlug!);
     }
   },
 );
@@ -336,6 +336,20 @@ function handleChatWebSocket(
     console.error(
       `[ws:chat] Error for conversation ${conversationId}:`,
       err.message,
+    );
+  });
+}
+
+/**
+ * Handle terminal WebSocket.
+ * Bridges client WebSocket to local SSH shell via ssh2.
+ */
+function handleTerminalWebSocket(ws: WebSocket, businessSlug: string): void {
+  console.log(`[ws:terminal] Client connected for tenant ${businessSlug}`);
+  bridgeTerminal(ws, businessSlug);
+  ws.on("close", () => {
+    console.log(
+      `[ws:terminal] Client disconnected from tenant ${businessSlug}`,
     );
   });
 }

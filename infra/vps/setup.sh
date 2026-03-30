@@ -81,6 +81,7 @@ cp "$SCRIPT_DIR/container-manager.ts" /opt/agency-factory/vps-proxy/
 cp "$SCRIPT_DIR/openclaw-client.ts" /opt/agency-factory/vps-proxy/
 cp "$SCRIPT_DIR/.env.example" /opt/agency-factory/vps-proxy/
 cp "$SCRIPT_DIR/bootstrap-prompt.md" /opt/agency-factory/vps-proxy/
+cp "$SCRIPT_DIR/terminal-bridge.ts" /opt/agency-factory/vps-proxy/
 echo "  Files copied to /opt/agency-factory/vps-proxy/"
 
 # ---------------------------------------------------------------------------
