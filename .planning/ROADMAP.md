@@ -286,10 +286,12 @@ Plans:
   2. Disabling a tenant stops all VPS activity (pauses containers, halts deployments)
   3. Admin panel blocks all interaction with VPS resources when tenant is disabled
   4. Admin can still view the business in a read-only frozen state (no edits, no deploys, no tasks)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 16-01: TBD
+- [ ] 16-01-PLAN.md — VPS lifecycle, emergency service extension, guard function, context/banner components
+- [ ] 16-02-PLAN.md — Add requireActiveBusiness guard to all mutation Server Actions
+- [ ] 16-03-PLAN.md — Layout integration, client component disabled state, VPS warning indicator
 
 ### Phase 17: VPS Activation & Embedded Terminal
 **Goal**: Deploy the first real department/agent to the Hostinger VPS and provide an embedded SSH terminal accessible from the business overview page for direct VPS access
