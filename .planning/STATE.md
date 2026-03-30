@@ -12,9 +12,9 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 Phase: 16 of 17 (Tenant Disable Fix & Dashboard Freeze)
 Plan: 3 of 3 in current phase (3 complete)
 Status: Phase complete
-Last activity: 2026-03-30 -- Completed 16-03-PLAN.md (UI Enforcement Layer)
+Last activity: 2026-03-30 -- Completed 14-03-PLAN.md (Slack Complete Integration)
 
-Progress: [██████████████████████████████░░] 98% (46/47 plans)
+Progress: [████████████████████████████████] 100% (47/47 plans)
 
 ## Performance Metrics
 
@@ -97,6 +97,7 @@ Progress: [███████████████████████
 | Phase 14 P02 | 6min | 3 tasks | 10 files |
 | Phase 16 P02 | 5min | 2 tasks | 8 files |
 | Phase 16 P03 | 4min | 2 tasks | 9 files |
+| Phase 14 P03 | 6min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -290,6 +291,10 @@ Recent decisions affecting current work:
 - [14-02]: Flat Slack-like message layout replaces bubble-style; all messages left-aligned
 - [14-02]: sendSlackMessageAction returns only userMessage; agent response via Slack events + polling
 - [14-02]: WebSocket streaming and stub typing indicator removed when Slack is connected
+- [14-03]: Used @slack/types KnownBlock for type-safe Block Kit formatting
+- [14-03]: Dynamic import for Slack modules in chat-service to avoid hard dependency
+- [14-03]: Slack posting is best-effort (try/catch) to never break response pipeline
+- [14-03]: Chat layout uses getSlackFeedMessages (slack_ts NOT NULL) for Slack-only message display
 - [16-03]: useBusinessStatus hook used in all client components for consistent disabled-state detection
 - [16-03]: VPS warning fetched server-side in page.tsx and passed as prop (Option A) to avoid client-side audit log fetch
 - [16-03]: isDisabled layered on top of existing disabled conditions (e.g. isAgentFrozen) rather than replacing them
@@ -306,5 +311,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 16-03-PLAN.md (UI Enforcement Layer)
-Resume file: .planning/phases/16-tenant-disable-fix-dashboard-freeze/16-03-SUMMARY.md
+Stopped at: Completed 14-03-PLAN.md (Slack Complete Integration)
+Resume file: .planning/phases/14-slack-integration-chat-replacement/14-03-SUMMARY.md
