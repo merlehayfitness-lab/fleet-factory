@@ -371,9 +371,9 @@
 | TMPL-02 | Phase 10 | Complete |
 | TMPL-03 | Phase 10 | Complete |
 | TMPL-04 | Phase 10 | Complete |
-| SUBAG-01 | Phase 11 | Not started |
-| SUBAG-02 | Phase 11 | Not started |
-| SUBAG-03 | Phase 11 | Not started |
+| SUBAG-01 | Phase 11 | Complete |
+| SUBAG-02 | Phase 11 | Complete |
+| SUBAG-03 | Phase 11 | Complete |
 | INTG-ENH-01 | Phase 12 | Not started |
 | INTG-ENH-02 | Phase 12 | Not started |
 | INTG-ENH-03 | Phase 12 | Not started |

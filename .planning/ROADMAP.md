@@ -22,7 +22,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8: Role Definition & Prompt Generation** - Plain-language role definition, Claude-powered prompt/SKILL.md generation, multi-agent departments, wizard update (completed 2026-03-27)
 - [x] **Phase 9: Skill Management & Deployment** - Skill editor UI, GitHub repo import, department-level skills, skill template library (completed 2026-03-28)
 - [x] **Phase 10: Template Profiles & Model Configuration** - Tool/Model Profile JSON on templates, model dropdown on agent config (completed 2026-03-29)
-- [x] **Phase 11: Sub-Agent Management** - Sub-agent creation under departments, visual hierarchy tree UI (completed 2026-03-29)
+- [x] **Phase 11: Sub-Agent Management** - Sub-agent creation under departments, visual hierarchy tree UI (completed 2026-03-30)
 - [x] **Phase 12: Integrations Catalog & Setup** - Integration catalog with add button, department/agent assignment, AI-generated setup guides (completed 2026-03-29)
 - [x] **Phase 13: Secrets Management UX** - Integration-first secrets flow, dynamic credential fields, grouped secrets page (completed 2026-03-30)
 - [ ] **Phase 14: Slack Integration & Chat Replacement** - Slack API routing, embedded feed in admin panel, replace custom chat
@@ -217,7 +217,7 @@ Plans:
 Plans:
 - [x] 11-01: Reparent service, tree data components, SVG lines, agents page and wizard updates
 - [x] 11-02: Sidebar panel, drag-and-drop reparenting, responsive mobile fallback
-- [ ] 11-03: UAT gap closure -- Unified org chart layout, box nodes, elbow connectors, DnD hydration fix
+- [x] 11-03: UAT gap closure -- Unified org chart layout, box nodes, elbow connectors, DnD hydration fix
 
 ### Phase 12: Integrations Catalog & Setup
 **Goal**: Admin can add integrations from a browsable catalog, assign them to specific departments or agents, and get AI-generated setup instructions
@@ -370,7 +370,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 8. Role Definition & Prompt Generation | 3/3 | Complete | 2026-03-27 |
 | 9. Skill Management & Deployment | 4/4 | Complete | 2026-03-28 |
 | 10. Template Profiles & Model Configuration | 3/3 | Complete    | 2026-03-29 |
-| 11. Sub-Agent Management | 2/3 | Gap closure    | 2026-03-29 |
+| 11. Sub-Agent Management | 3/3 | Complete    | 2026-03-30 |
 | 12. Integrations Catalog & Setup | 2/2 | Complete    | 2026-03-29 |
 | 13. Secrets Management UX | 3/3 | Complete    | 2026-03-30 |
 | 14. Slack Integration & Chat Replacement | 0/? | Not started | - |

@@ -19,9 +19,9 @@ Progress: [███████████████████████
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 40
+- Total plans completed: 41
 - Average duration: 6min
-- Total execution time: 3.95 hours
+- Total execution time: 4.20 hours
 
 **By Phase:**
 
@@ -39,13 +39,13 @@ Progress: [███████████████████████
 
 | 10 | 3 | 14min | 5min |
 
-| 11 | 2 | 10min | 5min |
+| 11 | 3 | 25min | 8min |
 | 12 | 2 | 15min | 8min |
 | 13 | 1 | 4min | 4min |
 
 **Recent Trend:**
-- Last 5 plans: 11-02 (5min), 12-01 (9min), 12-02 (6min), 13-01 (4min)
-- Trend: stable
+- Last 5 plans: 12-01 (9min), 12-02 (6min), 13-01 (4min), 13-02 (7min), 11-03 (15min)
+- Trend: stable (11-03 longer due to multi-session checkpoint + 4 bug fixes)
 
 *Updated after each plan completion*
 | Phase 01 P01 | 5min | 2 tasks | 29 files |
@@ -91,6 +91,7 @@ Progress: [███████████████████████
 | Phase 13 P01 | 4min | 2 tasks | 7 files |
 | Phase 13 P03 | 4min | 2 tasks | 3 files |
 | Phase 13 P02 | 7min | 2 tasks | 8 files |
+| Phase 11 P03 | 15min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -265,6 +266,11 @@ Recent decisions affecting current work:
 - [13-03]: onConfigure prop optional on IntegrationConfigCard for backward compatibility
 - [Phase 13-02]: Eye toggle uses 5-second auto-re-mask with client-side cache during reveal window
 - [Phase 13-02]: CredentialForm tracks modified fields via local Set state, only sending changed values on save
+- [11-03]: OrgChartNode tree model with root/lead/sub-agent types replaces flat TreeDepartment array
+- [11-03]: PointerSensor with distance:5 constraint prevents click-vs-drag ambiguity
+- [11-03]: SVG uses getBoundingClientRect minus container scroll offset for accurate line positions
+- [11-03]: transition-colors replaces transition-all on nodes to prevent drag transform animation
+- [11-03]: Agent dependency array (not agents.length) ensures lines recalculate on data changes
 
 ### Pending Todos
 
@@ -276,6 +282,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-29
-Stopped at: Completed 13-03-PLAN.md (Credential Side Drawer)
-Resume file: .planning/phases/13-secrets-management-ux/13-03-SUMMARY.md
+Last session: 2026-03-30
+Stopped at: Completed 11-03-PLAN.md (Unified Org Chart gap closure)
+Resume file: .planning/phases/11-sub-agent-management/11-03-SUMMARY.md
