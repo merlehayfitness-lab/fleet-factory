@@ -208,7 +208,7 @@ export function SlackConnectCard({
         {isConnected && status.connected ? (
           <>
             <a
-              href={`https://slack.com/app_redirect?team=${status.teamId}`}
+              href={`https://app.slack.com/client/${status.teamId}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md border border-input bg-background px-3 py-1.5 text-xs font-medium shadow-xs transition-colors hover:bg-accent hover:text-accent-foreground"
