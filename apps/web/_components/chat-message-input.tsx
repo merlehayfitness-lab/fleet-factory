@@ -14,6 +14,7 @@ interface ChatMessageInputProps {
   disabled: boolean;
   disabledReason?: string;
   isSending: boolean;
+  channelName?: string;
 }
 
 /**
@@ -25,12 +26,14 @@ interface ChatMessageInputProps {
  * - File upload via paperclip button (stores metadata only for MVP)
  * - Disabled state for frozen agents with explanation text
  * - Send button shows spinner when sending
+ * - Slack channel name in placeholder when connected
  */
 export function ChatMessageInput({
   onSendMessage,
   disabled,
   disabledReason,
   isSending,
+  channelName,
 }: ChatMessageInputProps) {
   const [content, setContent] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -135,7 +138,9 @@ export function ChatMessageInput({
           placeholder={
             disabled
               ? disabledReason ?? "Chat is unavailable"
-              : "Type a message... (Shift+Enter for newline)"
+              : channelName
+                ? `Message #${channelName}`
+                : "Type a message... (Shift+Enter for newline)"
           }
           disabled={disabled}
           className={cn(

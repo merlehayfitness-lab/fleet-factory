@@ -10,13 +10,19 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { DepartmentChannel } from "@agency-factory/core";
+import type { DepartmentChannel, SlackChannelMapping } from "@agency-factory/core";
 import type { LucideIcon } from "lucide-react";
+
+interface SlackChannelWithDept extends SlackChannelMapping {
+  departmentName: string;
+  departmentType: string;
+}
 
 interface ChatChannelListProps {
   channels: DepartmentChannel[];
   selectedDepartmentId: string | null;
   onSelectDepartment: (departmentId: string) => void;
+  slackChannels?: SlackChannelWithDept[];
 }
 
 /** Department type to icon mapping */
@@ -30,23 +36,34 @@ const DEPT_ICONS: Record<string, LucideIcon> = {
 /**
  * Department channel sidebar for the chat interface.
  *
- * Shows a vertical list of department channels with:
- * - Department type icon
- * - Department name
- * - Unread count badge
- * - Frozen agent indicator
- * - Selected channel highlight
+ * When Slack channels are provided, shows Slack channel names with # prefix
+ * instead of department names. Sidebar header shows "Slack Channels".
+ * Selection still identifies by departmentId.
  */
 export function ChatChannelList({
   channels,
   selectedDepartmentId,
   onSelectDepartment,
+  slackChannels,
 }: ChatChannelListProps) {
+  const hasSlack = slackChannels && slackChannels.length > 0;
+
+  // Build a map from departmentId to Slack channel name for display
+  const slackNameMap = new Map<string, string>();
+  if (hasSlack) {
+    for (const sc of slackChannels) {
+      // Use department-level mappings (agent_id null) as primary display name
+      if (sc.agentId === null) {
+        slackNameMap.set(sc.departmentId, sc.slackChannelName);
+      }
+    }
+  }
+
   return (
     <div className="w-60 shrink-0 border-r bg-muted/20 flex flex-col">
       <div className="border-b px-4 py-3">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Channels
+          {hasSlack ? "Slack Channels" : "Channels"}
         </h2>
       </div>
 
@@ -55,6 +72,11 @@ export function ChatChannelList({
           const isSelected = channel.departmentId === selectedDepartmentId;
           const Icon =
             DEPT_ICONS[channel.departmentType.toLowerCase()] ?? Hash;
+          const slackName = slackNameMap.get(channel.departmentId);
+          const displayName =
+            hasSlack && slackName
+              ? `#${slackName}`
+              : channel.departmentName;
 
           return (
             <button
@@ -69,7 +91,7 @@ export function ChatChannelList({
               )}
             >
               <Icon className="size-4 shrink-0" />
-              <span className="flex-1 truncate">{channel.departmentName}</span>
+              <span className="flex-1 truncate">{displayName}</span>
 
               {/* Frozen indicator */}
               {channel.agentFrozen && (

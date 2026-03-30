@@ -9,10 +9,10 @@ import { ChatMessageInput } from "./chat-message-input";
 import { SlackConnectPrompt } from "./slack-connect-prompt";
 import { SlackChannelHeader } from "./slack-channel-header";
 import {
-  sendMessageAction,
   getMessagesAction,
   getDepartmentChannelsAction,
   getConversationsAction,
+  sendSlackMessageAction,
 } from "@/_actions/chat-actions";
 import type { ChatMessage, DepartmentChannel, SlackConnectionStatus, SlackChannelMapping } from "@agency-factory/core";
 
@@ -222,7 +222,7 @@ function SlackChatUI({
 
       setIsSending(true);
 
-      const result = await sendMessageAction(
+      const result = await sendSlackMessageAction(
         businessId,
         selectedDepartmentId,
         content,
@@ -277,6 +277,7 @@ function SlackChatUI({
         channels={channels}
         selectedDepartmentId={selectedDepartmentId}
         onSelectDepartment={handleSelectDepartment}
+        slackChannels={slackChannels}
       />
 
       {/* Message area */}
@@ -337,6 +338,7 @@ function SlackChatUI({
                   : undefined
               }
               isSending={isSending}
+              channelName={channelDisplayName}
             />
           </>
         )}
