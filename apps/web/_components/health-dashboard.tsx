@@ -26,6 +26,7 @@ import { StatusBadge } from "@/_components/status-badge";
 import { UsageSummary, type UsageSummaryData } from "@/_components/usage-summary";
 import { AgentHealthGrid } from "@/_components/agent-health-grid";
 import { VpsStatusIndicator } from "@/_components/vps-status-indicator";
+import { AitmplSuggestionBanner } from "@/_components/aitmpl-suggestion-banner";
 import { getHealthDashboard } from "@/_actions/health-actions";
 import type { SystemHealth } from "@agency-factory/core/server";
 
@@ -42,6 +43,8 @@ interface HealthDashboardProps {
   usageSummary: UsageSummaryData;
   vpsStatus: { status: string; lastCheckedAt: string; details?: Record<string, unknown> } | null;
   vpsWarning?: string | null;
+  bannerAgents?: Array<{ id: string; name: string; department_name?: string }>;
+  bannerDepartments?: Array<{ id: string; name: string }>;
 }
 
 /** Humanize audit log action strings: "agent.frozen" -> "Agent frozen" */
@@ -82,6 +85,8 @@ export function HealthDashboard({
   usageSummary,
   vpsStatus,
   vpsWarning,
+  bannerAgents,
+  bannerDepartments,
 }: HealthDashboardProps) {
   const [health, setHealth] = useState<SystemHealth>(initialHealth);
 
@@ -143,6 +148,13 @@ export function HealthDashboard({
           {vpsWarning}
         </div>
       )}
+
+      {/* AITMPL suggestion banner */}
+      <AitmplSuggestionBanner
+        businessId={business.id}
+        agents={bannerAgents ?? []}
+        departments={bannerDepartments ?? []}
+      />
 
       {/* Row 1: Stats cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">

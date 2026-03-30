@@ -50,6 +50,31 @@ export default async function BusinessPage({
     vpsWarning = (meta?.vps_warning as string) ?? null;
   }
 
+  // Fetch agents (with department name) and departments for AITMPL banner
+  const [{ data: bannerAgents }, { data: bannerDepartments }] =
+    await Promise.all([
+      supabase
+        .from("agents")
+        .select("id, name, departments(name)")
+        .eq("business_id", id)
+        .eq("status", "active"),
+      supabase
+        .from("departments")
+        .select("id, name")
+        .eq("business_id", id),
+    ]);
+
+  const agentsForBanner = (bannerAgents ?? []).map((a) => ({
+    id: a.id as string,
+    name: a.name as string,
+    department_name: (a.departments as unknown as { name: string } | null)?.name,
+  }));
+
+  const departmentsForBanner = (bannerDepartments ?? []).map((d) => ({
+    id: d.id as string,
+    name: d.name as string,
+  }));
+
   // Fetch usage summary: aggregate from usage_records grouped by agent
   const { data: usageRecords } = await supabase
     .from("usage_records")
@@ -117,6 +142,8 @@ export default async function BusinessPage({
       usageSummary={usageSummary}
       vpsStatus={health.vpsStatus}
       vpsWarning={vpsWarning}
+      bannerAgents={agentsForBanner}
+      bannerDepartments={departmentsForBanner}
     />
   );
 }

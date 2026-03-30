@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { toast } from "sonner";
-import { Eye, Plus, Loader2 } from "lucide-react";
+import { Eye, Plus, Loader2, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +24,7 @@ import {
   createSkillFromTemplateAction,
   assignSkillAction,
 } from "@/_actions/skill-actions";
+import { AitmplCatalogBrowser } from "@/_components/aitmpl-catalog-browser";
 import type { SkillTemplate } from "@agency-factory/core";
 
 interface SkillTemplateBrowserProps {
@@ -32,6 +33,9 @@ interface SkillTemplateBrowserProps {
   onSkillAdded?: () => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  agents?: Array<{ id: string; name: string; department_name?: string }>;
+  departments?: Array<{ id: string; name: string }>;
+  departmentType?: string;
 }
 
 const DEPARTMENT_OPTIONS = ["All", "Owner", "Sales", "Support", "Operations"] as const;
@@ -46,6 +50,9 @@ export function SkillTemplateBrowser({
   onSkillAdded,
   open,
   onOpenChange,
+  agents,
+  departments,
+  departmentType,
 }: SkillTemplateBrowserProps) {
   const [templates, setTemplates] = useState<SkillTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,6 +60,7 @@ export function SkillTemplateBrowser({
   const [roleFilter, setRoleFilter] = useState("All");
   const [previewTemplate, setPreviewTemplate] = useState<SkillTemplate | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
+  const [aitmplOpen, setAitmplOpen] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -118,6 +126,7 @@ export function SkillTemplateBrowser({
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -126,6 +135,20 @@ export function SkillTemplateBrowser({
             Browse starter skill templates. Adding a template creates a copy in your business library.
           </DialogDescription>
         </DialogHeader>
+
+        {/* AITMPL browse button */}
+        {agents && agents.length > 0 && (
+          <div className="flex">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setAitmplOpen(true)}
+            >
+              <ExternalLink className="mr-1.5 size-3.5" />
+              Browse AITMPL Skills
+            </Button>
+          </div>
+        )}
 
         {/* Filter bar */}
         <div className="flex flex-wrap gap-3">
@@ -254,5 +277,22 @@ export function SkillTemplateBrowser({
         )}
       </DialogContent>
     </Dialog>
+
+    {/* AITMPL catalog browser (layered dialog) */}
+    <AitmplCatalogBrowser
+      open={aitmplOpen}
+      onOpenChange={setAitmplOpen}
+      businessId={businessId}
+      defaultType="skill"
+      departmentType={departmentType}
+      agentId={agentId}
+      agents={agents ?? []}
+      departments={departments ?? []}
+      onImported={() => {
+        onSkillAdded?.();
+        setAitmplOpen(false);
+      }}
+    />
+    </>
   );
 }
