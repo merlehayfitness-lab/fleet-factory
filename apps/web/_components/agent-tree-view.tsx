@@ -389,7 +389,7 @@ export function AgentTreeView({
       if (container) container.removeEventListener("scroll", recalculatePositions);
       window.removeEventListener("resize", recalculatePositions);
     };
-  }, [collapsed, agents.length, dragEndCount, recalculatePositions]);
+  }, [collapsed, agents, dragEndCount, recalculatePositions]);
 
   // Node select: open sidebar
   const handleSelectNode = useCallback((nodeId: string) => {
