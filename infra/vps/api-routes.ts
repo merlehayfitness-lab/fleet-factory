@@ -3,13 +3,12 @@
  *
  * Handles deployment packages, chat messages, task execution,
  * and health checks. Routes requests to OpenClaw gateway for
- * actual agent interaction.
- *
- * All OpenClaw integration points are STUBBED for MVP and marked
- * with TODO for activation when Claude Code is bootstrapped.
+ * actual agent interaction. Uses dockerode for container management
+ * and file-based persistence for deployment state.
  */
 
 import { Router } from "express";
+import { EventEmitter } from "node:events";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import type {
@@ -22,15 +21,44 @@ import type {
   TaskResult,
   HealthStatus,
   AgentHealthStatus,
+  TenantLifecycleRequest,
 } from "./api-types.js";
+import {
+  saveDeploymentState,
+  loadAllDeploymentStates,
+} from "./deploy-state.js";
+import {
+  createAgentContainer,
+  countRunningAgents,
+  stopTenantContainers,
+  resumeTenantContainers,
+  docker,
+} from "./container-manager.js";
+import {
+  sendMessageToAgent,
+  submitTaskToAgent,
+  checkGatewayHealth,
+} from "./openclaw-client.js";
 
 const router = Router();
 
 // ---------------------------------------------------------------------------
-// In-memory state (MVP -- replace with persistent store for production)
+// Shared deploy event emitter for WebSocket streaming
 // ---------------------------------------------------------------------------
 
-const deployments = new Map<string, DeploymentState>();
+export const deployEvents = new EventEmitter();
+
+// ---------------------------------------------------------------------------
+// Persistent deployment state (hydrated from disk on startup)
+// ---------------------------------------------------------------------------
+
+const deployments = loadAllDeploymentStates();
+if (deployments.size > 0) {
+  console.log(
+    `[deploy-state] Recovered ${deployments.size} deployment(s) from disk`,
+  );
+}
+
 const cancellationFlags = new Set<string>();
 
 function getTenantDataDir(): string {
@@ -47,30 +75,92 @@ router.post("/api/deploy", async (req, res) => {
 
     // Validate required fields
     if (!payload.businessSlug) {
-      res.status(400).json({ success: false, error: "businessSlug is required" });
+      res
+        .status(400)
+        .json({ success: false, error: "businessSlug is required" });
       return;
     }
     if (!payload.agents || payload.agents.length === 0) {
-      res.status(400).json({ success: false, error: "agents array is required and must not be empty" });
+      res.status(400).json({
+        success: false,
+        error: "agents array is required and must not be empty",
+      });
       return;
     }
     if (!payload.workspaceFiles || payload.workspaceFiles.length === 0) {
-      res.status(400).json({ success: false, error: "workspaceFiles array is required and must not be empty" });
+      res.status(400).json({
+        success: false,
+        error: "workspaceFiles array is required and must not be empty",
+      });
       return;
     }
 
     const deployId = payload.deploymentId || `deploy-${Date.now()}`;
     const tenantDir = path.join(getTenantDataDir(), payload.businessSlug);
 
-    // Track deployment state
-    deployments.set(deployId, {
+    // Track deployment state (persisted)
+    const initialState: DeploymentState = {
       deployId,
       status: "in_progress",
       startedAt: new Date().toISOString(),
+    };
+    deployments.set(deployId, initialState);
+    saveDeploymentState(deployId, initialState);
+
+    // Return immediately -- deploy pipeline runs async
+    res.json({ success: true, deployId });
+
+    // Run async deploy pipeline
+    runDeployPipeline(deployId, payload, tenantDir).catch((err) => {
+      console.error(`[deploy] Pipeline error for ${deployId}:`, err);
     });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error(`[deploy] Error: ${message}`);
+    res
+      .status(500)
+      .json({ success: false, deployId: "", agentResults: [], error: message });
+  }
+});
+
+/**
+ * Async deployment pipeline. Emits progress events via deployEvents.
+ */
+async function runDeployPipeline(
+  deployId: string,
+  payload: DeployPayload,
+  tenantDir: string,
+): Promise<void> {
+  const emitProgress = (
+    phase: string,
+    message: string,
+  ): void => {
+    deployEvents.emit(deployId, {
+      type: "phase",
+      phase,
+      message,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  try {
+    // Check for cancellation
+    if (cancellationFlags.has(deployId)) {
+      cancellationFlags.delete(deployId);
+      const cancelledState: DeploymentState = {
+        deployId,
+        status: "cancelled",
+        startedAt: deployments.get(deployId)!.startedAt,
+        completedAt: new Date().toISOString(),
+      };
+      deployments.set(deployId, cancelledState);
+      saveDeploymentState(deployId, cancelledState);
+      emitProgress("error", "Deployment cancelled");
+      return;
+    }
 
     // Step 1: Write workspace files to disk
-    // Structure: /data/tenants/{businessSlug}/workspaces/{vpsAgentId}/
+    emitProgress("writing_files", "Writing workspace files to disk...");
     for (const file of payload.workspaceFiles) {
       const filePath = path.join(tenantDir, file.path);
       const fileDir = path.dirname(filePath);
@@ -85,75 +175,163 @@ router.post("/api/deploy", async (req, res) => {
       fs.writeFileSync(configPath, payload.openclawConfig, "utf-8");
     }
 
-    // Step 3: Claude Code optimization
-    // TODO: Activate when Claude Code is bootstrapped on VPS
-    // When active:
-    //   a. Send workspace files to Claude Code via OpenClaw gateway WebSocket
-    //   b. Claude Code reviews and optimizes AGENTS.md, SOUL.md, etc.
-    //   c. Collect optimization diff report
-    //   d. Write optimized files back to disk
-    // For MVP: skip optimization, just write files as-is
+    // Step 3: Claude Code optimization via OpenClaw gateway
     let optimizationReport: DeployResult["optimizationReport"] | undefined;
     if (!payload.skipOptimization) {
-      // STUB: Optimization would happen here via OpenClaw gateway
-      optimizationReport = undefined; // No changes in stub mode
+      emitProgress("optimizing", "Sending workspace to Claude Code for optimization...");
+      try {
+        const filePreviews = payload.workspaceFiles.map((f) => ({
+          path: f.path,
+          preview: f.content.slice(0, 200),
+        }));
+        const result = await sendMessageToAgent(
+          "system",
+          `Review and optimize these workspace files for tenant ${payload.businessSlug}:\n${JSON.stringify(filePreviews)}`,
+        );
+
+        // Try to parse optimization report from response
+        try {
+          const parsed = JSON.parse(result.response) as {
+            changes?: Array<{ file: string; description: string }>;
+            summary?: string;
+          };
+          if (parsed.changes && parsed.summary) {
+            optimizationReport = {
+              changes: parsed.changes,
+              summary: parsed.summary,
+            };
+            // Write optimized files back to disk if changes provided
+            for (const change of parsed.changes) {
+              const optimizedContent = (
+                parsed as Record<string, unknown>
+              )[change.file] as string | undefined;
+              if (optimizedContent) {
+                const filePath = path.join(tenantDir, change.file);
+                fs.writeFileSync(filePath, optimizedContent, "utf-8");
+              }
+            }
+          }
+        } catch {
+          // Response was not structured JSON -- that's okay, treat as text report
+          optimizationReport = {
+            changes: [],
+            summary: result.response.slice(0, 500),
+          };
+        }
+      } catch (err) {
+        // Per CONTEXT.md: "If Claude Code optimization fails, deployment fails"
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.error(`[deploy] Optimization failed for ${deployId}: ${errMsg}`);
+
+        const failedState: DeploymentState = {
+          deployId,
+          status: "failed",
+          startedAt: deployments.get(deployId)!.startedAt,
+          completedAt: new Date().toISOString(),
+        };
+        deployments.set(deployId, failedState);
+        saveDeploymentState(deployId, failedState);
+        emitProgress("error", `Optimization failed: ${errMsg}`);
+        return;
+      }
     }
 
-    // Step 4: Start/restart agent containers
-    // TODO: Activate when Claude Code is bootstrapped on VPS
-    // When active:
-    //   - Use Docker API or openclaw CLI to create/restart containers
-    //   - Each agent gets its own sandbox container
-    //   - Mount workspace as rw, shared dir as ro
-    // For MVP: mark all agents as "deployed" (files written to disk)
-    const agentResults: DeployResult["agentResults"] = payload.agents.map(
-      (agent) => ({
-        agentId: agent.agentId,
-        vpsAgentId: agent.vpsAgentId,
-        status: "deployed" as const,
-      }),
+    // Step 4: Start/restart agent containers via dockerode
+    emitProgress(
+      "starting_containers",
+      `Creating ${payload.agents.length} agent container(s)...`,
     );
+    const agentResults: DeployResult["agentResults"] = [];
 
-    // Check for cancellation
-    if (cancellationFlags.has(deployId)) {
-      cancellationFlags.delete(deployId);
-      deployments.set(deployId, {
-        deployId,
-        status: "cancelled",
-        startedAt: deployments.get(deployId)!.startedAt,
-        completedAt: new Date().toISOString(),
-      });
-      res.json({ success: false, deployId, agentResults: [], error: "Deployment cancelled" });
-      return;
+    for (const agent of payload.agents) {
+      const workspacePath = path.join(
+        tenantDir,
+        "workspaces",
+        agent.vpsAgentId,
+      );
+      const sharedPath = path.join(tenantDir, "shared");
+
+      // Ensure directories exist
+      fs.mkdirSync(workspacePath, { recursive: true });
+      fs.mkdirSync(sharedPath, { recursive: true });
+
+      try {
+        await createAgentContainer(
+          agent.vpsAgentId,
+          workspacePath,
+          sharedPath,
+        );
+        agentResults.push({
+          agentId: agent.agentId,
+          vpsAgentId: agent.vpsAgentId,
+          status: "deployed",
+        });
+        deployEvents.emit(deployId, {
+          type: "agent_status",
+          agentId: agent.vpsAgentId,
+          message: `Container ${agent.vpsAgentId} created and started`,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        agentResults.push({
+          agentId: agent.agentId,
+          vpsAgentId: agent.vpsAgentId,
+          status: "failed",
+          error: errMsg,
+        });
+        deployEvents.emit(deployId, {
+          type: "agent_status",
+          agentId: agent.vpsAgentId,
+          message: `Container ${agent.vpsAgentId} failed: ${errMsg}`,
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
+
+    // Determine overall success
+    const anyFailed = agentResults.some((r) => r.status === "failed");
+    const finalStatus = anyFailed ? "failed" : "completed";
 
     const result: DeployResult = {
-      success: true,
+      success: !anyFailed,
       deployId,
       agentResults,
       optimizationReport,
+      error: anyFailed ? "One or more agent containers failed to start" : undefined,
     };
 
     // Update state
-    deployments.set(deployId, {
+    const completedState: DeploymentState = {
       deployId,
-      status: "completed",
+      status: finalStatus,
       startedAt: deployments.get(deployId)!.startedAt,
       completedAt: new Date().toISOString(),
       result,
-    });
+    };
+    deployments.set(deployId, completedState);
+    saveDeploymentState(deployId, completedState);
 
     console.log(
-      `[deploy] Deployment ${deployId} completed for ${payload.businessSlug} (${payload.agents.length} agents)`,
+      `[deploy] Deployment ${deployId} ${finalStatus} for ${payload.businessSlug} (${payload.agents.length} agents)`,
     );
 
-    res.json(result);
+    emitProgress("complete", `Deployment ${finalStatus}`);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    console.error(`[deploy] Error: ${message}`);
-    res.status(500).json({ success: false, deployId: "", agentResults: [], error: message });
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[deploy] Pipeline error for ${deployId}: ${errMsg}`);
+
+    const failedState: DeploymentState = {
+      deployId,
+      status: "failed",
+      startedAt: deployments.get(deployId)?.startedAt || new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+    deployments.set(deployId, failedState);
+    saveDeploymentState(deployId, failedState);
+    emitProgress("error", `Deployment failed: ${errMsg}`);
   }
-});
+}
 
 // ---------------------------------------------------------------------------
 // POST /api/deploy/:id/cancel
@@ -177,7 +355,10 @@ router.post("/api/deploy/:id/cancel", (req, res) => {
   }
 
   cancellationFlags.add(id);
-  res.json({ success: true, message: `Cancellation requested for deployment ${id}` });
+  res.json({
+    success: true,
+    message: `Cancellation requested for deployment ${id}`,
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -221,20 +402,16 @@ router.post("/api/agents/:vpsAgentId/chat", async (req, res) => {
       return;
     }
 
-    // TODO: Activate when Claude Code is bootstrapped on VPS
-    // When active:
-    //   1. Route message to OpenClaw agent via gateway WebSocket or HTTP endpoint
-    //   2. POST /v1/chat/completions on OpenClaw gateway with agent routing
-    //   3. Return actual agent response with tool calls
-    // For MVP: return a stub response
+    // Route message to OpenClaw gateway
+    const result = await sendMessageToAgent(vpsAgentId, chatReq.message);
 
     const response: ChatResponse = {
-      content: `I received your message. [VPS agent ${vpsAgentId} response will appear here when Claude Code is bootstrapped]`,
+      content: result.response,
       agentId: chatReq.agentId || vpsAgentId,
       toolCalls: [],
     };
 
-    console.log(`[chat] Message routed to agent ${vpsAgentId} (stub mode)`);
+    console.log(`[chat] Message routed to agent ${vpsAgentId}`);
 
     res.json(response);
   } catch (err) {
@@ -263,26 +440,25 @@ router.post("/api/agents/:vpsAgentId/task", async (req, res) => {
       return;
     }
 
-    // TODO: Activate when Claude Code is bootstrapped on VPS
-    // When active:
-    //   1. Submit task to OpenClaw agent via gateway
-    //   2. Wait for execution result (with timeout)
-    //   3. Return actual tool execution result with token usage
-    // For MVP: return a stub success result
-
-    const result: TaskResult = {
+    // Submit task to OpenClaw gateway
+    const result = await submitTaskToAgent(vpsAgentId, {
       taskId: taskReq.taskId,
-      success: true,
-      result: {
-        message: `Task received by agent ${vpsAgentId}. [Real execution will happen when Claude Code is bootstrapped]`,
-      },
-      toolsUsed: [],
-      tokenUsage: { prompt_tokens: 0, completion_tokens: 0 },
+      title: taskReq.title,
+      payload: taskReq.payload,
+    });
+
+    const taskResult: TaskResult = {
+      taskId: taskReq.taskId,
+      success: result.success,
+      result: result.result,
+      toolsUsed: result.toolsUsed,
+      tokenUsage: result.tokenUsage,
+      error: result.error,
     };
 
-    console.log(`[task] Task ${taskReq.taskId} submitted to agent ${vpsAgentId} (stub mode)`);
+    console.log(`[task] Task ${taskReq.taskId} submitted to agent ${vpsAgentId}`);
 
-    res.json(result);
+    res.json(taskResult);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error(`[task] Error: ${message}`);
@@ -296,40 +472,20 @@ router.post("/api/agents/:vpsAgentId/task", async (req, res) => {
 
 router.get("/api/health", async (_req, res) => {
   try {
-    // TODO: Activate when Claude Code is bootstrapped on VPS
-    // When active:
-    //   - Check OpenClaw gateway /healthz endpoint
-    //   - Count running agent containers
-    //   - Report degraded if gateway unreachable but proxy is running
-    // For MVP: report online with basic info
+    // Check OpenClaw gateway health
+    const gateway = await checkGatewayHealth();
 
-    const openclawWsUrl = process.env.OPENCLAW_WS_URL || "ws://127.0.0.1:18789";
-    let gatewayStatus = "unknown";
-
-    // Check if OpenClaw gateway is reachable via HTTP
-    // The gateway HTTP API runs on port 18790 by default
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 3000);
-      const gatewayHttpUrl = openclawWsUrl
-        .replace("ws://", "http://")
-        .replace(":18789", ":18790");
-      const response = await fetch(`${gatewayHttpUrl}/healthz`, {
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
-      gatewayStatus = response.ok ? "connected" : "error";
-    } catch {
-      gatewayStatus = "unreachable";
-    }
+    // Count running agent containers via dockerode
+    const agentCount = await countRunningAgents();
 
     const status: HealthStatus = {
-      status: gatewayStatus === "connected" ? "online" : "degraded",
+      status: gateway.status === "unreachable" ? "degraded" : "online",
       timestamp: new Date().toISOString(),
-      agentCount: 0, // TODO: count running agent containers
+      agentCount,
       details: {
         proxy: "running",
-        gateway: gatewayStatus,
+        gateway: gateway.status,
+        sessions: gateway.sessions,
         tenantDataDir: getTenantDataDir(),
         uptime: process.uptime(),
       },
@@ -355,18 +511,28 @@ router.get("/api/agents/:vpsAgentId/health", async (req, res) => {
   try {
     const { vpsAgentId } = req.params;
 
-    // TODO: Activate when Claude Code is bootstrapped on VPS
-    // When active:
-    //   - Check if the specific agent container is running via Docker API
-    //   - Check if OpenClaw gateway /readyz reports agent as ready
-    //   - Return last response timestamp from agent state
-    // For MVP: check if workspace directory exists on disk
+    // Check actual Docker container status via dockerode
+    let containerStatus: "running" | "stopped" | "error" = "stopped";
+    let startedAt: string | undefined;
 
+    try {
+      const container = docker.getContainer(vpsAgentId);
+      const info = await container.inspect();
+      if (info.State.Running) {
+        containerStatus = "running";
+        startedAt = info.State.StartedAt;
+      } else {
+        containerStatus = "stopped";
+      }
+    } catch {
+      // Container not found -- check if workspace exists on disk
+      containerStatus = "stopped";
+    }
+
+    // Check if workspace directory exists on disk as supplementary info
     const tenantDataDir = getTenantDataDir();
-    // Parse business slug from vpsAgentId (format: {slug}-{dept}-{prefix})
     const parts = vpsAgentId.split("-");
     let workspaceExists = false;
-
     if (parts.length >= 3) {
       const businessSlug = parts[0];
       const workspacePath = path.join(
@@ -380,11 +546,11 @@ router.get("/api/agents/:vpsAgentId/health", async (req, res) => {
 
     const healthStatus: AgentHealthStatus = {
       vpsAgentId,
-      status: workspaceExists ? "running" : "stopped",
-      lastResponseAt: workspaceExists ? new Date().toISOString() : undefined,
+      status: containerStatus,
+      lastResponseAt: startedAt,
       metadata: {
         workspaceExists,
-        mode: "stub", // TODO: Remove when real container management is active
+        containerStartedAt: startedAt,
       },
     };
 
@@ -396,6 +562,50 @@ router.get("/api/agents/:vpsAgentId/health", async (req, res) => {
       status: "error",
       metadata: { error: message },
     });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/tenants/stop
+// ---------------------------------------------------------------------------
+
+router.post("/api/tenants/stop", async (req, res) => {
+  try {
+    const { businessSlug } = req.body as TenantLifecycleRequest;
+
+    if (!businessSlug) {
+      res.status(400).json({ success: false, error: "businessSlug is required" });
+      return;
+    }
+
+    const stoppedCount = await stopTenantContainers(businessSlug);
+    res.json({ success: true, stoppedCount });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error(`[tenants/stop] Error: ${message}`);
+    res.status(500).json({ success: false, error: message });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/tenants/resume
+// ---------------------------------------------------------------------------
+
+router.post("/api/tenants/resume", async (req, res) => {
+  try {
+    const { businessSlug } = req.body as TenantLifecycleRequest;
+
+    if (!businessSlug) {
+      res.status(400).json({ success: false, error: "businessSlug is required" });
+      return;
+    }
+
+    const resumedCount = await resumeTenantContainers(businessSlug);
+    res.json({ success: true, resumedCount });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error(`[tenants/resume] Error: ${message}`);
+    res.status(500).json({ success: false, error: message });
   }
 });
 

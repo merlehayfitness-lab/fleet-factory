@@ -58,8 +58,10 @@ fi
 
 echo "[5/10] Creating directory structure..."
 mkdir -p /data/tenants
+mkdir -p /data/state
 mkdir -p /opt/agency-factory/vps-proxy
 echo "  /data/tenants/ created"
+echo "  /data/state/ created"
 echo "  /opt/agency-factory/vps-proxy/ created"
 
 # ---------------------------------------------------------------------------
@@ -74,6 +76,9 @@ cp "$SCRIPT_DIR/tsconfig.json" /opt/agency-factory/vps-proxy/
 cp "$SCRIPT_DIR/api-server.ts" /opt/agency-factory/vps-proxy/
 cp "$SCRIPT_DIR/api-routes.ts" /opt/agency-factory/vps-proxy/
 cp "$SCRIPT_DIR/api-types.ts" /opt/agency-factory/vps-proxy/
+cp "$SCRIPT_DIR/deploy-state.ts" /opt/agency-factory/vps-proxy/
+cp "$SCRIPT_DIR/container-manager.ts" /opt/agency-factory/vps-proxy/
+cp "$SCRIPT_DIR/openclaw-client.ts" /opt/agency-factory/vps-proxy/
 cp "$SCRIPT_DIR/.env.example" /opt/agency-factory/vps-proxy/
 cp "$SCRIPT_DIR/bootstrap-prompt.md" /opt/agency-factory/vps-proxy/
 echo "  Files copied to /opt/agency-factory/vps-proxy/"

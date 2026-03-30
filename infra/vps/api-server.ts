@@ -6,7 +6,7 @@
  * Routes to OpenClaw gateway for actual agent interaction.
  *
  * Authentication: X-API-Key header on all endpoints except /healthz.
- * WebSocket: /ws/deploy/:id and /ws/chat/:conversationId for streaming.
+ * WebSocket: /ws/deploy/:id, /ws/chat/:conversationId, and /ws/terminal/:businessSlug for streaming.
  */
 
 import "dotenv/config";
@@ -14,7 +14,9 @@ import express from "express";
 import { createServer } from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
 import type { IncomingMessage } from "node:http";
-import apiRoutes from "./api-routes.js";
+import apiRoutes, { deployEvents } from "./api-routes.js";
+import { streamChatFromAgent } from "./openclaw-client.js";
+import { loadDeploymentState } from "./deploy-state.js";
 import type { DeployProgressEvent, ChatStreamEvent } from "./api-types.js";
 
 const app = express();
@@ -52,13 +54,17 @@ app.use((req, res, next) => {
   const providedKey = req.headers["x-api-key"];
 
   if (!API_KEY) {
-    console.warn("[auth] WARNING: API_KEY not set -- rejecting all authenticated requests");
+    console.warn(
+      "[auth] WARNING: API_KEY not set -- rejecting all authenticated requests",
+    );
     res.status(500).json({ error: "Server misconfigured: API_KEY not set" });
     return;
   }
 
   if (!providedKey || providedKey !== API_KEY) {
-    res.status(401).json({ error: "Unauthorized: invalid or missing X-API-Key header" });
+    res
+      .status(401)
+      .json({ error: "Unauthorized: invalid or missing X-API-Key header" });
     return;
   }
 
@@ -84,12 +90,23 @@ const wss = new WebSocketServer({ noServer: true });
  * Supported paths:
  *   /ws/deploy/:id
  *   /ws/chat/:conversationId  (also accepts /chat/:conversationId)
+ *   /ws/terminal/:businessSlug
  */
 function parseWsPath(
   url: string,
-): { type: "deploy"; id: string } | { type: "chat"; conversationId: string; agentId?: string } | null {
+):
+  | { type: "deploy"; id: string }
+  | { type: "chat"; conversationId: string; agentId?: string }
+  | { type: "terminal"; businessSlug: string }
+  | null {
   const parsed = new URL(url, "http://localhost");
   const pathname = parsed.pathname;
+
+  // Terminal streaming: /ws/terminal/:businessSlug
+  const termMatch = pathname.match(/^\/ws\/terminal\/(.+)$/);
+  if (termMatch) {
+    return { type: "terminal", businessSlug: termMatch[1] };
+  }
 
   // Deploy streaming: /ws/deploy/:id
   const deployMatch = pathname.match(/^\/ws\/deploy\/(.+)$/);
@@ -109,7 +126,8 @@ function parseWsPath(
 
 function validateWsAuth(url: string): boolean {
   const parsed = new URL(url, "http://localhost");
-  const apiKey = parsed.searchParams.get("apiKey") || parsed.searchParams.get("token");
+  const apiKey =
+    parsed.searchParams.get("apiKey") || parsed.searchParams.get("token");
   return apiKey === API_KEY;
 }
 
@@ -140,25 +158,29 @@ wss.on(
   (
     ws: WebSocket,
     _request: IncomingMessage,
-    route: { type: string; id?: string; conversationId?: string; agentId?: string },
+    route: {
+      type: string;
+      id?: string;
+      conversationId?: string;
+      agentId?: string;
+      businessSlug?: string;
+    },
   ) => {
     if (route.type === "deploy") {
       handleDeployWebSocket(ws, route.id!);
     } else if (route.type === "chat") {
       handleChatWebSocket(ws, route.conversationId!, route.agentId);
+    } else if (route.type === "terminal") {
+      // Terminal handling will be wired in Plan 02
+      ws.send("Terminal support loading...\r\n");
     }
   },
 );
 
 /**
  * Handle deployment progress WebSocket.
- * Streams deployment phase updates to the admin app.
- *
- * TODO: Activate when Claude Code is bootstrapped on VPS
- * When active:
- *   - Subscribe to deployment progress events from the deploy pipeline
- *   - Stream real phase/detail/agent_status/complete/error events
- * For MVP: send a simple connected + complete sequence
+ * Subscribes to deployEvents EventEmitter and streams real progress to client.
+ * If deployment already completed, sends the final status immediately.
  */
 function handleDeployWebSocket(ws: WebSocket, deployId: string): void {
   console.log(`[ws:deploy] Client connected for deployment ${deployId}`);
@@ -172,28 +194,49 @@ function handleDeployWebSocket(ws: WebSocket, deployId: string): void {
   };
   ws.send(JSON.stringify(connectedEvent));
 
-  // TODO: Subscribe to real deployment progress events
-  // For MVP: the deploy endpoint is synchronous, so close after connected
+  // Check if deployment already completed
+  const existingState = loadDeploymentState(deployId);
+  if (
+    existingState &&
+    (existingState.status === "completed" ||
+      existingState.status === "failed" ||
+      existingState.status === "cancelled")
+  ) {
+    const finalEvent: DeployProgressEvent = {
+      type: "complete",
+      phase: existingState.status,
+      message: `Deployment ${existingState.status}`,
+      timestamp: new Date().toISOString(),
+    };
+    ws.send(JSON.stringify(finalEvent));
+    return;
+  }
+
+  // Subscribe to real deploy progress events
+  const handler = (event: DeployProgressEvent) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(event));
+    }
+  };
+  deployEvents.on(deployId, handler);
 
   ws.on("close", () => {
+    deployEvents.removeListener(deployId, handler);
     console.log(`[ws:deploy] Client disconnected from deployment ${deployId}`);
   });
 
   ws.on("error", (err) => {
-    console.error(`[ws:deploy] Error for deployment ${deployId}:`, err.message);
+    deployEvents.removeListener(deployId, handler);
+    console.error(
+      `[ws:deploy] Error for deployment ${deployId}:`,
+      err.message,
+    );
   });
 }
 
 /**
  * Handle chat streaming WebSocket.
- * Streams agent response tokens to the admin app in real time.
- *
- * TODO: Activate when Claude Code is bootstrapped on VPS
- * When active:
- *   - Connect to OpenClaw gateway WebSocket for agent session
- *   - Forward token events from agent to admin app client
- *   - Handle agent tool calls and stream summaries
- * For MVP: send a stub token sequence when client sends a message
+ * Bridges client WebSocket to OpenClaw gateway WebSocket for real token streaming.
  */
 function handleChatWebSocket(
   ws: WebSocket,
@@ -205,53 +248,66 @@ function handleChatWebSocket(
       (agentId ? ` (agent: ${agentId})` : ""),
   );
 
+  let cleanupStream: (() => void) | null = null;
+
   ws.on("message", (data) => {
     try {
-      const msg = JSON.parse(data.toString());
-      console.log(`[ws:chat] Received message for ${conversationId}:`, msg.message?.slice(0, 50));
+      const msg = JSON.parse(data.toString()) as {
+        message?: string;
+        agentId?: string;
+      };
+      console.log(
+        `[ws:chat] Received message for ${conversationId}:`,
+        msg.message?.slice(0, 50),
+      );
 
-      // TODO: Route to OpenClaw agent and stream real tokens
-      // For MVP: send stub token events
+      // Clean up previous stream if any
+      if (cleanupStream) {
+        cleanupStream();
+        cleanupStream = null;
+      }
 
-      const stubTokens = [
-        "I ",
-        "received ",
-        "your ",
-        "message. ",
-        "[Real-time ",
-        "streaming ",
-        "will ",
-        "activate ",
-        "when ",
-        "Claude Code ",
-        "is ",
-        "bootstrapped]",
-      ];
+      const targetAgent = msg.agentId || agentId || conversationId;
 
-      let tokenIndex = 0;
-      const tokenInterval = setInterval(() => {
-        if (tokenIndex >= stubTokens.length || ws.readyState !== WebSocket.OPEN) {
-          clearInterval(tokenInterval);
+      // Stream real tokens from OpenClaw gateway
+      cleanupStream = streamChatFromAgent(
+        targetAgent,
+        msg.message || "",
+        // onToken
+        (token: string) => {
+          if (ws.readyState === WebSocket.OPEN) {
+            const tokenEvent: ChatStreamEvent = {
+              type: "token",
+              content: token,
+              timestamp: new Date().toISOString(),
+            };
+            ws.send(JSON.stringify(tokenEvent));
+          }
+        },
+        // onComplete
+        (fullResponse: string) => {
           if (ws.readyState === WebSocket.OPEN) {
             const completeEvent: ChatStreamEvent = {
               type: "complete",
-              content: stubTokens.join(""),
-              agentId: agentId || "stub",
+              content: fullResponse,
+              agentId: targetAgent,
               timestamp: new Date().toISOString(),
             };
             ws.send(JSON.stringify(completeEvent));
           }
-          return;
-        }
-
-        const tokenEvent: ChatStreamEvent = {
-          type: "token",
-          content: stubTokens[tokenIndex],
-          timestamp: new Date().toISOString(),
-        };
-        ws.send(JSON.stringify(tokenEvent));
-        tokenIndex++;
-      }, 50);
+        },
+        // onError
+        (error: string) => {
+          if (ws.readyState === WebSocket.OPEN) {
+            const errorEvent: ChatStreamEvent = {
+              type: "error",
+              error,
+              timestamp: new Date().toISOString(),
+            };
+            ws.send(JSON.stringify(errorEvent));
+          }
+        },
+      );
     } catch {
       const errorEvent: ChatStreamEvent = {
         type: "error",
@@ -263,11 +319,24 @@ function handleChatWebSocket(
   });
 
   ws.on("close", () => {
-    console.log(`[ws:chat] Client disconnected from conversation ${conversationId}`);
+    if (cleanupStream) {
+      cleanupStream();
+      cleanupStream = null;
+    }
+    console.log(
+      `[ws:chat] Client disconnected from conversation ${conversationId}`,
+    );
   });
 
   ws.on("error", (err) => {
-    console.error(`[ws:chat] Error for conversation ${conversationId}:`, err.message);
+    if (cleanupStream) {
+      cleanupStream();
+      cleanupStream = null;
+    }
+    console.error(
+      `[ws:chat] Error for conversation ${conversationId}:`,
+      err.message,
+    );
   });
 }
 
@@ -281,8 +350,13 @@ server.listen(PORT, () => {
   console.log(`  WebSocket:  ws://0.0.0.0:${PORT}/ws/*`);
   console.log(`  Health:     http://0.0.0.0:${PORT}/healthz`);
   console.log(`  Tenant dir: ${process.env.TENANT_DATA_DIR || "/data/tenants"}`);
+  console.log(
+    `  State dir:  ${process.env.STATE_DIR || "/data/state"}`,
+  );
   if (!API_KEY) {
-    console.warn("  WARNING: API_KEY is not set -- all authenticated requests will be rejected");
+    console.warn(
+      "  WARNING: API_KEY is not set -- all authenticated requests will be rejected",
+    );
   }
 });
 
