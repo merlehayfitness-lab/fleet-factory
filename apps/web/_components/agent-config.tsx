@@ -19,6 +19,7 @@ import { TestChatDialog } from "@/_components/test-chat-dialog";
 import { ModelSelector } from "@/_components/model-selector";
 import { ProfileEditorDrawer } from "@/_components/profile-editor-drawer";
 import { SyncFromTemplateDialog } from "@/_components/sync-from-template-dialog";
+import { AitmplCatalogBrowser } from "@/_components/aitmpl-catalog-browser";
 import type {
   RoleDefinition,
   GenerationResult,
@@ -62,6 +63,7 @@ interface AgentConfigProps {
   businessId: string;
   knowledgeDocs: KnowledgeDoc[];
   integrations: IntegrationItem[];
+  departmentType?: string;
 }
 
 /** Compare two values for equality (JSON comparison for objects). */
@@ -135,6 +137,7 @@ export function AgentConfig({
   businessId,
   knowledgeDocs,
   integrations,
+  departmentType,
 }: AgentConfigProps) {
   const router = useRouter();
 
@@ -178,6 +181,7 @@ export function AgentConfig({
     parseToolProfile(agent.tool_profile),
   );
   const [toolDrawerOpen, setToolDrawerOpen] = useState(false);
+  const [aitmplToolOpen, setAitmplToolOpen] = useState(false);
 
   // Calculate template drift
   const promptDiffers = template
@@ -576,13 +580,22 @@ export function AgentConfig({
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Tool Profile</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setToolDrawerOpen(true)}
-            >
-              Edit
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAitmplToolOpen(true)}
+              >
+                Browse AITMPL MCPs
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setToolDrawerOpen(true)}
+              >
+                Edit
+              </Button>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -628,6 +641,19 @@ export function AgentConfig({
         profile={toolProfile}
         onSave={handleToolProfileSave}
         businessId={businessId}
+      />
+
+      {/* AITMPL MCP browser */}
+      <AitmplCatalogBrowser
+        open={aitmplToolOpen}
+        onOpenChange={setAitmplToolOpen}
+        businessId={businessId}
+        defaultType="mcp"
+        departmentType={departmentType}
+        agentId={agent.id}
+        agents={[{ id: agent.id, name: agent.name }]}
+        departments={[]}
+        onImported={() => router.refresh()}
       />
     </div>
   );

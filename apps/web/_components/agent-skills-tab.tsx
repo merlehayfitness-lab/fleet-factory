@@ -8,6 +8,7 @@ import { SkillAssignmentList } from "@/_components/skill-assignment-list";
 import { SkillUsageCard } from "@/_components/skill-usage-card";
 import { SkillTemplateBrowser } from "@/_components/skill-template-browser";
 import { GitHubImportDialog } from "@/_components/github-import-dialog";
+import { AitmplCatalogBrowser } from "@/_components/aitmpl-catalog-browser";
 import {
   getSkillsForAgentAction,
   listSkillsForBusinessAction,
@@ -19,6 +20,9 @@ interface AgentSkillsTabProps {
   agentId: string;
   departmentId: string;
   agentName: string;
+  departmentType?: string;
+  agents: Array<{ id: string; name: string; department_name?: string }>;
+  departments: Array<{ id: string; name: string }>;
 }
 
 /**
@@ -31,6 +35,9 @@ export function AgentSkillsTab({
   agentId,
   departmentId,
   agentName,
+  departmentType,
+  agents,
+  departments,
 }: AgentSkillsTabProps) {
   const [agentSkills, setAgentSkills] = useState<SkillWithAssignment[]>([]);
   const [allSkills, setAllSkills] = useState<Skill[]>([]);
@@ -39,6 +46,7 @@ export function AgentSkillsTab({
   const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
   const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false);
   const [githubImportOpen, setGithubImportOpen] = useState(false);
+  const [aitmplOpen, setAitmplOpen] = useState(false);
 
   const fetchSkills = useCallback(async () => {
     setLoading(true);
@@ -129,6 +137,14 @@ export function AgentSkillsTab({
             <GitBranch className="mr-1 size-3.5" />
             Import from GitHub
           </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setAitmplOpen(true)}
+          >
+            <Layers className="mr-1 size-3.5" />
+            Browse AITMPL
+          </Button>
         </div>
       </div>
 
@@ -174,6 +190,19 @@ export function AgentSkillsTab({
         onImported={fetchSkills}
         open={githubImportOpen}
         onOpenChange={setGithubImportOpen}
+      />
+
+      {/* AITMPL catalog browser */}
+      <AitmplCatalogBrowser
+        open={aitmplOpen}
+        onOpenChange={setAitmplOpen}
+        businessId={businessId}
+        defaultType="skill"
+        departmentType={departmentType}
+        agentId={agentId}
+        agents={agents}
+        departments={departments}
+        onImported={fetchSkills}
       />
     </div>
   );

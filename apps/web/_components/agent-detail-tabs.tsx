@@ -144,6 +144,7 @@ export function AgentDetailTabs({
           businessId={businessId}
           knowledgeDocs={knowledgeDocs}
           integrations={configIntegrations}
+          departmentType={agent.departments?.type}
         />
       </TabsContent>
 
@@ -174,6 +175,12 @@ export function AgentDetailTabs({
           agentId={agent.id}
           departmentId={agent.departments?.id ?? ""}
           agentName={agent.name}
+          departmentType={agent.departments?.type}
+          agents={allAgents.map((a) => {
+            const dept = departments.find((d) => d.id === a.department_id);
+            return { id: a.id, name: a.name, department_name: dept?.name };
+          })}
+          departments={departments.map((d) => ({ id: d.id, name: d.name }))}
         />
       </TabsContent>
 
