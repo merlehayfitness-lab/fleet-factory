@@ -42,7 +42,7 @@ export default async function BusinessPage({
       .from("audit_logs")
       .select("metadata")
       .eq("business_id", business.id)
-      .eq("action", "tenant_disabled")
+      .eq("action", "emergency.tenant_disabled")
       .order("created_at", { ascending: false })
       .limit(1)
       .single();
