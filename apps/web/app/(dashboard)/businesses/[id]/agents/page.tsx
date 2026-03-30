@@ -7,7 +7,7 @@ import { AgentTreeView } from "@/_components/agent-tree-view";
  *
  * Fetches all agents for the business with department joins,
  * plus skill assignment counts per agent (direct + department-inherited).
- * Renders the AgentTreeView hierarchy instead of a flat list.
+ * Renders the unified org chart tree view.
  * RLS scopes results to the authenticated user's businesses.
  */
 export default async function AgentsPage({
@@ -26,7 +26,14 @@ export default async function AgentsPage({
     redirect("/sign-in");
   }
 
-  // Fetch departments separately for the tree view headers
+  // Fetch business name for the org chart root node
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("name")
+    .eq("id", businessId)
+    .single();
+
+  // Fetch departments separately for the tree view
   const { data: departments } = await supabase
     .from("departments")
     .select("id, name, type")
@@ -125,6 +132,7 @@ export default async function AgentsPage({
           type: d.type as string,
         }))}
         businessId={businessId}
+        businessName={(business?.name as string) ?? "Organization"}
       />
     </div>
   );

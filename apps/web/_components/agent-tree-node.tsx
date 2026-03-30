@@ -3,30 +3,15 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useDraggable, useDroppable } from "@dnd-kit/core";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface TreeAgent {
-  id: string;
-  name: string;
-  status: string;
-  role: string | null;
-  parent_agent_id: string | null;
-  model_profile: Record<string, unknown>;
-  skill_count: number;
-  children: TreeAgent[];
-  isCollapsed: boolean;
-}
+import type { OrgChartNode } from "@/_components/agent-tree-view";
 
 interface AgentTreeNodeProps {
-  agent: TreeAgent;
+  node: OrgChartNode;
   businessId: string;
-  departmentId: string;
-  isLead: boolean;
-  isCollapsed: boolean;
-  childCount: number;
-  onToggleCollapse?: () => void;
-  onSelect: (agentId: string) => void;
+  onSelect: (nodeId: string) => void;
+  onToggleCollapse: () => void;
   registerRef: (nodeId: string, el: HTMLElement | null) => void;
 }
 
@@ -40,19 +25,15 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 /**
- * Compact pill node for an agent in the tree view.
- * Shows status dot (Slack-style), name, collapse chevron for leads, and '+' button.
- * Draggable via @dnd-kit/core. Lead agents are also drop targets.
+ * Rectangular box node for the org chart.
+ * Shows status dot, name, role, collapse chevron, and '+' add-child button.
+ * Draggable via @dnd-kit/core. Root and lead nodes are also drop targets.
  */
 export function AgentTreeNode({
-  agent,
+  node,
   businessId,
-  departmentId,
-  isLead,
-  isCollapsed,
-  childCount,
-  onToggleCollapse,
   onSelect,
+  onToggleCollapse,
   registerRef,
 }: AgentTreeNodeProps) {
   const router = useRouter();
@@ -62,102 +43,113 @@ export function AgentTreeNode({
     listeners,
     setNodeRef: setDragRef,
     isDragging,
-  } = useDraggable({ id: agent.id });
+  } = useDraggable({ id: node.id, disabled: node.type === "root" && node.id === "root" });
 
   const { setNodeRef: setDropRef, isOver } = useDroppable({
-    id: agent.id,
-    disabled: !isLead,
+    id: node.id,
+    disabled: node.type === "sub-agent",
   });
 
   const setRef = useCallback(
     (el: HTMLElement | null) => {
       setDragRef(el);
-      if (isLead) setDropRef(el);
-      registerRef(agent.id, el);
+      if (node.type !== "sub-agent") setDropRef(el);
+      registerRef(node.id, el);
     },
-    [agent.id, isLead, setDragRef, setDropRef, registerRef],
+    [node.id, node.type, setDragRef, setDropRef, registerRef],
   );
 
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
-      // Don't trigger select if clicking chevron or plus button
       const target = e.target as HTMLElement;
       if (target.closest("[data-action]")) return;
-      // Don't trigger select during drag
       if (e.defaultPrevented) return;
-      onSelect(agent.id);
+      onSelect(node.id);
     },
-    [agent.id, onSelect],
+    [node.id, onSelect],
   );
 
   const handleAddChild = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      const params = new URLSearchParams({
-        departmentId,
-        parentAgentId: agent.id,
-      });
-      router.push(`/businesses/${businessId}/agents/new?${params.toString()}`);
+      if (node.type === "root") {
+        router.push(`/businesses/${businessId}/agents/new`);
+      } else {
+        const params = new URLSearchParams();
+        if (node.departmentId) params.set("departmentId", node.departmentId);
+        params.set("parentAgentId", node.id);
+        router.push(`/businesses/${businessId}/agents/new?${params.toString()}`);
+      }
     },
-    [businessId, departmentId, agent.id, router],
+    [businessId, node.id, node.type, node.departmentId, router],
   );
 
   const handleToggle = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      onToggleCollapse?.();
+      onToggleCollapse();
     },
     [onToggleCollapse],
   );
 
-  const dotColor = STATUS_COLORS[agent.status] ?? "bg-muted-foreground";
+  const dotColor = STATUS_COLORS[node.status] ?? "bg-muted-foreground";
 
   return (
     <div
       ref={setRef}
-      data-node-id={agent.id}
+      data-node-id={node.id}
       {...attributes}
       {...listeners}
       onClick={handleClick}
       className={cn(
-        "group relative z-10 inline-flex cursor-grab items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-all hover:bg-accent",
-        isLead && "border-foreground/20",
+        "group relative z-10 flex min-w-[140px] max-w-[180px] cursor-grab flex-col items-center gap-1 rounded-lg border bg-card px-4 py-3 text-center shadow-sm transition-all hover:shadow-md",
         isDragging && "cursor-grabbing opacity-50",
-        isOver && isLead && "ring-2 ring-primary border-primary bg-primary/5",
+        isOver && "ring-2 ring-primary border-primary bg-primary/5",
+        node.type === "root" && "min-w-[160px] border-primary/40 bg-primary/5",
       )}
     >
-      {/* Status dot */}
-      <span className={cn("size-2 shrink-0 rounded-full", dotColor)} />
+      {/* Status dot + status text */}
+      <div className="flex items-center gap-2">
+        <span className={cn("size-2 shrink-0 rounded-full", dotColor)} />
+        <span className="text-xs font-medium capitalize text-muted-foreground">
+          {node.status}
+        </span>
+      </div>
 
       {/* Name */}
-      <span className="max-w-[120px] truncate">{agent.name}</span>
+      <p className="text-sm font-semibold leading-tight">{node.name}</p>
 
-      {/* Collapse chevron for leads with children */}
-      {isLead && childCount > 0 && (
+      {/* Role */}
+      {node.role && (
+        <p className="text-[11px] leading-tight text-muted-foreground">
+          {node.role}
+        </p>
+      )}
+
+      {/* Collapse indicator + child count */}
+      {node.children.length > 0 && (
         <button
           data-action="toggle"
           onClick={handleToggle}
-          className="inline-flex items-center text-muted-foreground hover:text-foreground"
+          className="mt-1 inline-flex items-center gap-0.5 text-muted-foreground hover:text-foreground"
         >
-          {isCollapsed ? (
+          {node.isCollapsed ? (
             <>
-              <span className="mr-0.5 text-xs text-muted-foreground">
-                ({childCount})
-              </span>
-              <ChevronRight className="size-3" />
+              <ChevronDown className="size-3" />
+              <span className="text-[10px]">({node.children.length})</span>
             </>
           ) : (
-            <ChevronDown className="size-3" />
+            <ChevronUp className="size-3" />
           )}
         </button>
       )}
 
-      {/* Add sub-agent button for leads */}
-      {isLead && (
+      {/* '+' add child button (on hover) */}
+      {(node.type === "root" || node.type === "lead") && (
         <button
           data-action="add"
           onClick={handleAddChild}
-          className="inline-flex size-5 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-primary hover:text-primary-foreground group-hover:opacity-100"
+          className="absolute -bottom-3 left-1/2 -translate-x-1/2 inline-flex size-6 items-center justify-center rounded-full border bg-card text-muted-foreground opacity-0 shadow-sm transition-opacity hover:bg-primary hover:text-primary-foreground group-hover:opacity-100"
         >
           <Plus className="size-3" />
         </button>

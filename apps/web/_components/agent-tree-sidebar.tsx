@@ -17,22 +17,10 @@ import {
   Snowflake,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { OrgChartNode } from "@/_components/agent-tree-view";
 
 interface AgentTreeSidebarProps {
-  selectedAgent: {
-    id: string;
-    name: string;
-    status: string;
-    role: string | null;
-    model_profile: Record<string, unknown>;
-    skill_count: number;
-  } | null;
-  selectedDepartment: {
-    id: string;
-    name: string;
-    type: string;
-    agentCount: number;
-  } | null;
+  selectedNode: OrgChartNode | null;
   businessId: string;
   isOpen: boolean;
   onClose: () => void;
@@ -48,8 +36,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export function AgentTreeSidebar({
-  selectedAgent,
-  selectedDepartment,
+  selectedNode,
   businessId,
   isOpen,
   onClose,
@@ -69,11 +56,11 @@ export function AgentTreeSidebar({
 
   const handleAction = useCallback(
     async (action: "freeze" | "pause" | "resume") => {
-      if (!selectedAgent) return;
+      if (!selectedNode || selectedNode.type === "root") return;
       setLoading(action);
       try {
         const fns = { freeze: freezeAgent, pause: pauseAgent, resume: resumeAgent };
-        const result = await fns[action](selectedAgent.id, businessId);
+        const result = await fns[action](selectedNode.id, businessId);
         if (result?.error) {
           toast.error(result.error);
         } else {
@@ -85,12 +72,12 @@ export function AgentTreeSidebar({
         setLoading(null);
       }
     },
-    [selectedAgent, businessId, onClose, router],
+    [selectedNode, businessId, onClose, router],
   );
 
-  if (!isOpen) return null;
+  if (!isOpen || !selectedNode) return null;
 
-  const name = selectedAgent?.name ?? selectedDepartment?.name ?? "";
+  const isAgent = selectedNode.type === "lead" || selectedNode.type === "sub-agent";
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -101,7 +88,7 @@ export function AgentTreeSidebar({
       <div className="relative z-10 flex w-full max-w-sm flex-col bg-popover shadow-lg ring-1 ring-foreground/10">
         {/* Header */}
         <div className="flex items-center justify-between border-b px-4 py-3">
-          <h3 className="text-lg font-semibold truncate">{name}</h3>
+          <h3 className="text-lg font-semibold truncate">{selectedNode.name}</h3>
           <button
             onClick={onClose}
             className="inline-flex size-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -112,7 +99,25 @@ export function AgentTreeSidebar({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {selectedAgent && (
+          {selectedNode.type === "root" && (
+            <>
+              <div className="space-y-1">
+                <p className="text-xs font-medium uppercase text-muted-foreground">Type</p>
+                <span className="inline-block rounded-full bg-foreground/10 px-2.5 py-0.5 text-xs font-medium">
+                  Organization Root
+                </span>
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium uppercase text-muted-foreground">Direct Reports</p>
+                <p className="text-sm">
+                  {selectedNode.children.length}{" "}
+                  {selectedNode.children.length === 1 ? "agent" : "agents"}
+                </p>
+              </div>
+            </>
+          )}
+
+          {isAgent && (
             <>
               {/* Status */}
               <div className="space-y-1">
@@ -121,25 +126,35 @@ export function AgentTreeSidebar({
                   <span
                     className={cn(
                       "size-2.5 rounded-full",
-                      STATUS_COLORS[selectedAgent.status] ?? "bg-muted-foreground",
+                      STATUS_COLORS[selectedNode.status] ?? "bg-muted-foreground",
                     )}
                   />
-                  <span className="text-sm capitalize">{selectedAgent.status}</span>
+                  <span className="text-sm capitalize">{selectedNode.status}</span>
                 </div>
               </div>
 
               {/* Role */}
               <div className="space-y-1">
                 <p className="text-xs font-medium uppercase text-muted-foreground">Role</p>
-                <p className="text-sm">{selectedAgent.role ?? "No role defined"}</p>
+                <p className="text-sm">{selectedNode.role ?? "No role defined"}</p>
               </div>
+
+              {/* Department */}
+              {selectedNode.departmentName && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium uppercase text-muted-foreground">Department</p>
+                  <span className="inline-block rounded-full bg-foreground/10 px-2.5 py-0.5 text-xs font-medium capitalize">
+                    {selectedNode.departmentName}
+                  </span>
+                </div>
+              )}
 
               {/* Model */}
               <div className="space-y-1">
                 <p className="text-xs font-medium uppercase text-muted-foreground">Model</p>
                 <p className="text-sm">
                   {getModelFriendlyName(
-                    (selectedAgent.model_profile as { model?: string })?.model ?? "",
+                    (selectedNode.model_profile as { model?: string })?.model ?? "",
                   ) || "Default"}
                 </p>
               </div>
@@ -148,38 +163,28 @@ export function AgentTreeSidebar({
               <div className="space-y-1">
                 <p className="text-xs font-medium uppercase text-muted-foreground">Skills</p>
                 <p className="text-sm">
-                  {selectedAgent.skill_count} {selectedAgent.skill_count === 1 ? "skill" : "skills"} assigned
+                  {selectedNode.skill_count} {selectedNode.skill_count === 1 ? "skill" : "skills"} assigned
                 </p>
               </div>
-            </>
-          )}
 
-          {selectedDepartment && (
-            <>
-              {/* Type */}
-              <div className="space-y-1">
-                <p className="text-xs font-medium uppercase text-muted-foreground">Type</p>
-                <span className="inline-block rounded-full bg-foreground/10 px-2.5 py-0.5 text-xs font-medium capitalize">
-                  {selectedDepartment.type}
-                </span>
-              </div>
-
-              {/* Agent count */}
-              <div className="space-y-1">
-                <p className="text-xs font-medium uppercase text-muted-foreground">Agents</p>
-                <p className="text-sm">
-                  {selectedDepartment.agentCount}{" "}
-                  {selectedDepartment.agentCount === 1 ? "agent" : "agents"} in this department
-                </p>
-              </div>
+              {/* Sub-agents count */}
+              {selectedNode.children.length > 0 && (
+                <div className="space-y-1">
+                  <p className="text-xs font-medium uppercase text-muted-foreground">Sub-agents</p>
+                  <p className="text-sm">
+                    {selectedNode.children.length}{" "}
+                    {selectedNode.children.length === 1 ? "sub-agent" : "sub-agents"}
+                  </p>
+                </div>
+              )}
             </>
           )}
         </div>
 
         {/* Footer with action buttons */}
-        {selectedAgent && (
+        {isAgent && (
           <div className="border-t px-4 py-3 flex flex-wrap gap-2">
-            {selectedAgent.status === "active" && (
+            {selectedNode.status === "active" && (
               <>
                 <button
                   onClick={() => handleAction("pause")}
@@ -199,7 +204,7 @@ export function AgentTreeSidebar({
                 </button>
               </>
             )}
-            {selectedAgent.status === "paused" && (
+            {selectedNode.status === "paused" && (
               <>
                 <button
                   onClick={() => handleAction("resume")}
@@ -219,7 +224,7 @@ export function AgentTreeSidebar({
                 </button>
               </>
             )}
-            {selectedAgent.status === "frozen" && (
+            {selectedNode.status === "frozen" && (
               <button
                 onClick={() => handleAction("resume")}
                 disabled={loading !== null}
@@ -231,7 +236,7 @@ export function AgentTreeSidebar({
             )}
             <button
               onClick={() =>
-                router.push(`/businesses/${businessId}/agents/${selectedAgent.id}`)
+                router.push(`/businesses/${businessId}/agents/${selectedNode.id}`)
               }
               className="inline-flex items-center gap-1.5 rounded-md border bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary/90"
             >
