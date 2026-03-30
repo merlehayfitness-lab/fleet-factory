@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 import {
   DndContext,
   DragOverlay,
+  PointerSensor,
   closestCenter,
+  useSensor,
+  useSensors,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
@@ -283,6 +286,11 @@ export function AgentTreeView({
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [isReparenting, setIsReparenting] = useState(false);
 
+  // Require 8px drag distance before activating DnD — prevents click from triggering drag
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+  );
+
   // Load collapse state from localStorage
   useEffect(() => {
     try {
@@ -332,35 +340,36 @@ export function AgentTreeView({
     [],
   );
 
+  // Shared position recalculation
+  const recalculatePositions = useCallback(() => {
+    if (!containerRef.current) return;
+    setContainerRect(containerRef.current.getBoundingClientRect());
+
+    const nodes = containerRef.current.querySelectorAll("[data-node-id]");
+    const newPositions = new Map<string, DOMRect>();
+    nodes.forEach((node) => {
+      const id = (node as HTMLElement).dataset.nodeId;
+      if (id) newPositions.set(id, node.getBoundingClientRect());
+    });
+    nodeRefs.current = newPositions;
+    setPositionVersion((v) => v + 1);
+  }, []);
+
   // Recalculate positions after render and on resize
   useEffect(() => {
-    function recalculate() {
-      if (!containerRef.current) return;
-      setContainerRect(containerRef.current.getBoundingClientRect());
+    const timer = setTimeout(recalculatePositions, 50);
 
-      const nodes = containerRef.current.querySelectorAll("[data-node-id]");
-      const newPositions = new Map<string, DOMRect>();
-      nodes.forEach((node) => {
-        const id = (node as HTMLElement).dataset.nodeId;
-        if (id) newPositions.set(id, node.getBoundingClientRect());
-      });
-      nodeRefs.current = newPositions;
-      setPositionVersion((v) => v + 1);
-    }
-
-    const timer = setTimeout(recalculate, 50);
-
-    const observer = new ResizeObserver(recalculate);
+    const observer = new ResizeObserver(recalculatePositions);
     if (containerRef.current) observer.observe(containerRef.current);
 
-    window.addEventListener("resize", recalculate);
+    window.addEventListener("resize", recalculatePositions);
 
     return () => {
       clearTimeout(timer);
       observer.disconnect();
-      window.removeEventListener("resize", recalculate);
+      window.removeEventListener("resize", recalculatePositions);
     };
-  }, [collapsed, agents.length]);
+  }, [collapsed, agents.length, recalculatePositions]);
 
   // Node select: open sidebar
   const handleSelectNode = useCallback((nodeId: string) => {
@@ -383,6 +392,8 @@ export function AgentTreeView({
 
   function handleDragEnd(event: DragEndEvent) {
     setActiveDragId(null);
+    // Recalculate line positions after drag completes
+    setTimeout(recalculatePositions, 50);
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
@@ -593,6 +604,7 @@ export function AgentTreeView({
       {/* Desktop: full org chart with DnD and elbow connectors */}
       {!isMobile && isClient && (
         <DndContext
+          sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
