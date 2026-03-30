@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 14 -- Slack Integration & Chat Replacement
+**Current focus:** Phase 16 -- Tenant Disable Fix & Dashboard Freeze
 
 ## Current Position
 
-Phase: 14 of 17 (Slack Integration & Chat Replacement)
-Plan: 2 of 3 in current phase (2 complete)
-Status: In progress
-Last activity: 2026-03-30 -- Completed 14-02-PLAN.md (Slack Chat Page & Integrations UI)
+Phase: 16 of 17 (Tenant Disable Fix & Dashboard Freeze)
+Plan: 3 of 3 in current phase (3 complete)
+Status: Phase complete
+Last activity: 2026-03-30 -- Completed 16-03-PLAN.md (UI Enforcement Layer)
 
-Progress: [██████████████████████████████░░] 98% (45/46 plans)
+Progress: [██████████████████████████████░░] 98% (46/47 plans)
 
 ## Performance Metrics
 
@@ -95,6 +95,8 @@ Progress: [███████████████████████
 | Phase 16 P01 | 2min | 1 tasks | 6 files |
 | Phase 14 P01 | 9min | 3 tasks | 15 files |
 | Phase 14 P02 | 6min | 3 tasks | 10 files |
+| Phase 16 P02 | 5min | 2 tasks | 8 files |
+| Phase 16 P03 | 4min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -288,6 +290,10 @@ Recent decisions affecting current work:
 - [14-02]: Flat Slack-like message layout replaces bubble-style; all messages left-aligned
 - [14-02]: sendSlackMessageAction returns only userMessage; agent response via Slack events + polling
 - [14-02]: WebSocket streaming and stub typing indicator removed when Slack is connected
+- [16-03]: useBusinessStatus hook used in all client components for consistent disabled-state detection
+- [16-03]: VPS warning fetched server-side in page.tsx and passed as prop (Option A) to avoid client-side audit log fetch
+- [16-03]: isDisabled layered on top of existing disabled conditions (e.g. isAgentFrozen) rather than replacing them
+- [16-03]: Agent tree '+' buttons show at reduced opacity when disabled instead of hiding entirely
 
 ### Pending Todos
 
@@ -300,5 +306,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-03-30
-Stopped at: Completed 14-02-PLAN.md (Slack Chat Page & Integrations UI)
-Resume file: .planning/phases/14-slack-integration-chat-replacement/14-02-SUMMARY.md
+Stopped at: Completed 16-03-PLAN.md (UI Enforcement Layer)
+Resume file: .planning/phases/16-tenant-disable-fix-dashboard-freeze/16-03-SUMMARY.md
