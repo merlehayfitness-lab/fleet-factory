@@ -116,7 +116,9 @@ export default async function IntegrationsPage({
       </section>
 
       <IntegrationsOverview
-        integrations={integrations ?? []}
+        integrations={(integrations ?? []).filter(
+          (i) => i.agent_id || i.department_id
+        )}
         agents={agentsList}
         businessId={businessId}
       />

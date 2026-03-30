@@ -46,7 +46,8 @@ export function SlackConnectCard({
       const { getSlackChannelsAction } = await import("@/_actions/slack-actions");
       const result = await getSlackChannelsAction(businessId);
       if ("channels" in result) {
-        setChannelCount(result.channels.length);
+        const deptChannels = result.channels.filter((c) => !c.agentId);
+        setChannelCount(deptChannels.length);
       }
     }
     void fetchChannelCount();
