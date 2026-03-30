@@ -15,6 +15,7 @@ import {
   getConversationsAction,
   sendSlackMessageAction,
 } from "@/_actions/chat-actions";
+import { getSlackFeedMessagesAction } from "@/_actions/slack-actions";
 import type { ChatMessage, DepartmentChannel, SlackConnectionStatus, SlackChannelMapping } from "@agency-factory/core";
 
 interface SlackChannelWithDept extends SlackChannelMapping {
@@ -151,7 +152,19 @@ function SlackChatUI({
         setChannels(result.channels);
       }
 
-      // Find active conversation for this department
+      // Load Slack-synced messages for the department (Slack feed view)
+      const feedResult = await getSlackFeedMessagesAction(
+        businessId,
+        selectedDepartmentId!,
+      );
+      if (cancelled) return;
+
+      if ("messages" in feedResult && feedResult.messages.length > 0) {
+        setMessages(feedResult.messages);
+        setHasMoreMessages(feedResult.messages.length >= 50);
+      }
+
+      // Also look up conversation ID for polling and sending
       const convResult = await getConversationsAction(businessId);
       if (cancelled) return;
 
@@ -162,12 +175,6 @@ function SlackChatUI({
         );
         if (conv) {
           setConversationId(conv.id);
-          const msgResult = await getMessagesAction(conv.id);
-          if (cancelled) return;
-          if ("messages" in msgResult) {
-            setMessages(msgResult.messages);
-            setHasMoreMessages(msgResult.messages.length >= 50);
-          }
         }
       }
 
@@ -183,10 +190,14 @@ function SlackChatUI({
 
   // Message polling every 10 seconds (Slack events store messages in Supabase)
   useEffect(() => {
-    if (!conversationId) return;
+    if (!selectedDepartmentId) return;
 
     pollingRef.current = setInterval(async () => {
-      const result = await getMessagesAction(conversationId);
+      // Use Slack feed messages for polling (only Slack-synced messages)
+      const result = await getSlackFeedMessagesAction(
+        businessId,
+        selectedDepartmentId,
+      );
       if ("messages" in result) {
         setMessages((prev) => {
           const existingIds = new Set(prev.map((m) => m.id));
@@ -207,7 +218,7 @@ function SlackChatUI({
         pollingRef.current = null;
       }
     };
-  }, [conversationId]);
+  }, [selectedDepartmentId, businessId]);
 
   // Handle department selection
   const handleSelectDepartment = useCallback((departmentId: string) => {
@@ -252,11 +263,13 @@ function SlackChatUI({
 
   // Handle load more messages
   const handleLoadMore = useCallback(async () => {
-    if (!conversationId || messages.length === 0) return;
+    if (!selectedDepartmentId || messages.length === 0) return;
 
     const oldestMessage = messages[0];
-    const result = await getMessagesAction(
-      conversationId,
+    const result = await getSlackFeedMessagesAction(
+      businessId,
+      selectedDepartmentId,
+      50,
       oldestMessage.createdAt,
     );
 
@@ -264,7 +277,7 @@ function SlackChatUI({
       setMessages((prev) => [...result.messages, ...prev]);
       setHasMoreMessages(result.messages.length >= 50);
     }
-  }, [conversationId, messages]);
+  }, [businessId, selectedDepartmentId, messages]);
 
   // Determine channel name for input placeholder
   const channelDisplayName =
@@ -320,6 +333,13 @@ function SlackChatUI({
             {isLoading ? (
               <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
                 Loading messages...
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+                <span>No messages yet</span>
+                <span className="text-xs">
+                  Send a message below or @mention the bot in Slack to start a conversation
+                </span>
               </div>
             ) : (
               <ChatMessageList

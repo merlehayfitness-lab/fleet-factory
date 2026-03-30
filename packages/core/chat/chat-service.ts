@@ -630,6 +630,15 @@ export async function routeAndRespond(
             /* best-effort */
           }
 
+          // Post agent response to Slack (best-effort, if connected)
+          await postResponseToSlackIfConnected(
+            supabase,
+            businessId,
+            departmentId,
+            departmentType,
+            agentMessage,
+          );
+
           return agentMessage;
         }
       }
@@ -688,5 +697,81 @@ export async function routeAndRespond(
     console.error("Failed to create chat routing audit log");
   }
 
+  // Post agent response to Slack (best-effort, if connected)
+  await postResponseToSlackIfConnected(
+    supabase,
+    businessId,
+    departmentId,
+    departmentType,
+    agentMessage,
+  );
+
   return agentMessage;
+}
+
+/**
+ * Post an agent response to Slack if the business has Slack connected.
+ * Best-effort: errors are logged but never thrown to avoid breaking the response pipeline.
+ * Dynamically imports Slack modules to avoid hard dependency.
+ */
+async function postResponseToSlackIfConnected(
+  supabase: SupabaseClient,
+  businessId: string,
+  departmentId: string,
+  departmentType: string,
+  agentMessage: ChatMessage,
+): Promise<void> {
+  try {
+    // Check if business has Slack connected
+    const { data: installation } = await supabase
+      .from("slack_installations")
+      .select("id")
+      .eq("business_id", businessId)
+      .maybeSingle();
+
+    if (!installation) return;
+
+    // Look up the department's Slack channel mapping
+    const { data: channelMapping } = await supabase
+      .from("slack_channel_mappings")
+      .select("slack_channel_id")
+      .eq("business_id", businessId)
+      .eq("department_id", departmentId)
+      .is("agent_id", null)
+      .maybeSingle();
+
+    if (!channelMapping) return;
+
+    const slackChannelId = channelMapping.slack_channel_id as string;
+
+    // Dynamic import to avoid hard dependency (like knowledge retrieval pattern)
+    const { getSlackClient } = await import("../slack/slack-client");
+    const { postAgentResponseToSlack } = await import("../slack/slack-messages");
+
+    const client = await getSlackClient(supabase, businessId);
+    if (!client) return;
+
+    const slackTs = await postAgentResponseToSlack(
+      client,
+      slackChannelId,
+      agentMessage.agentName ?? "Agent",
+      departmentType,
+      agentMessage.content,
+      agentMessage.toolCalls,
+    );
+
+    // Update the agent message record with slack_ts and slack_channel_id
+    if (slackTs) {
+      await supabase
+        .from("messages")
+        .update({
+          slack_ts: slackTs,
+          slack_channel_id: slackChannelId,
+        })
+        .eq("id", agentMessage.id);
+    }
+  } catch (err) {
+    // Best-effort: Slack posting failure should never break the response pipeline
+    console.error("Failed to post agent response to Slack:", err);
+  }
 }

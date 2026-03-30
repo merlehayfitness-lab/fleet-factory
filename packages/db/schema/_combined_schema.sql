@@ -1251,6 +1251,8 @@ VALUES
   ('calendly', 'api_key', 'password', 'Personal Access Token', NULL, 'From Integrations page', 0),
   ('slack', 'bot_token', 'password', 'Bot Token', 'xoxb-xxxx...', NULL, 0),
   ('slack', 'signing_secret', 'password', 'Signing Secret', NULL, 'From Basic Information > App Credentials', 1),
+  ('slack', 'client_id', 'text', 'Client ID', NULL, 'From api.slack.com > Your App > Basic Information', 2),
+  ('slack', 'client_secret', 'password', 'Client Secret', NULL, 'From api.slack.com > Your App > Basic Information', 3),
   ('teams', 'app_id', 'text', 'App ID', NULL, NULL, 0),
   ('teams', 'app_password', 'password', 'App Password', NULL, NULL, 1),
   ('discord', 'bot_token', 'password', 'Bot Token', NULL, NULL, 0),

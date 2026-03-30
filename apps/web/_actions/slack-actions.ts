@@ -8,8 +8,9 @@ import {
   getSlackInstallUrl,
   disconnectSlack,
   getChannelMappings,
+  getSlackFeedMessages,
 } from "@agency-factory/core/server";
-import type { SlackConnectionStatus, SlackChannelMapping } from "@agency-factory/core";
+import type { SlackConnectionStatus, SlackChannelMapping, ChatMessage } from "@agency-factory/core";
 
 /**
  * Check if Slack is connected for a business.
@@ -158,6 +159,42 @@ export async function getSlackChannelsAction(
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Failed to fetch Slack channels",
+    };
+  }
+}
+
+/**
+ * Get Slack-synced messages for a department.
+ * Returns only messages that have slack_ts (Slack-synced).
+ * Used by chat layout to show Slack-only messages when connected.
+ */
+export async function getSlackFeedMessagesAction(
+  businessId: string,
+  departmentId: string,
+  limit?: number,
+  before?: string,
+): Promise<{ messages: ChatMessage[] } | { error: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  try {
+    const messages = await getSlackFeedMessages(
+      supabase,
+      businessId,
+      departmentId,
+      limit,
+      before,
+    );
+    return { messages };
+  } catch (err) {
+    return {
+      error: err instanceof Error ? err.message : "Failed to fetch Slack feed messages",
     };
   }
 }

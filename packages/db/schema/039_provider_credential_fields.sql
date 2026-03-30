@@ -87,6 +87,8 @@ VALUES
   -- Slack (Messaging)
   ('slack', 'bot_token', 'password', 'Bot Token', 'xoxb-xxxx...', NULL, 0),
   ('slack', 'signing_secret', 'password', 'Signing Secret', NULL, 'From Basic Information > App Credentials', 1),
+  ('slack', 'client_id', 'text', 'Client ID', NULL, 'From api.slack.com > Your App > Basic Information', 2),
+  ('slack', 'client_secret', 'password', 'Client Secret', NULL, 'From api.slack.com > Your App > Basic Information', 3),
 
   -- Microsoft Teams (Messaging)
   ('teams', 'app_id', 'text', 'App ID', NULL, NULL, 0),
