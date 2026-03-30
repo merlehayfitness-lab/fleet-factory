@@ -125,3 +125,25 @@ export interface DeploymentState {
   completedAt?: string;
   result?: DeployResult;
 }
+
+/** Terminal WebSocket message from client */
+export interface TerminalMessage {
+  type: "resize" | "input";
+  cols?: number;
+  rows?: number;
+  data?: string;
+}
+
+/** Tenant stop/resume request */
+export interface TenantLifecycleRequest {
+  businessId: string;
+  businessSlug: string;
+}
+
+/** Tenant stop/resume response */
+export interface TenantLifecycleResponse {
+  success: boolean;
+  stoppedCount?: number;
+  resumedCount?: number;
+  error?: string;
+}
