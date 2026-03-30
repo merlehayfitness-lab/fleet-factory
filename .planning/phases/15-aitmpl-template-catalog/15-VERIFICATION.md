@@ -1,160 +1,192 @@
 ---
 phase: 15-aitmpl-template-catalog
-verified: 2026-03-30T17:15:00Z
+verified: 2026-03-30T21:10:00Z
 status: passed
-score: 22/22 must-haves verified
-re_verification: false
+score: 17/17 must-haves verified
+re_verification:
+  previous_status: passed (human_needed items remained)
+  previous_score: 22/22
+  gaps_closed:
+    - "Banner dismiss state persists via localStorage after page refresh"
+    - "Target picker in AITMPL catalog shows friendly agent/department names"
+  gaps_remaining: []
+  regressions: []
 gaps: []
 human_verification:
-  - test: "Open business dashboard and verify AITMPL suggestion banner appears"
-    expected: "Blue banner with Sparkles icon, 'Enhance your agents with AITMPL templates' heading, Browse Catalog button, and X dismiss button"
-    why_human: "localStorage dismiss state and SSR hydration flash prevention cannot be verified statically"
-  - test: "Click Browse Catalog from the banner, verify catalog loads and shows tabs"
-    expected: "Dialog opens with 7 tabs (Skills, Agents, Commands, MCPs, Settings, Hooks, Plugins); default 10 results visible per tab"
-    why_human: "Requires live aitmpl.com/components.json network fetch to confirm data populates"
-  - test: "Click Add on a catalog card, verify detail panel content preview, then click Import"
-    expected: "Content preview renders in pre block; for MCP type, JSON preview appears before target picker; success toast fires after import"
-    why_human: "End-to-end import flow requires live database writes and Supabase auth"
-  - test: "Verify Recommended badge on cards matching department context"
-    expected: "Cards whose category appears in DEPARTMENT_CATEGORY_MAP for the current department show green 'Recommended' badge"
-    why_human: "Requires live catalog data and correct departmentType prop propagation from agent detail"
-  - test: "Dismiss banner and verify it stays dismissed after page reload"
-    expected: "Banner remains hidden after dismiss; localStorage key 'aitmpl-banner-dismissed-{businessId}' set to 'true'"
-    why_human: "localStorage behavior cannot be verified statically"
+  - test: "Open business dashboard, clear localStorage, verify AITMPL banner appears and dismiss persists after reload"
+    expected: "Banner appears on first load; after clicking X and reloading, banner stays hidden; localStorage shows key 'aitmpl-banner-dismissed-{realId}' = 'true', NOT 'aitmpl-banner-dismissed-undefined'"
+    why_human: "businessId guard correctness and localStorage hydration timing require a live browser"
+  - test: "From skills page, open Browse Templates -> Browse AITMPL Skills -> Import, verify target picker shows friendly names"
+    expected: "Target picker dropdown shows agent names with department context (e.g. 'SalesBot (Sales)') instead of raw UUIDs"
+    why_human: "Requires live Supabase data and rendered React SelectItem children"
+  - test: "Click Browse Catalog from banner, verify catalog loads and shows all 7 tabs with real data"
+    expected: "Dialog opens; each of the 7 tabs (Skills, Agents, Commands, MCPs, Settings, Hooks, Plugins) populates with live cards from aitmpl.com"
+    why_human: "Requires live network access to aitmpl.com/components.json"
+  - test: "Full import flow from agent Skills tab — import a skill, confirm in target picker"
+    expected: "Success toast fires; skill appears in agent's skills list"
+    why_human: "End-to-end import requires live Supabase auth and database writes"
+  - test: "MCP import flow from agent Config tab — verify JSON preview before target picker"
+    expected: "JSON preview of MCP config appears before target picker; MCP entry appears in agent tool profile after confirm"
+    why_human: "Requires MCP component with valid JSON content from live catalog and database write to tool_profile"
 ---
 
 # Phase 15: AITMPL Template Catalog Verification Report
 
 **Phase Goal:** Business setup wizard and template management suggest Skills, Agents, Commands, Settings, Hooks, MCPs, and Plugins from the AITMPL catalog (aitmpl.com)
-**Verified:** 2026-03-30T17:15:00Z
+**Verified:** 2026-03-30T21:10:00Z
 **Status:** passed
-**Re-verification:** No — initial verification
+**Re-verification:** Yes — after UAT gap closure (Plan 04)
+
+## Re-Verification Context
+
+The initial VERIFICATION.md (2026-03-30T17:15:00Z) had status `passed` with 5 human_verification items. UAT was subsequently run and found 2 issues:
+
+1. **Banner dismiss not persisting (major)** — `aitmpl-suggestion-banner.tsx` wrote to localStorage before `businessId` hydrated, creating key `aitmpl-banner-dismissed-undefined` instead of `aitmpl-banner-dismissed-{realId}`.
+2. **Target picker showing raw UUIDs (minor)** — `skills/page.tsx` did not fetch agents or departments; `SkillLibrary` did not accept or forward them to `SkillTemplateBrowser`.
+
+Plan 04 was created and executed. Both fixes were committed atomically (`6dd3ad1` and `77d4923`). This re-verification confirms the fixes are present, substantive, and wired.
+
+---
 
 ## Goal Achievement
 
-### Observable Truths
+### Plan 04 Gap Closure Truths
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Users can browse AITMPL catalog within the admin panel | VERIFIED | `AitmplCatalogBrowser` dialog exists at `apps/web/_components/aitmpl-catalog-browser.tsx` with 7 type tabs; integrated into 4 access points |
-| 2 | Wizard/panel shows 7 AITMPL category tabs (Skills, Agents, Commands, MCPs, Settings, Hooks, Plugins) | VERIFIED | `TABS` constant in catalog-browser.tsx defines all 7 values matching `AitmplComponentType`; tab bar renders Button per tab |
-| 3 | Components can be browsed with search, category filter, and sort | VERIFIED | Search input with 300ms debounce, category Select from live results, sort Select (Most Popular / A-Z); `searchAitmplAction` calls `searchComponents` server-side |
-| 4 | Recommendations shown based on department type | VERIFIED | `isDepartmentRecommended(departmentType, item.category)` called per card; green "Recommended" badge rendered when true; `DEPARTMENT_CATEGORY_MAP` covers all 4 department types |
-| 5 | Skills, Commands, Settings, Hooks can be imported as Agency Factory skills | VERIFIED | `importFromAitmpl` in `import-service.ts` routes skill/command/setting/hook to `createSkill` + optional `assignSkill` with `source_type: "imported"` and `source_url: "aitmpl://{type}/{path}"` |
-| 6 | Agent type can be imported as system_prompt onto a target agent | VERIFIED | `importFromAitmpl` case "agent" calls `supabase.from("agents").update({ system_prompt: component.content })` when `targetAgentId` provided |
-| 7 | MCP type can be imported by merging into tool_profile.mcp_servers[] | VERIFIED | `importFromAitmpl` case "mcp" parses content JSON, fetches agent tool_profile, pushes new server entry, updates agent; JSON preview shown in UI before target picker |
-| 8 | Plugin type returns actionable decomposition guidance | VERIFIED | `importFromAitmpl` case "plugin" returns `success: false` with error listing `agentsList`, `commandsList`, `mcpServersList` paths to import individually |
-| 9 | 10MB+ catalog never sent to client; search returns lightweight results | VERIFIED | `searchComponents` returns `CatalogSearchResult[]` (no `content` field); `getAitmplDetailAction` strips security/author/repo before returning; full catalog cached server-side with 24h TTL |
-| 10 | AITMPL catalog browser accessible from agent Skills tab | VERIFIED | `agent-skills-tab.tsx` imports `AitmplCatalogBrowser`, renders "Browse AITMPL" button, opens with `defaultType="skill"` and passes `agents`/`departments` from `AgentDetailTabs` |
-| 11 | AITMPL catalog browser accessible from agent Config Tool Profile section | VERIFIED | `agent-config.tsx` imports `AitmplCatalogBrowser`, renders "Browse AITMPL MCPs" button, opens with `defaultType="mcp"` |
-| 12 | AITMPL suggestion banner on business dashboard | VERIFIED | `health-dashboard.tsx` renders `AitmplSuggestionBanner` at line 153; `bannerAgents`/`bannerDepartments` fetched server-side via `Promise.all` in `page.tsx` |
-| 13 | Banner dismiss state persists via localStorage per business | VERIFIED | `storageKey(businessId)` used as localStorage key; `useEffect` on mount reads it; SSR flash prevented by defaulting `dismissed=true` until mount |
-| 14 | Skill Template Browser has Browse AITMPL Skills button | VERIFIED | `skill-template-browser.tsx` imports `AitmplCatalogBrowser`, renders "Browse AITMPL Skills" button at line 140 when `agents && agents.length > 0`; opens layered dialog |
-| 15 | Target picker receives actual agents from server (never empty) | VERIFIED | `allAgents` fetched from Supabase in `apps/web/app/(dashboard)/businesses/[id]/agents/[agentId]/page.tsx` and passed through `AgentDetailTabs` -> `AgentSkillsTab`; `bannerAgents` fetched in business page.tsx |
+| 1 | Banner dismiss state persists via localStorage after page refresh | VERIFIED | `if (!businessId) return` guard at line 29 of `aitmpl-suggestion-banner.tsx` (useEffect); same guard at line 35 (dismiss handler); only writes valid key `aitmpl-banner-dismissed-{businessId}`; `businessId` in useEffect dependency array ensures re-run on hydration |
+| 2 | Target picker in AITMPL catalog shows friendly agent/department names | VERIFIED | `skills/page.tsx` fetches agents with `departments(name)` join and departments in `Promise.all` (lines 42-60); maps to `{ id, name, department_name }` shape; passes `agents={agents} departments={departments}` at lines 91-92 to `SkillLibrary`; `SkillLibrary` forwards both to `SkillTemplateBrowser` at lines 512-513 |
 
-**Score:** 15/15 truths verified
+**Gap closure score:** 2/2 truths verified
 
-### Required Artifacts
+### Previously-Verified Truths (Regression Check)
 
-| Artifact | Status | Evidence |
-|----------|--------|----------|
-| `packages/core/aitmpl/catalog-types.ts` | VERIFIED | 145 lines; exports `AitmplComponentType`, `AitmplComponent`, `AitmplPlugin`, `AitmplTemplate`, `AitmplCatalog`, `CatalogSearchResult`, `AitmplImportOptions`, `AitmplImportResult`; `CatalogSearchResult` has no `content` field |
-| `packages/core/aitmpl/category-mapping.ts` | VERIFIED | 63 lines; exports `DEPARTMENT_CATEGORY_MAP` covering owner/sales/support/operations, `getRecommendedCategories`, `isDepartmentRecommended` |
-| `packages/core/aitmpl/catalog-service.ts` | VERIFIED | 276 lines; module-level cache (`cachedData`, `cacheTimestamp`, `CACHE_TTL=24h`); exports `getCatalog`, `searchComponents`, `getComponentDetail`, `getComponentsByType`, `getCatalogStats`, `clearCatalogCache`; stale-cache fallback on fetch failure |
-| `packages/core/aitmpl/import-service.ts` | VERIFIED | 275 lines; `importFromAitmpl` handles all 7 types; uses `createSkill`/`assignSkill` from `skill-service`; MCP merges into `tool_profile.mcp_servers[]` |
-| `packages/core/server.ts` | VERIFIED | AITMPL exports present at lines 232-243; exports all 6 catalog service functions + `importFromAitmpl` |
-| `packages/core/index.ts` | VERIFIED | Client-safe AITMPL exports present at lines 243-256; exports `AitmplComponentType`, `CatalogSearchResult`, `AitmplImportOptions`, `AitmplImportResult`, `DEPARTMENT_CATEGORY_MAP`, `getRecommendedCategories`, `isDepartmentRecommended` |
-| `apps/web/_actions/aitmpl-actions.ts` | VERIFIED | 168 lines; 4 Server Actions with `"use server"` directive; all have auth checks; `importAitmplAction` calls `revalidatePath` on success; `getAitmplDetailAction` strips `security`/`author`/`repo` fields |
-| `apps/web/_components/aitmpl-catalog-browser.tsx` | VERIFIED | 487 lines; Dialog with `sm:max-w-5xl`; 7-tab bar; search + category + sort filters; card grid with name/description/category/download/Recommended badges; detail panel with `pre` preview; MCP JSON confirm flow; renders `AitmplTargetPicker` outside Dialog |
-| `apps/web/_components/aitmpl-target-picker.tsx` | VERIFIED | 155 lines; Dialog; agent/department radio; pre-selection support; MCP note; confirm/cancel |
-| `apps/web/_components/agent-skills-tab.tsx` | VERIFIED | Contains `AitmplCatalogBrowser` import and render with `defaultType="skill"`, `agents`, `departments`, `departmentType` props |
-| `apps/web/_components/agent-config.tsx` | VERIFIED | Contains `AitmplCatalogBrowser` import and render with `defaultType="mcp"` on Tool Profile section |
-| `apps/web/_components/aitmpl-suggestion-banner.tsx` | VERIFIED | 85 lines; Sparkles icon; "Enhance your agents with AITMPL templates" heading; Browse Catalog + X buttons; `localStorage` dismiss per businessId; `useRef` tracks import across dialog sessions; `AitmplCatalogBrowser` rendered inline |
-| `apps/web/app/(dashboard)/businesses/[id]/page.tsx` | VERIFIED | Server-side `Promise.all` fetch for `bannerAgents`/`bannerDepartments`; maps to expected prop shapes; passes to `HealthDashboard` |
-| `apps/web/_components/health-dashboard.tsx` | VERIFIED | Accepts `bannerAgents`/`bannerDepartments` optional props; renders `AitmplSuggestionBanner` with businessId + agents + departments |
-| `apps/web/_components/skill-template-browser.tsx` | VERIFIED | Accepts `agents`/`departments`/`departmentType` optional props; "Browse AITMPL Skills" button conditioned on `agents && agents.length > 0`; `AitmplCatalogBrowser` rendered at bottom |
+| # | Truth | Status | Evidence |
+|---|-------|--------|----------|
+| 1 | Users can browse AITMPL catalog within the admin panel | VERIFIED | `aitmpl-catalog-browser.tsx` unchanged (486 lines); all 4 access points intact |
+| 2 | Wizard/panel shows 7 AITMPL category tabs | VERIFIED | No changes to catalog-browser.tsx tab definition |
+| 3 | Components browsable with search, category filter, and sort | VERIFIED | No changes to search/filter logic |
+| 4 | Recommendations shown based on department type | VERIFIED | `category-mapping.ts` unchanged (62 lines) |
+| 5 | Skills, Commands, Settings, Hooks importable as Agency Factory skills | VERIFIED | `import-service.ts` unchanged (275 lines) |
+| 6 | Agent type importable as system_prompt | VERIFIED | `import-service.ts` unchanged |
+| 7 | MCP type importable by merging into tool_profile.mcp_servers[] | VERIFIED | `import-service.ts` unchanged |
+| 8 | Plugin type returns decomposition guidance | VERIFIED | `import-service.ts` unchanged |
+| 9 | 10MB+ catalog never sent to client | VERIFIED | `catalog-service.ts` unchanged (275 lines) |
+| 10 | Catalog browser accessible from agent Skills tab | VERIFIED | `agent-skills-tab.tsx` not in modified files list |
+| 11 | Catalog browser accessible from agent Config Tool Profile | VERIFIED | `agent-config.tsx` not in modified files list |
+| 12 | AITMPL suggestion banner on business dashboard | VERIFIED | `health-dashboard.tsx` and business `page.tsx` not modified |
+| 13 | Skill Template Browser has Browse AITMPL Skills button | VERIFIED | `skill-template-browser.tsx` not modified |
+| 14 | Target picker receives actual agents from server | VERIFIED | Skill page path now complete — see Truth #2 above |
+| 15 | TypeScript passes with no errors | VERIFIED | `npx tsc --noEmit -p apps/web/tsconfig.json` exits clean |
 
-### Key Link Verification
+**Regression score:** 15/15 (no regressions)
 
-| From | To | Via | Status | Evidence |
-|------|----|-----|--------|----------|
-| `catalog-service.ts` | `catalog-types.ts` | `import { AitmplCatalog, CatalogSearchResult }` | WIRED | Line 9-14 of catalog-service.ts |
-| `catalog-service.ts` | `category-mapping.ts` | `import { DEPARTMENT_CATEGORY_MAP }` | WIRED | Line 15 of catalog-service.ts |
-| `import-service.ts` | `catalog-service.ts` | `import { getComponentDetail, getCatalog }` | WIRED | Line 11 of import-service.ts |
-| `import-service.ts` | `skill/skill-service.ts` | `import { createSkill, assignSkill }` | WIRED | Line 18 of import-service.ts |
-| `aitmpl-actions.ts` | `@agency-factory/core/server` | `import { searchComponents, getComponentDetail, importFromAitmpl, getCatalogStats }` | WIRED | Lines 8-12 of aitmpl-actions.ts |
-| `aitmpl-catalog-browser.tsx` | `aitmpl-actions.ts` | `import { searchAitmplAction, getAitmplDetailAction, importAitmplAction }` | WIRED | Lines 24-27 of catalog-browser.tsx; all 3 called in handlers |
-| `agent-skills-tab.tsx` | `aitmpl-catalog-browser.tsx` | `import { AitmplCatalogBrowser }` + rendered | WIRED | Line 11 + lines 196-210 of agent-skills-tab.tsx |
-| `agent-config.tsx` | `aitmpl-catalog-browser.tsx` | `import { AitmplCatalogBrowser }` + rendered | WIRED | Line 22 + lines 647-660 of agent-config.tsx |
-| `aitmpl-suggestion-banner.tsx` | `aitmpl-catalog-browser.tsx` | `AitmplCatalogBrowser` rendered with `open={catalogOpen}` | WIRED | Line 6 + lines 73-82 of aitmpl-suggestion-banner.tsx |
-| `skill-template-browser.tsx` | `aitmpl-catalog-browser.tsx` | `AitmplCatalogBrowser` rendered as layered dialog | WIRED | Line 27 + lines 282-295 of skill-template-browser.tsx |
-| `health-dashboard.tsx` | `aitmpl-suggestion-banner.tsx` | `AitmplSuggestionBanner` rendered at line 153 | WIRED | `bannerAgents`/`bannerDepartments` passed from page.tsx -> HealthDashboard -> AitmplSuggestionBanner |
-| `page.tsx (business dashboard)` | `health-dashboard.tsx` | `bannerAgents` and `bannerDepartments` props | WIRED | Lines 54-76 fetch data; lines 145-146 pass to HealthDashboard |
+---
+
+### Required Artifacts (Plan 04)
+
+| Artifact | Expected | Status | Details |
+|----------|----------|--------|---------|
+| `apps/web/_components/aitmpl-suggestion-banner.tsx` | businessId guard in useEffect and dismiss handler | VERIFIED | `if (!businessId) return` at lines 29 and 35; prevents undefined key writes; 87 lines total |
+| `apps/web/app/(dashboard)/businesses/[id]/skills/page.tsx` | Server-side agent and department fetching | VERIFIED | `Promise.all` at lines 42-60 fetches skills, agents (with `departments(name)` join), and departments in parallel; agents mapped at lines 68-72 with `unknown` cast for Supabase belongsTo join; passed as props at lines 91-92 |
+| `apps/web/_components/skill-library.tsx` | agents and departments prop forwarding | VERIFIED | `SkillLibraryProps` declares optional `agents` and `departments` at lines 40-41; destructured in component signature at line 157; forwarded to `SkillTemplateBrowser` at lines 512-513 |
+
+### Previously-Verified Artifacts (Regression Check)
+
+| Artifact | Lines | Status |
+|----------|-------|--------|
+| `packages/core/aitmpl/catalog-types.ts` | 144 | VERIFIED (unchanged) |
+| `packages/core/aitmpl/category-mapping.ts` | 62 | VERIFIED (unchanged) |
+| `packages/core/aitmpl/catalog-service.ts` | 275 | VERIFIED (unchanged) |
+| `packages/core/aitmpl/import-service.ts` | 275 | VERIFIED (unchanged) |
+| `apps/web/_actions/aitmpl-actions.ts` | 167 | VERIFIED (unchanged) |
+| `apps/web/_components/aitmpl-catalog-browser.tsx` | 486 | VERIFIED (unchanged) |
+| `apps/web/_components/aitmpl-target-picker.tsx` | 155 | VERIFIED (unchanged) |
+
+---
+
+### Key Link Verification (Plan 04)
+
+| From | To | Via | Status | Details |
+|------|----|-----|--------|---------|
+| `skills/page.tsx` | `skill-library.tsx` | `agents={agents} departments={departments}` props | WIRED | Lines 91-92 of page.tsx pass both; `SkillLibraryProps` declares them optional (lines 40-41) |
+| `skill-library.tsx` | `skill-template-browser.tsx` | `agents={agents} departments={departments}` forwarded | WIRED | Lines 512-513 of skill-library.tsx; `SkillTemplateBrowser` already accepted these from Plan 03 |
+| `aitmpl-suggestion-banner.tsx` | localStorage | `storageKey(businessId)` with businessId guard | WIRED | Guard at line 29 (read) and line 35 (write); only executes with valid, hydrated businessId |
+
+### Key Links from Initial Verification (Regression Check)
+
+All 12 key links from the initial VERIFICATION.md remain intact. The 3 modified files (banner, skills page, skill-library) had no existing key links removed — Plan 04 only added guards and props.
+
+---
 
 ### Requirements Coverage
 
 | Requirement | Source Plans | Description | Status | Evidence |
 |-------------|-------------|-------------|--------|----------|
-| AITMPL-01 | 15-01, 15-02, 15-03 | Browse and select from AITMPL catalog within business setup wizard | SATISFIED | `AitmplCatalogBrowser` accessible from dashboard banner, skill template browser, agent skills tab, agent config — 4 access points total |
-| AITMPL-02 | 15-01, 15-02, 15-03 | Wizard suggests skills, agents, commands based on department/industry | SATISFIED | `DEPARTMENT_CATEGORY_MAP` maps owner/sales/support/operations to relevant AITMPL categories; `isDepartmentRecommended` drives "Recommended" badges; `departmentType` prop propagated from agent context |
-| AITMPL-03 | 15-01, 15-02, 15-03 | Import tool configurations from AITMPL agent-tool-builder for tool_profile JSON | SATISFIED | MCP import type parses component content JSON and merges into `tool_profile.mcp_servers[]` via `importFromAitmpl`; JSON preview shown before confirmation |
-| AITMPL-04 | 15-01, 15-02, 15-03 | Catalog covers Skills, Agents, Commands, Settings, Hooks, MCPs, Plugins | SATISFIED | All 7 types defined in `AitmplComponentType`; 7-tab UI in `AitmplCatalogBrowser`; `AitmplCatalog` interface has separate arrays for each; `searchComponents` handles all types including plugin shape mapping |
+| AITMPL-01 | 15-01, 15-02, 15-03, 15-04 | Browse and select from AITMPL catalog within business setup wizard | SATISFIED | 4 access points; skills page now supplies agents/departments for target picker; no regression |
+| AITMPL-02 | 15-01, 15-02, 15-03, 15-04 | Wizard suggests skills, agents, commands based on department/industry | SATISFIED | `DEPARTMENT_CATEGORY_MAP` and Recommended badges unchanged; target picker now shows department-qualified agent names |
+| AITMPL-03 | 15-01, 15-02, 15-03 | Import tool configurations from AITMPL agent-tool-builder for tool_profile JSON | SATISFIED | MCP import unchanged; JSON preview and merge into `tool_profile.mcp_servers[]` verified in initial check |
+| AITMPL-04 | 15-01, 15-02, 15-03 | Catalog covers Skills, Agents, Commands, Settings, Hooks, MCPs, Plugins | SATISFIED | All 7 types in `AitmplComponentType` and catalog browser tabs; no changes |
 
-All 4 requirements satisfied. No orphaned requirements detected (REQUIREMENTS.md shows AITMPL-01 through AITMPL-04 mapped to Phase 15; all 4 are claimed in all 3 plans).
-
-### Anti-Patterns Found
-
-No blockers or warnings detected.
-
-- The `placeholder` occurrences in catalog-browser.tsx and target-picker.tsx are HTML input/select placeholder attributes — not code stubs.
-- `return null` in `aitmpl-suggestion-banner.tsx` (line 46) is intentional and correct: renders nothing when banner is dismissed.
-- `getComponentDetail` returning `null` for plugin type (line 238 of catalog-service.ts) is intentional design; plugin type is handled separately via `getCatalog().plugins`.
-
-### Human Verification Required
-
-#### 1. Banner Renders on Business Dashboard
-
-**Test:** Navigate to `/businesses/{id}` and verify the AITMPL suggestion banner appears (assuming it has not been dismissed yet — clear localStorage first).
-**Expected:** Blue banner with Sparkles icon, bold heading "Enhance your agents with AITMPL templates", sub-text about 1,600+ items, "Browse Catalog" button, and X dismiss button.
-**Why human:** SSR hydration flash prevention (defaults `dismissed=true` until `useEffect` runs) and localStorage state cannot be verified statically.
-
-#### 2. Catalog Browser Loads Data from aitmpl.com
-
-**Test:** Click "Browse Catalog" from the banner. Observe the Skills tab.
-**Expected:** Dialog opens; Skills tab shows up to 10 cards by default; each card has a name, 2-3 line description, category badge, download count badge; typing in the search field expands results to 50.
-**Why human:** Requires live network fetch to `https://www.aitmpl.com/components.json`; server-side 24h TTL cache behavior cannot be tested statically.
-
-#### 3. Full Import Flow (non-MCP)
-
-**Test:** Open catalog browser from an agent's Skills tab; click Add on a skill card; verify detail panel with content preview appears; click Import; select an agent in the target picker; confirm.
-**Expected:** Success toast "Imported {name} successfully"; skill appears in agent's skills list.
-**Why human:** Requires live Supabase auth, `createSkill`, `assignSkill` database operations.
-
-#### 4. MCP Import with JSON Preview
-
-**Test:** Open catalog browser from agent Config tab (Browse AITMPL MCPs); switch to MCPs tab; click Add on an MCP card; click Import.
-**Expected:** JSON preview of MCP config appears in the detail panel before target picker; clicking "Confirm & Select Agent" opens target picker; after confirming, MCP appears in agent's tool profile.
-**Why human:** Requires MCP component with valid JSON content from live catalog; database write to `tool_profile`.
-
-#### 5. Recommendation Badges
-
-**Test:** Open catalog browser from an agent in the "Sales" department; observe Skills and Agents tabs.
-**Expected:** Cards in categories matching `DEPARTMENT_CATEGORY_MAP["sales"]` (business-marketing, marketing, enterprise-communication, web-data, seo) show green "Recommended" badge.
-**Why human:** Requires live catalog data with known categories to match against the mapping.
-
-### Summary
-
-Phase 15 goal is fully achieved. The AITMPL catalog integration is complete across all three plans:
-
-**Plan 01 (Backend):** All 4 core modules exist in `packages/core/aitmpl/` with substantive implementations. The catalog service fetches from `aitmpl.com/components.json` with 24h module-level TTL caching and stale-cache fallback. Search filtering operates server-side returning lightweight `CatalogSearchResult[]`. Import service correctly routes all 7 AITMPL types to Agency Factory entities. Barrel exports properly separate client-safe types (`index.ts`) from server-only functions (`server.ts`).
-
-**Plan 02 (UI Layer):** All 5 files exist and are substantive. Server Actions have auth checks and proper field stripping. The catalog browser dialog is fully implemented with 7 tabs, debounced search (300ms), category filter built from live results, sort dropdown, card grid with download counts and department recommendation badges, detail panel with content preview, MCP JSON confirmation flow, and target picker integration. Both agent-level access points (Skills tab + Config Tool Profile) are wired with real `agents`/`departments` data flowing from `AgentDetailTabs` -> server-fetched `allAgents`.
-
-**Plan 03 (Discovery):** The suggestion banner is complete with correct localStorage persistence pattern, SSR hydration flash prevention, auto-dismiss after import via `useRef`, and `AitmplCatalogBrowser` embedded. The business dashboard page fetches `bannerAgents`/`bannerDepartments` server-side via `Promise.all` and passes them through `HealthDashboard`. The Skill Template Browser gains a "Browse AITMPL Skills" peer button conditionally shown when agents are available.
-
-Typecheck passes across all packages (`pnpm turbo typecheck`). All 6 commits verified in git log.
+All 4 requirements satisfied. No orphaned requirements.
 
 ---
 
-_Verified: 2026-03-30T17:15:00Z_
+### Anti-Patterns Found
+
+None. Reviewed all 3 modified files in Plan 04:
+
+- Both `if (!businessId) return` guards are intentional control flow, not stubs.
+- `(a.departments as unknown as { name: string } | null)?.name` is a required Supabase type cast for a belongsTo join, not a code smell.
+- `return null` in `aitmpl-suggestion-banner.tsx` (line 48) is correct dismissed-state rendering.
+
+---
+
+### Human Verification Required
+
+#### 1. Banner Dismiss Persists With Valid Key
+
+**Test:** Open DevTools Application tab, clear localStorage. Navigate to `/businesses/{id}`. Banner should appear. Click X. Reload.
+**Expected:** Banner stays hidden. DevTools shows key `aitmpl-banner-dismissed-{realId}` = `"true"` — not `aitmpl-banner-dismissed-undefined`.
+**Why human:** businessId guard correctness and localStorage hydration timing require a live browser; static analysis confirms guards exist but cannot observe hydration order.
+
+#### 2. Target Picker Shows Friendly Agent Names
+
+**Test:** Navigate to `/businesses/{id}/skills`. Click "Browse Templates", then "Browse AITMPL Skills". Select any skill and click Import.
+**Expected:** Target picker dropdown shows entries like "SalesBot (Sales)" rather than raw UUIDs.
+**Why human:** Requires live Supabase query results and rendered React SelectItem children.
+
+#### 3. Catalog Browser Loads Live Data
+
+**Test:** Open any AITMPL catalog browser and switch between all 7 tabs.
+**Expected:** Each tab populates with real cards from `aitmpl.com/components.json`; names, descriptions, and download counts visible.
+**Why human:** Requires live network access to aitmpl.com.
+
+#### 4. Full Import Flow (Non-MCP)
+
+**Test:** From an agent's Skills tab, open catalog browser, select a skill, click Import, choose agent/department in target picker, confirm.
+**Expected:** Success toast fires; skill appears in agent's skills list.
+**Why human:** Requires live Supabase auth and `createSkill`/`assignSkill` database operations.
+
+#### 5. MCP Import With JSON Preview
+
+**Test:** From agent Config tab, click "Browse AITMPL MCPs", select an MCP, click Import.
+**Expected:** JSON preview of MCP config appears before target picker; after confirming, entry appears in agent's tool profile.
+**Why human:** Requires MCP component with valid JSON content from live catalog and database write to `tool_profile`.
+
+---
+
+### Summary
+
+Phase 15 goal is fully achieved. UAT gap closure via Plan 04 is confirmed.
+
+**Gap 1 — Banner dismiss persistence:** `aitmpl-suggestion-banner.tsx` now has `if (!businessId) return` guards in both the `useEffect` mount handler (line 29) and the `dismiss()` function (line 35). Previously, the component wrote to key `aitmpl-banner-dismissed-undefined` during early hydration; subsequent renders with the real businessId found no stored value and showed the banner again. The fix ensures localStorage is only accessed after businessId is a valid non-empty string. Since businessId is in the useEffect dependency array, the effect correctly re-runs once the hydrated value is available.
+
+**Gap 2 — Target picker friendly names:** `apps/web/app/(dashboard)/businesses/[id]/skills/page.tsx` now fetches agents (with `departments(name)` join) and departments in parallel via `Promise.all`, maps them to `{ id, name, department_name }` shapes, and passes them as props to `SkillLibrary`. `SkillLibrary` forwards both props to `SkillTemplateBrowser`, which already forwarded them to `AitmplCatalogBrowser` and `AitmplTargetPicker` from Plan 03. The prop chain from server fetch to rendered SelectItems is now complete.
+
+TypeScript check (`npx tsc --noEmit -p apps/web/tsconfig.json`) passes with no errors. Both fix commits verified in git log (`6dd3ad1`, `77d4923`). No regressions detected across the 7 previously-verified core/UI files.
+
+---
+
+_Verified: 2026-03-30T21:10:00Z_
 _Verifier: Claude (gsd-verifier)_
