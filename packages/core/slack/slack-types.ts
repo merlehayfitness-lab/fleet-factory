@@ -9,6 +9,7 @@ export interface SlackInstallation {
   slackTeamName: string | null;
   botUserId: string;
   installedAt: string;
+  authedUserId?: string | null;
 }
 
 /** A mapping between a Slack channel and a department (or sub-agent) */

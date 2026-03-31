@@ -89,10 +89,14 @@ export function SlackConnectCard({
     );
 
     let elapsed = 0;
+    let resolved = false;
     pollRef.current = setInterval(async () => {
+      if (resolved) return;
       elapsed += 1000;
       const statusResult = await getSlackStatusAction(businessId);
       if ("status" in statusResult && statusResult.status.connected) {
+        if (resolved) return;
+        resolved = true;
         if (pollRef.current) {
           clearInterval(pollRef.current);
           pollRef.current = null;
@@ -107,6 +111,8 @@ export function SlackConnectCard({
         return;
       }
       if (elapsed >= 60000) {
+        if (resolved) return;
+        resolved = true;
         if (pollRef.current) {
           clearInterval(pollRef.current);
           pollRef.current = null;

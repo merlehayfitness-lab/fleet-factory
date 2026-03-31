@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
   try {
     // Exchange code for token and create installation
-    await handleSlackOAuthCallback(supabase, code, businessId);
+    const installation = await handleSlackOAuthCallback(supabase, code, businessId);
 
     // Auto-create department channels after successful installation
     try {
@@ -51,7 +51,8 @@ export async function GET(request: NextRequest) {
           .single();
 
         const slug = (business?.slug as string) ?? "biz";
-        await createDepartmentChannels(client, supabase, businessId, slug);
+        // Pass the installing user's Slack ID so they auto-join all channels
+        await createDepartmentChannels(client, supabase, businessId, slug, installation.authedUserId);
       }
     } catch (channelErr) {
       // Channel creation failure is non-fatal -- installation succeeded
@@ -65,8 +66,14 @@ export async function GET(request: NextRequest) {
     );
   } catch (err) {
     console.error("Slack OAuth callback failed:", err);
+    const errMsg = err instanceof Error ? err.message : "Unknown error";
+    // Check for duplicate team constraint
+    const isDuplicate = errMsg.includes("slack_installations_slack_team_id_key") || errMsg.includes("duplicate key");
+    const userMessage = isDuplicate
+      ? "This Slack workspace is already connected to another business. Disconnect it there first, or use a different workspace."
+      : `Connection failed: ${errMsg}`;
     return new NextResponse(
-      `<html><body><script>window.close();</script><p>Connection failed. You can close this window and try again.</p></body></html>`,
+      `<html><body style="font-family:system-ui;padding:40px;text-align:center"><h2 style="color:#dc2626">Connection Failed</h2><p>${userMessage}</p><p style="margin-top:20px"><button onclick="window.close()" style="padding:8px 16px;cursor:pointer">Close</button></p></body></html>`,
       { headers: { "Content-Type": "text/html" } },
     );
   }

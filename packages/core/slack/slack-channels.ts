@@ -38,6 +38,25 @@ async function createChannelWithFallback(
   } catch (error: unknown) {
     const slackError = error as { data?: { error?: string } };
     if (slackError?.data?.error === "name_taken") {
+      // Find the existing channel by name and reuse it
+      const existing = await findChannelByName(client, channelName);
+      if (existing) {
+        // Unarchive if needed, then join
+        if (existing.archived) {
+          try {
+            await client.conversations.unarchive({ channel: existing.id });
+          } catch {
+            // May fail if not archived or lack permissions — continue anyway
+          }
+        }
+        try {
+          await client.conversations.join({ channel: existing.id });
+        } catch {
+          // Bot may already be a member
+        }
+        return { channelId: existing.id, channelName: existing.name };
+      }
+      // Channel exists but couldn't be found (e.g. private) — fall back to suffix
       const suffixed = `${channelName}-${Date.now().toString(36)}`.slice(0, 80);
       const result = await client.conversations.create({
         name: suffixed,
@@ -53,6 +72,36 @@ async function createChannelWithFallback(
 }
 
 /**
+ * Find a public channel by exact name.
+ * Uses conversations.list with a type filter since Slack has no direct name lookup.
+ */
+async function findChannelByName(
+  client: WebClient,
+  name: string,
+): Promise<{ id: string; name: string; archived: boolean } | null> {
+  let cursor: string | undefined;
+  do {
+    const result = await client.conversations.list({
+      types: "public_channel",
+      exclude_archived: false,
+      limit: 200,
+      cursor,
+    });
+    for (const ch of result.channels ?? []) {
+      if (ch.name === name && ch.id) {
+        return {
+          id: ch.id,
+          name: ch.name,
+          archived: ch.is_archived ?? false,
+        };
+      }
+    }
+    cursor = result.response_metadata?.next_cursor || undefined;
+  } while (cursor);
+  return null;
+}
+
+/**
  * Create Slack channels for all departments in a business.
  * Creates one channel per department (name: {slug}-{dept-type})
  * and one sub-channel per sub-agent (name: {slug}-{dept-type}-{agent-slug}).
@@ -63,6 +112,7 @@ export async function createDepartmentChannels(
   supabase: SupabaseClient,
   businessId: string,
   businessSlug: string,
+  inviteUserId?: string | null,
 ): Promise<SlackChannelMapping[]> {
   // Fetch all departments for this business
   const { data: departments, error: deptError } = await supabase
@@ -84,6 +134,18 @@ export async function createDepartmentChannels(
     // Create main department channel
     const channelName = sanitizeChannelName(`${businessSlug}-${deptType}`);
     const channel = await createChannelWithFallback(client, channelName);
+
+    // Auto-invite the installing user to the channel
+    if (inviteUserId) {
+      try {
+        await client.conversations.invite({
+          channel: channel.channelId,
+          users: inviteUserId,
+        });
+      } catch {
+        // User may already be a member or invite may fail — non-fatal
+      }
+    }
 
     // Save department-level mapping (agent_id = NULL)
     const deptMapping = await saveChannelMapping(supabase, {
@@ -108,6 +170,18 @@ export async function createDepartmentChannels(
         const agentSlug = sanitizeChannelName(subAgent.role as string || subAgent.name as string);
         const subChannelName = sanitizeChannelName(`${businessSlug}-${deptType}-${agentSlug}`);
         const subChannel = await createChannelWithFallback(client, subChannelName);
+
+        // Auto-invite the installing user to sub-agent channels too
+        if (inviteUserId) {
+          try {
+            await client.conversations.invite({
+              channel: subChannel.channelId,
+              users: inviteUserId,
+            });
+          } catch {
+            // Non-fatal
+          }
+        }
 
         const subMapping = await saveChannelMapping(supabase, {
           businessId,

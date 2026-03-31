@@ -99,63 +99,63 @@ export function IntegrationConfigCard({
     <>
       <Card className="transition-colors hover:bg-accent/30">
         <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between gap-2">
             {isDepartmentLevel ? (
-              <div className="flex items-center gap-1.5 text-sm font-medium">
+              <div className="flex items-center gap-1.5 text-sm font-medium shrink-0">
                 <Building2 className="size-3.5 text-muted-foreground" />
                 <span>Department: {departmentName}</span>
               </div>
             ) : (
               <Link
                 href={`/businesses/${businessId}/agents/${agentId}`}
-                className="text-sm font-medium underline-offset-4 hover:underline"
+                className="text-sm font-medium underline-offset-4 hover:underline shrink-0"
               >
                 {agentName}
               </Link>
             )}
-            <div className="flex items-center gap-1.5">
-              {onConfigure && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground"
-                  onClick={() => onConfigure(integration.provider)}
-                >
-                  <Settings2 className="size-3" />
-                  Configure
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground"
-                onClick={() => setSetupOpen(true)}
-              >
-                <BookOpen className="size-3" />
-                View Setup
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-1.5 text-muted-foreground hover:text-destructive"
-                onClick={async () => {
-                  if (!window.confirm(`Delete "${displayName}" integration?`)) return;
-                  await deleteIntegrationAction(businessId, integration.id);
-                }}
-              >
-                <Trash2 className="size-3" />
-              </Button>
-              <Badge
-                variant="outline"
-                className={statusColor(integration.status)}
-              >
-                {integration.status}
-              </Badge>
-            </div>
+            <Badge
+              variant="outline"
+              className={`shrink-0 ${statusColor(integration.status)}`}
+            >
+              {integration.status}
+            </Badge>
           </div>
           <CardTitle className="text-xs font-normal text-muted-foreground">
             {displayName}
           </CardTitle>
+          <div className="flex items-center gap-1 pt-1">
+            {onConfigure && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground"
+                onClick={() => onConfigure(integration.provider)}
+              >
+                <Settings2 className="size-3" />
+                Configure
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground"
+              onClick={() => setSetupOpen(true)}
+            >
+              <BookOpen className="size-3" />
+              View Setup
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-1.5 text-muted-foreground hover:text-destructive"
+              onClick={async () => {
+                if (!window.confirm(`Delete "${displayName}" integration?`)) return;
+                await deleteIntegrationAction(businessId, integration.id);
+              }}
+            >
+              <Trash2 className="size-3" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {/* Capabilities chips */}

@@ -126,6 +126,7 @@ export async function handleSlackOAuthCallback(
   const teamId = oauthResult.team?.id;
   const teamName = oauthResult.team?.name;
   const botUserId = oauthResult.bot_user_id;
+  const authedUserId = oauthResult.authed_user?.id ?? null;
 
   if (!botToken || !teamId || !botUserId) {
     throw new Error("Slack OAuth response missing required fields (access_token, team.id, bot_user_id)");
@@ -177,6 +178,7 @@ export async function handleSlackOAuthCallback(
     slackTeamName: (installation.slack_team_name as string) ?? null,
     botUserId: installation.bot_user_id as string,
     installedAt: installation.installed_at as string,
+    authedUserId: authedUserId,
   };
 }
 
