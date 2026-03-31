@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 15 UAT gap closure complete
+**Current focus:** Phase 17 UAT approved — Milestone 1 complete
 
 ## Current Position
 
 Phase: 17 of 17 (VPS Activation & Embedded Terminal)
 Plan: 3 of 3 in current phase (3 complete)
-Status: Phase complete
-Last activity: 2026-03-30 -- Completed 15-04-PLAN.md (UAT Gap Closure)
+Status: Phase 17 UAT approved
+Last activity: 2026-03-31 -- Phase 17 UAT approved (VPS-TERM-02, 03, 04 passed; 01, 05 blocked on OpenClaw)
 
 Progress: [███████████████████████████████████] 100% (54/54 plans)
 
@@ -336,6 +336,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-30
-Stopped at: Completed 15-04-PLAN.md (UAT Gap Closure) -- Phase 15 UAT gaps closed
-Resume file: .planning/phases/15-aitmpl-template-catalog/15-04-SUMMARY.md
+Last session: 2026-03-31
+Stopped at: Phase 17 UAT approved -- all v1 milestone phases complete
+Resume file: .planning/phases/17-vps-activation-embedded-terminal/17-VERIFICATION.md

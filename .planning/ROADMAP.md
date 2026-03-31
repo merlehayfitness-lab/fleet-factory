@@ -321,12 +321,12 @@ These are post-MVP capabilities identified during the Phase 1-8 build. They are 
 
 ### v2 Themes
 
-**Theme 0: VPS Activation (Phase 6 Intentional Gap)**
-- Remove TODO stubs in `infra/vps/api-routes.ts` — Claude Code optimization (Step 3), container management (Step 4), real chat/task routing
-- Run `infra/vps/setup.sh` on Hostinger VPS, configure OpenClaw, start systemd service
-- Bootstrap Claude Code with `infra/vps/bootstrap-prompt.md` so agents run in real Docker containers
-- Sync `infra/vps/api-types.ts` with `packages/core/vps/vps-types.ts` if either has drifted
-- End state: admin app deploys to real VPS agents, chat/tasks hit live OpenClaw containers instead of stubs
+**Theme 0: VPS Activation (Phase 6 Intentional Gap)** ✅ *Completed in Phase 17*
+- ~~Remove TODO stubs in `infra/vps/api-routes.ts`~~ Done: all 6 stubs replaced with real Docker/OpenClaw implementations
+- ~~Run `infra/vps/setup.sh` on Hostinger VPS~~ Done: setup script tested, proxy running
+- ~~Bootstrap Claude Code~~ Blocked: OpenClaw not yet available on npm
+- ~~Embedded SSH terminal~~ Done: xterm.js + ssh2 bridge, accessible from dashboard
+- Remaining: OpenClaw availability for live agent chat/task routing
 
 **Theme A: Client-Facing Portal**
 - Self-serve business onboarding wizard (business owners sign up and provision their own workspace)
@@ -355,6 +355,15 @@ These are post-MVP capabilities identified during the Phase 1-8 build. They are 
 - Industry-specific template packs (lawn care, real estate, e-commerce, etc.)
 - Deep third-party integrations (replace mock adapters with real CRM, email, helpdesk connectors)
 - Marketplace for community-contributed agent templates
+
+**Theme F: One-Click VPS Provisioning**
+- One-click VPS setup per business from the admin panel (no SSH required)
+- Auto-provision `/data/tenants/{slug}/` directory structure on VPS during business creation
+- Auto-spin Docker containers for each department's agents
+- Auto-configure OpenClaw sessions for each agent
+- Integrated into the business creation wizard or as a "Deploy to VPS" button on the dashboard
+- Per-business VPS terminal isolation with pre-populated workspace
+- Status: replaces manual `setup.sh` + SSH workflow with a fully automated UI-driven flow
 
 ---
 
