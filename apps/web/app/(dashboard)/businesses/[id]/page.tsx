@@ -135,12 +135,17 @@ export default async function BusinessPage({
     ),
   };
 
+  // If VPS is configured but DB has no status row yet, provide a placeholder
+  // so the Terminal icon renders immediately
+  const vpsConfigured = !!(process.env.VPS_API_URL && process.env.VPS_API_KEY);
+  const effectiveVpsStatus = health.vpsStatus ?? (vpsConfigured ? { status: "checking", lastCheckedAt: new Date().toISOString() } : null);
+
   return (
     <HealthDashboard
       business={business}
       initialHealth={health}
       usageSummary={usageSummary}
-      vpsStatus={health.vpsStatus}
+      vpsStatus={effectiveVpsStatus}
       vpsWarning={vpsWarning}
       bannerAgents={agentsForBanner}
       bannerDepartments={departmentsForBanner}

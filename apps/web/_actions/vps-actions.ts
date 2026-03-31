@@ -24,11 +24,15 @@ export async function checkVpsHealthAction() {
 
   try {
     const healthResult = await checkVpsHealth();
-    // Persist the health status to the database
-    await updateVpsStatus(supabase, {
-      status: healthResult.status,
-      details: healthResult.details as Record<string, unknown> | undefined,
-    });
+    // Persist the health status to the database (best-effort, don't fail if DB write errors)
+    try {
+      await updateVpsStatus(supabase, {
+        status: healthResult.status,
+        details: healthResult.details as Record<string, unknown> | undefined,
+      });
+    } catch {
+      // DB write failed (e.g., RLS policy) -- continue with the health result
+    }
     return {
       status: healthResult.status,
       lastCheckedAt: healthResult.timestamp,
