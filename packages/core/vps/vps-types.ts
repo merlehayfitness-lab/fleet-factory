@@ -75,6 +75,14 @@ export interface VpsChatRequest {
   metadata?: Record<string, unknown>;
 }
 
+/** Token usage from VPS agent response */
+export interface VpsTokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  model?: string;
+}
+
 /** Chat response from VPS agent */
 export interface VpsChatResponse {
   content: string;
@@ -85,6 +93,7 @@ export interface VpsChatResponse {
     inputs?: Record<string, unknown>;
     outputs?: Record<string, unknown>;
   }>;
+  tokenUsage?: VpsTokenUsage;
 }
 
 /** Async chat submit response from VPS (returned immediately) */
@@ -97,7 +106,9 @@ export interface AsyncChatSubmitResponse {
 export interface AsyncChatPollResponse {
   requestId: string;
   status: "processing" | "complete" | "failed";
-  result?: VpsChatResponse;
+  result?: VpsChatResponse & {
+    tokenUsage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number; model?: string } | null;
+  };
   error?: string;
 }
 
