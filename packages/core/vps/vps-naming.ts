@@ -17,3 +17,33 @@ export function deriveVpsAgentId(
   const prefix = agentId.replace(/-/g, "").slice(0, 8);
   return `${businessSlug}-${departmentType}-${prefix}`;
 }
+
+/**
+ * Parse a vpsAgentId back into its components.
+ * Format: {businessSlug}-{departmentType}-{agentIdPrefix}
+ *
+ * The agentIdPrefix is always exactly 8 alphanumeric chars (from UUID).
+ * The departmentType is always a single word (no hyphens).
+ * The businessSlug can contain hyphens.
+ *
+ * Returns null if the ID doesn't match the expected format.
+ */
+export function parseVpsAgentId(vpsAgentId: string): {
+  businessSlug: string;
+  departmentType: string;
+  agentIdPrefix: string;
+} | null {
+  const parts = vpsAgentId.split("-");
+  // Need at least 3 parts: slug (1+), dept (1), prefix (1)
+  if (parts.length < 3) return null;
+
+  const agentIdPrefix = parts[parts.length - 1];
+  const departmentType = parts[parts.length - 2];
+  const businessSlug = parts.slice(0, -2).join("-");
+
+  // Validate prefix is 8 alphanumeric chars
+  if (!/^[a-f0-9]{8}$/i.test(agentIdPrefix)) return null;
+  if (!businessSlug || !departmentType) return null;
+
+  return { businessSlug, departmentType, agentIdPrefix };
+}

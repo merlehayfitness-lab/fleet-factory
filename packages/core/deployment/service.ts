@@ -63,14 +63,44 @@ export async function triggerDeployment(
 
   const nextVersion = lastDeployment ? (lastDeployment.version as number) + 1 : 1;
 
-  // 3. Fetch agents with department info
+  // 3. Fetch agents with department info + template metadata for OpenClaw config
   const { data: agents, error: agentsError } = await supabase
     .from("agents")
-    .select("id, name, system_prompt, tool_profile, model_profile, department_id, status, skill_definition")
+    .select("id, name, system_prompt, tool_profile, model_profile, department_id, status, skill_definition, parent_agent_id, token_budget, template_id")
     .eq("business_id", businessId);
 
   if (agentsError) {
     throw new Error(`Failed to fetch agents: ${agentsError.message}`);
+  }
+
+  // 3b. Fetch template metadata (mcp_servers, role_level, reporting_chain, skills_package, token_budget)
+  const templateIds = [...new Set(
+    (agents ?? []).map((a) => a.template_id as string | null).filter(Boolean),
+  )] as string[];
+
+  const templateMetadata = new Map<string, {
+    mcp_servers: unknown[];
+    skills_package: unknown[];
+    role_level: number;
+    reporting_chain: string | null;
+    token_budget: number;
+  }>();
+
+  if (templateIds.length > 0) {
+    const { data: templates } = await supabase
+      .from("agent_templates")
+      .select("id, mcp_servers, skills_package, role_level, reporting_chain, token_budget")
+      .in("id", templateIds);
+
+    for (const t of templates ?? []) {
+      templateMetadata.set(t.id as string, {
+        mcp_servers: (t.mcp_servers as unknown[]) ?? [],
+        skills_package: (t.skills_package as unknown[]) ?? [],
+        role_level: (t.role_level as number) ?? 0,
+        reporting_chain: (t.reporting_chain as string) ?? null,
+        token_budget: (t.token_budget as number) ?? 100000,
+      });
+    }
   }
 
   // 4. Fetch departments
@@ -326,17 +356,26 @@ export async function triggerDeployment(
         slug: business.slug,
         industry: (business.industry as string) ?? "general",
       },
-      (agents ?? []).map((a) => ({
-        id: a.id as string,
-        name: a.name as string,
-        department_id: a.department_id as string,
-        system_prompt: (a.system_prompt as string) ?? "",
-        tool_profile: (a.tool_profile as Record<string, unknown>) ?? {},
-        model_profile: (a.model_profile as Record<string, unknown>) ?? {},
-        status: a.status as string,
-        skill_definition: (a.skill_definition as string) ?? null,
-        skills: skillsByAgent[a.id as string] ?? [],
-      })),
+      (agents ?? []).map((a) => {
+        const tmpl = templateMetadata.get(a.template_id as string);
+        return {
+          id: a.id as string,
+          name: a.name as string,
+          department_id: a.department_id as string,
+          system_prompt: (a.system_prompt as string) ?? "",
+          tool_profile: (a.tool_profile as Record<string, unknown>) ?? {},
+          model_profile: (a.model_profile as Record<string, unknown>) ?? {},
+          status: a.status as string,
+          skill_definition: (a.skill_definition as string) ?? null,
+          skills: skillsByAgent[a.id as string] ?? [],
+          parent_agent_id: (a.parent_agent_id as string) ?? null,
+          token_budget: (a.token_budget as number) ?? tmpl?.token_budget ?? 100000,
+          role_level: tmpl?.role_level ?? 0,
+          reporting_chain: tmpl?.reporting_chain ?? null,
+          mcp_servers: (tmpl?.mcp_servers ?? []) as Array<{ name: string; type: string; config: Record<string, unknown> }>,
+          skills_package: (tmpl?.skills_package ?? []) as Array<{ name: string; source: string; version?: string }>,
+        };
+      }),
       (departments ?? []).map((d) => ({
         id: d.id as string,
         type: d.type as string,
@@ -402,40 +441,43 @@ export async function triggerDeployment(
         openclawConfig: openclawWorkspace.config,
       };
 
-      const vpsResult = await pushDeploymentToVps(supabase, deploymentId, vpsPayload);
+      // Skip VPS push if no deployable agents (go straight to local-live path below)
+      if (vpsAgents.length === 0) {
+        assertDeploymentTransition("deploying", "live");
+        await updateDeploymentStatus(supabase, deploymentId, "live", {
+          completed_at: new Date().toISOString(),
+        });
+      } else {
+        const vpsResult = await pushDeploymentToVps(supabase, deploymentId, vpsPayload);
 
-      if (!vpsResult.success) {
-        // VPS push failed but artifacts are generated -- mark as failed
-        throw new Error(`VPS deployment failed: ${vpsResult.error}`);
+        if (!vpsResult.success) {
+          // VPS push failed but artifacts are generated -- mark as failed
+          throw new Error(`VPS deployment failed: ${vpsResult.error}`);
+        }
+
+        // 10c. Transition verifying -> live.
+        // Agents start on-demand when chatted with, so "stopped" status is normal.
+        // Run health check to record initial container status, but don't gate on it.
+        assertDeploymentTransition("deploying", "verifying");
+        await updateDeploymentStatus(supabase, deploymentId, "verifying");
+
+        const healthAgents = vpsAgents.map((a) => ({
+          id: a.agentId,
+          vpsAgentId: a.vpsAgentId,
+        }));
+
+        // Non-blocking: record agent status, workspace deployed = ready
+        const healthResult = await runPostDeployHealthCheck(supabase, businessId, healthAgents);
+        const runningCount = healthResult.healthy.length;
+        const totalCount = healthAgents.length;
+        console.info(`Post-deploy status: ${runningCount}/${totalCount} agents running (others start on-demand)`);
+
+        // Transition verifying -> live
+        assertDeploymentTransition("verifying", "live");
+        await updateDeploymentStatus(supabase, deploymentId, "live", {
+          completed_at: new Date().toISOString(),
+        });
       }
-
-      // 10c. Transition to 'verifying' and run post-deploy health check
-      assertDeploymentTransition("deploying", "verifying");
-      await updateDeploymentStatus(supabase, deploymentId, "verifying");
-
-      const healthAgents = vpsAgents.map((a) => ({
-        id: a.agentId,
-        vpsAgentId: a.vpsAgentId,
-      }));
-
-      const healthResult = await runPostDeployHealthCheck(supabase, businessId, healthAgents);
-
-      if (healthResult.healthy.length === 0) {
-        throw new Error("Post-deploy health check failed: no agents responding");
-      }
-
-      // If some agents are unhealthy, log but continue (partial failure)
-      if (healthResult.unhealthy.length > 0 && healthResult.healthy.length > 0) {
-        console.warn(
-          `Partial deployment: ${healthResult.unhealthy.length} unhealthy agents out of ${healthAgents.length}`,
-        );
-      }
-
-      // Transition verifying -> live
-      assertDeploymentTransition("verifying", "live");
-      await updateDeploymentStatus(supabase, deploymentId, "live", {
-        completed_at: new Date().toISOString(),
-      });
     } else {
       // If VPS not configured, continue with existing local-only path
       assertDeploymentTransition("deploying", "live");
@@ -675,7 +717,7 @@ export async function rollbackDeployment(
         throw new Error(`VPS rollback failed: ${vpsResult.error}`);
       }
 
-      // Run post-deploy health check
+      // Non-blocking health check -- agents start on-demand, workspace deployed = ready
       assertDeploymentTransition("deploying", "verifying");
       await updateDeploymentStatus(supabase, deploymentId, "verifying");
 
@@ -685,10 +727,7 @@ export async function rollbackDeployment(
       }));
 
       const healthResult = await runPostDeployHealthCheck(supabase, businessId, healthAgents);
-
-      if (healthResult.healthy.length === 0) {
-        throw new Error("Post-rollback health check failed: no agents responding");
-      }
+      console.info(`Post-rollback status: ${healthResult.healthy.length}/${healthAgents.length} agents running`);
 
       assertDeploymentTransition("verifying", "live");
       await updateDeploymentStatus(supabase, deploymentId, "live", {

@@ -47,6 +47,8 @@ export interface ChatRequest {
   vpsAgentId: string;
   conversationId: string;
   message: string;
+  knowledgeContext?: string;
+  model?: string;
   metadata?: Record<string, unknown>;
 }
 

@@ -1,5 +1,12 @@
 /**
  * Generates openclaw.json configuration for a multi-agent OpenClaw workspace.
+ *
+ * Produces a gateway-compatible config with:
+ * - agents.list[] — all registered agents with workspace paths
+ * - mcp.servers — MCP tool configs (filesystem per workspace, plus agent-specific)
+ * - gateway.tools.allow — session tools for inter-agent comms + MCP
+ * - gateway.http.endpoints — chat completions enabled
+ *
  * Returns stringified JSON.
  */
 
@@ -61,12 +68,19 @@ const DEFAULT_SANDBOX: SandboxConfig = {
   networkAccess: true,
 };
 
+/** Tenant data directory on VPS */
+const TENANT_DATA_DIR = "/data/tenants";
+
 export function generateOpenClawConfig(
   businessSlug: string,
   agents: AgentConfigInput[],
   sandboxConfig?: SandboxConfig,
 ): string {
   const sandbox = { ...DEFAULT_SANDBOX, ...sandboxConfig };
+  const tenantDir = `${TENANT_DATA_DIR}/${businessSlug}`;
+
+  // Build per-agent config and collect MCP servers
+  const globalMcpServers: Record<string, Record<string, unknown>> = {};
 
   const agentList = agents.map((agent) => {
     const vpsAgentId = deriveVpsAgentId(
@@ -78,15 +92,25 @@ export function generateOpenClawConfig(
     const model =
       (agent.modelProfile as { model?: string }).model || "claude-sonnet-4-6";
 
-    // Build MCP servers config for this agent
-    const mcpServers: Record<string, unknown> = {};
+    const workspacePath = `${tenantDir}/workspace/workspace-${vpsAgentId}`;
+
+    // Add filesystem MCP server scoped to this agent's workspace
+    globalMcpServers[`filesystem-${vpsAgentId}`] = {
+      command: "npx",
+      args: ["-y", "@modelcontextprotocol/server-filesystem", workspacePath],
+    };
+
+    // Build agent-specific MCP servers and add to global pool
+    const agentMcpServerNames: string[] = [`filesystem-${vpsAgentId}`];
     if (agent.mcpServers) {
       for (const mcp of agent.mcpServers) {
-        mcpServers[mcp.name] = {
+        const serverKey = `${mcp.name}-${vpsAgentId}`;
+        globalMcpServers[serverKey] = {
           ...(mcp.command ? { command: mcp.command, args: mcp.args ?? [] } : {}),
           ...(mcp.url ? { url: mcp.url } : {}),
           ...(mcp.env ? { env: mcp.env } : {}),
         };
+        agentMcpServerNames.push(serverKey);
       }
     }
 
@@ -94,15 +118,15 @@ export function generateOpenClawConfig(
       id: vpsAgentId,
       name: agent.name,
       department: agent.departmentType,
-      workspace: `workspace-${vpsAgentId}`,
-      model,
+      workspace: workspacePath,
+      model: `anthropic/${model}`,
       sandbox: {
         image: sandbox.image,
         memory: sandbox.memory,
         cpus: sandbox.cpus,
         network_access: sandbox.networkAccess,
       },
-      ...(Object.keys(mcpServers).length > 0 ? { mcpServers } : {}),
+      mcpServers: agentMcpServerNames,
       ...(agent.skillsPackage?.length ? { skills: agent.skillsPackage } : {}),
       ...(agent.tokenBudget ? { tokenBudget: agent.tokenBudget } : {}),
       ...(agent.reportingChain ? { reportingChain: agent.reportingChain } : {}),
@@ -126,11 +150,37 @@ export function generateOpenClawConfig(
         protocol: "internal-message",
       },
     },
+    // MCP servers available to agents (gateway-level config)
+    mcp: {
+      servers: globalMcpServers,
+    },
+    // Gateway configuration
+    gateway: {
+      http: {
+        endpoints: {
+          chatCompletions: { enabled: true },
+        },
+      },
+      tools: {
+        allow: [
+          "sessions_send",
+          "sessions_list",
+          "sessions_history",
+          "sessions_spawn",
+          "mcp_*",
+        ],
+      },
+    },
     tools: {
       agentToAgent: {
         enabled: true,
         allow: allAgentIds,
-        capabilities: ["sessions_send", "sessions_list", "sessions_history"],
+        capabilities: [
+          "sessions_send",
+          "sessions_list",
+          "sessions_history",
+          "sessions_spawn",
+        ],
       },
     },
     runtime: {

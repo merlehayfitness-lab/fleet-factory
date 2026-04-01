@@ -1,7 +1,8 @@
 /**
  * SSH-based deployment service for V2.
  *
- * Replaces REST-based provisioning (pushDeploymentToVps) with SSH via node-ssh.
+ * Deploys workspace files via SSH and registers agents in OpenClaw gateway.
+ * No Docker containers — OpenClaw handles agent execution natively.
  * REST endpoints remain for runtime operations (chat, task, health).
  *
  * Deployment order: CEO agent deploys first, then sub-agents are hired.
@@ -26,7 +27,8 @@ export interface SshDeployOptions {
   businessSlug: string;
   deploymentId: string;
   subdomain?: string;
-  portRangeStart: number;
+  /** @deprecated Ports are no longer used — OpenClaw handles agent execution natively. Kept for caller compat. */
+  portRangeStart?: number;
   agents: SshDeployAgent[];
   workspaceFiles: Array<{ path: string; content: string }>;
   openclawConfig: string;
@@ -51,7 +53,6 @@ export interface SshDeployResult {
     agentId: string;
     vpsAgentId: string;
     status: "deployed" | "failed";
-    port?: number;
     error?: string;
   }>;
   error?: string;
@@ -71,9 +72,9 @@ const TENANT_DATA_DIR = "/data/tenants";
  * Deploy a full business to VPS via SSH.
  *
  * 1. Upload workspace files to tenant directory
- * 2. Write provision config
- * 3. Execute provision-tenant.sh (CEO first, then rest)
- * 4. Update agent statuses in database
+ * 2. Write OpenClaw config and provision config
+ * 3. Execute provision-tenant.sh (registers agents in OpenClaw, restarts gateway)
+ * 4. Verify agent workspaces and update statuses in database
  */
 export async function sshDeployBusiness(
   supabase: SupabaseClient,
@@ -118,7 +119,7 @@ export async function sshDeployBusiness(
       return 0;
     });
 
-    // 6. Execute provision-tenant.sh
+    // 6. Execute provision-tenant.sh (registers agents in OpenClaw, no Docker)
     log("[ssh] Running provision-tenant.sh");
     const provisionResult = await execCommand(
       `bash /opt/agency-factory/provision-tenant.sh "${options.businessSlug}"`,
@@ -132,7 +133,6 @@ export async function sshDeployBusiness(
 
     if (provisionResult.code !== 0) {
       log(`[ssh] Provisioning failed with code ${provisionResult.code}`);
-      // Mark all agents as failed
       for (const agent of sortedAgents) {
         agentResults.push({
           agentId: agent.agentId,
@@ -151,24 +151,22 @@ export async function sshDeployBusiness(
       return { success: false, agentResults, error: provisionResult.stderr };
     }
 
-    // 7. Verify each agent container is running
-    log("[ssh] Verifying agent containers");
+    // 7. Verify each agent workspace exists on disk
+    log("[ssh] Verifying agent workspaces");
     for (let i = 0; i < sortedAgents.length; i++) {
       const agent = sortedAgents[i];
-      const port = options.portRangeStart + i;
 
       const checkResult = await execCommand(
-        `docker ps --filter "name=${agent.vpsAgentId}" --format "{{.Status}}" 2>/dev/null || echo "not_found"`,
+        `test -f "${tenantDir}/workspace/workspace-${agent.vpsAgentId}/IDENTITY.md" && echo "ready" || echo "not_found"`,
       );
 
-      const isRunning = checkResult.stdout.toLowerCase().includes("up");
+      const isReady = checkResult.stdout.trim() === "ready";
 
       agentResults.push({
         agentId: agent.agentId,
         vpsAgentId: agent.vpsAgentId,
-        status: isRunning ? "deployed" : "failed",
-        port,
-        error: isRunning ? undefined : `Container not running: ${checkResult.stdout.trim()}`,
+        status: isReady ? "deployed" : "failed",
+        error: isReady ? undefined : `Workspace not ready for ${agent.vpsAgentId}`,
       });
 
       await updateAgentVpsStatus(
@@ -176,18 +174,18 @@ export async function sshDeployBusiness(
         options.businessId,
         agent.agentId,
         agent.vpsAgentId,
-        isRunning ? "running" : "error",
+        isReady ? "running" : "error",
       );
 
-      if (isRunning) {
-        log(`[ssh] Agent ${agent.vpsAgentId} running on port ${port}`);
+      if (isReady) {
+        log(`[ssh] Agent ${agent.vpsAgentId} registered in OpenClaw`);
       } else {
-        log(`[ssh] Agent ${agent.vpsAgentId} failed to start`);
+        log(`[ssh] Agent ${agent.vpsAgentId} workspace not ready`);
       }
     }
 
     const allDeployed = agentResults.every((r) => r.status === "deployed");
-    log(`[ssh] Deployment ${allDeployed ? "complete" : "partial"}: ${agentResults.filter((r) => r.status === "deployed").length}/${agentResults.length} agents running`);
+    log(`[ssh] Deployment ${allDeployed ? "complete" : "partial"}: ${agentResults.filter((r) => r.status === "deployed").length}/${agentResults.length} agents registered`);
 
     return { success: allDeployed, agentResults };
   } catch (err) {
@@ -202,13 +200,13 @@ export async function sshDeployBusiness(
 /**
  * Deploy a single agent to an existing tenant via SSH.
  * Used for CEO "hiring" sub-agents after initial deployment.
+ * Uploads workspace files and restarts the OpenClaw gateway to pick up the new agent.
  */
 export async function sshDeployAgent(
   supabase: SupabaseClient,
   businessSlug: string,
   businessId: string,
   agent: SshDeployAgent,
-  port: number,
   workspaceFiles: Array<{ path: string; content: string }>,
   onProgress?: SshProgressCallback,
 ): Promise<SshDeployResult> {
@@ -231,17 +229,21 @@ export async function sshDeployAgent(
       await writeRemoteFile(remotePath, file.content);
     }
 
-    // Start agent container
-    log(`[ssh] Starting agent container ${agent.vpsAgentId} on port ${port}`);
-    const startResult = await execCommand(
-      `bash /opt/agency-factory/start-agent.sh "${businessSlug}" "${agent.vpsAgentId}" "${agent.departmentType}" "${port}"`,
+    // Restart OpenClaw gateway to pick up the new agent workspace
+    log(`[ssh] Restarting OpenClaw gateway to register ${agent.vpsAgentId}`);
+    const restartResult = await execCommand(
+      `systemctl --user restart openclaw-gateway`,
       {
-        onStdout: (line) => log(`[agent] ${line}`),
-        onStderr: (line) => log(`[agent:err] ${line}`),
+        onStdout: (line) => log(`[gateway] ${line}`),
+        onStderr: (line) => log(`[gateway:err] ${line}`),
       },
     );
 
-    const success = startResult.code === 0;
+    // Verify workspace exists
+    const checkResult = await execCommand(
+      `test -f "${tenantDir}/workspace/workspace-${agent.vpsAgentId}/IDENTITY.md" && echo "ready" || echo "not_found"`,
+    );
+    const success = checkResult.stdout.trim() === "ready" && restartResult.code === 0;
 
     if (success) {
       await updateAgentVpsStatus(supabase, businessId, agent.agentId, agent.vpsAgentId, "running");
@@ -255,8 +257,7 @@ export async function sshDeployAgent(
         agentId: agent.agentId,
         vpsAgentId: agent.vpsAgentId,
         status: success ? "deployed" : "failed",
-        port,
-        error: success ? undefined : startResult.stderr,
+        error: success ? undefined : "Workspace not ready or gateway restart failed",
       }],
     };
   } catch (err) {
@@ -276,16 +277,14 @@ function buildProvisionConfig(options: SshDeployOptions) {
     businessId: options.businessId,
     businessSlug: options.businessSlug,
     subdomain: options.subdomain ?? null,
-    portRangeStart: options.portRangeStart,
     deploymentId: options.deploymentId,
-    agents: options.agents.map((a, i) => ({
+    agents: options.agents.map((a) => ({
       agentId: a.agentId,
       vpsAgentId: a.vpsAgentId,
       departmentType: a.departmentType,
       model: a.model,
       isCeo: a.isCeo,
       templateName: a.templateName,
-      port: options.portRangeStart + i,
       skillsPackage: a.skillsPackage ?? [],
       mcpServers: a.mcpServers ?? [],
       tokenBudget: a.tokenBudget ?? 100000,

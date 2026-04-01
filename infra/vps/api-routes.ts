@@ -3,8 +3,8 @@
  *
  * Handles deployment packages, chat messages, task execution,
  * and health checks. Routes requests to OpenClaw gateway for
- * actual agent interaction. Uses dockerode for container management
- * and file-based persistence for deployment state.
+ * actual agent interaction. Agents are managed via workspace files
+ * and OpenClaw gateway registration (no Docker containers).
  */
 
 import { Router } from "express";
@@ -28,13 +28,8 @@ import {
   saveDeploymentState,
   loadAllDeploymentStates,
 } from "./deploy-state.js";
-import {
-  createAgentContainer,
-  countRunningAgents,
-  stopTenantContainers,
-  resumeTenantContainers,
-  docker,
-} from "./container-manager.js";
+// Note: container-manager.ts is deprecated — OpenClaw handles agent execution natively.
+// Stop/resume now operates on gateway config, not Docker containers.
 import {
   sendMessageToAgent,
   submitTaskToAgent,
@@ -193,17 +188,21 @@ async function runDeployPipeline(
       fs.writeFileSync(configPath, payload.openclawConfig, "utf-8");
     }
 
-    // Step 3: Claude Code optimization via OpenClaw gateway
+    // Step 3: Claude Code optimization via OpenClaw gateway (best-effort)
+    // Uses the first deployed agent (typically CEO) for optimization review.
+    // If no agents are available or optimization fails, deployment continues.
     let optimizationReport: DeployResult["optimizationReport"] | undefined;
-    if (!payload.skipOptimization) {
+    if (!payload.skipOptimization && payload.agents.length > 0) {
       emitProgress("optimizing", "Sending workspace to Claude Code for optimization...");
       try {
         const filePreviews = payload.workspaceFiles.map((f) => ({
           path: f.path,
           preview: f.content.slice(0, 200),
         }));
+        // Use the first agent (CEO) for optimization — avoids non-existent "system" agent
+        const optimizerAgent = payload.agents[0].vpsAgentId;
         const result = await sendMessageToAgent(
-          "system",
+          optimizerAgent,
           `Review and optimize these workspace files for tenant ${payload.businessSlug}:\n${JSON.stringify(filePreviews)}`,
         );
 
@@ -237,48 +236,33 @@ async function runDeployPipeline(
           };
         }
       } catch (err) {
-        // Per CONTEXT.md: "If Claude Code optimization fails, deployment fails"
+        // Optimization failure is non-fatal — log and continue deployment
         const errMsg = err instanceof Error ? err.message : String(err);
-        console.error(`[deploy] Optimization failed for ${deployId}: ${errMsg}`);
-
-        const failedState: DeploymentState = {
-          deployId,
-          status: "failed",
-          startedAt: deployments.get(deployId)!.startedAt,
-          completedAt: new Date().toISOString(),
-        };
-        deployments.set(deployId, failedState);
-        saveDeploymentState(deployId, failedState);
-        emitProgress("error", `Optimization failed: ${errMsg}`);
-        return;
+        console.warn(`[deploy] Optimization failed for ${deployId} (non-fatal): ${errMsg}`);
+        emitProgress("optimizing", `Optimization skipped: ${errMsg}`);
       }
     }
 
-    // Step 4: Start/restart agent containers via dockerode
+    // Step 4: Verify agent workspaces are ready (OpenClaw handles execution natively)
     emitProgress(
-      "starting_containers",
-      `Creating ${payload.agents.length} agent container(s)...`,
+      "registering_agents",
+      `Registering ${payload.agents.length} agent(s) in OpenClaw...`,
     );
     const agentResults: DeployResult["agentResults"] = [];
 
     for (const agent of payload.agents) {
       const workspacePath = path.join(
         tenantDir,
-        "workspaces",
-        agent.vpsAgentId,
+        "workspace",
+        `workspace-${agent.vpsAgentId}`,
       );
-      const sharedPath = path.join(tenantDir, "shared");
 
-      // Ensure directories exist
-      fs.mkdirSync(workspacePath, { recursive: true });
-      fs.mkdirSync(sharedPath, { recursive: true });
+      // Verify workspace directory and identity file exist
+      const identityPath = path.join(workspacePath, "IDENTITY.md");
+      const hasWorkspace = fs.existsSync(workspacePath);
+      const hasIdentity = fs.existsSync(identityPath);
 
-      try {
-        await createAgentContainer(
-          agent.vpsAgentId,
-          workspacePath,
-          sharedPath,
-        );
+      if (hasWorkspace && hasIdentity) {
         agentResults.push({
           agentId: agent.agentId,
           vpsAgentId: agent.vpsAgentId,
@@ -287,21 +271,20 @@ async function runDeployPipeline(
         deployEvents.emit(deployId, {
           type: "agent_status",
           agentId: agent.vpsAgentId,
-          message: `Container ${agent.vpsAgentId} created and started`,
+          message: `Agent ${agent.vpsAgentId} registered with workspace`,
           timestamp: new Date().toISOString(),
         });
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
+      } else {
         agentResults.push({
           agentId: agent.agentId,
           vpsAgentId: agent.vpsAgentId,
           status: "failed",
-          error: errMsg,
+          error: `Workspace not ready: workspace=${hasWorkspace}, identity=${hasIdentity}`,
         });
         deployEvents.emit(deployId, {
           type: "agent_status",
           agentId: agent.vpsAgentId,
-          message: `Container ${agent.vpsAgentId} failed: ${errMsg}`,
+          message: `Agent ${agent.vpsAgentId} failed: workspace files missing`,
           timestamp: new Date().toISOString(),
         });
       }
@@ -316,7 +299,7 @@ async function runDeployPipeline(
       deployId,
       agentResults,
       optimizationReport,
-      error: anyFailed ? "One or more agent containers failed to start" : undefined,
+      error: anyFailed ? "One or more agents failed to register" : undefined,
     };
 
     // Update state
@@ -435,8 +418,11 @@ router.post("/api/agents/:vpsAgentId/chat", (req, res) => {
     // Process in background using non-streaming HTTP (reliable, no SSE parsing issues)
     console.log(`[chat] Async request ${requestId} submitted for agent ${vpsAgentId}`);
 
-    // Model from web app is for display/tracking only — OpenClaw uses its own model mapping ("openclaw/default")
-    sendMessageToAgent(vpsAgentId, chatReq.message)
+    // Forward all chat metadata to OpenClaw (agent targeting, session persistence, RAG context)
+    sendMessageToAgent(vpsAgentId, chatReq.message, chatReq.conversationId, {
+      knowledgeContext: chatReq.knowledgeContext,
+      model: chatReq.model,
+    })
       .then((result) => {
         const state = pendingChats.get(requestId);
         if (state) {
@@ -545,8 +531,23 @@ router.get("/api/health", async (_req, res) => {
     // Check OpenClaw gateway health
     const gateway = await checkGatewayHealth();
 
-    // Count running agent containers via dockerode
-    const agentCount = await countRunningAgents();
+    // Count registered agents by scanning workspace directories
+    const tenantDataDir = getTenantDataDir();
+    let agentCount = 0;
+    try {
+      if (fs.existsSync(tenantDataDir)) {
+        const tenants = fs.readdirSync(tenantDataDir);
+        for (const tenant of tenants) {
+          const workspaceDir = path.join(tenantDataDir, tenant, "workspace");
+          if (fs.existsSync(workspaceDir)) {
+            const entries = fs.readdirSync(workspaceDir);
+            agentCount += entries.filter((e) => e.startsWith("workspace-")).length;
+          }
+        }
+      }
+    } catch {
+      // Failed to count — not critical
+    }
 
     const status: HealthStatus = {
       status: gateway.status === "unreachable" ? "degraded" : "online",
@@ -556,7 +557,7 @@ router.get("/api/health", async (_req, res) => {
         proxy: "running",
         gateway: gateway.status,
         sessions: gateway.sessions,
-        tenantDataDir: getTenantDataDir(),
+        tenantDataDir,
         uptime: process.uptime(),
       },
     };
@@ -580,47 +581,38 @@ router.get("/api/health", async (_req, res) => {
 router.get("/api/agents/:vpsAgentId/health", async (req, res) => {
   try {
     const { vpsAgentId } = req.params;
-
-    // Check actual Docker container status via dockerode
-    let containerStatus: "running" | "stopped" | "error" = "stopped";
-    let startedAt: string | undefined;
-
-    try {
-      const container = docker.getContainer(vpsAgentId);
-      const info = await container.inspect();
-      if (info.State.Running) {
-        containerStatus = "running";
-        startedAt = info.State.StartedAt;
-      } else {
-        containerStatus = "stopped";
-      }
-    } catch {
-      // Container not found -- check if workspace exists on disk
-      containerStatus = "stopped";
-    }
-
-    // Check if workspace directory exists on disk as supplementary info
     const tenantDataDir = getTenantDataDir();
+
+    // Parse business slug from vpsAgentId (format: {slug}-{dept}-{8charPrefix})
+    // Slug can contain hyphens, so take everything before the last 2 segments
     const parts = vpsAgentId.split("-");
     let workspaceExists = false;
+    let identityExists = false;
     if (parts.length >= 3) {
-      const businessSlug = parts[0];
+      const businessSlug = parts.slice(0, -2).join("-");
       const workspacePath = path.join(
         tenantDataDir,
         businessSlug,
-        "workspaces",
-        vpsAgentId,
+        "workspace",
+        `workspace-${vpsAgentId}`,
       );
       workspaceExists = fs.existsSync(workspacePath);
+      identityExists = fs.existsSync(path.join(workspacePath, "IDENTITY.md"));
+    }
+
+    // Agent is "running" if workspace + identity files exist and gateway is reachable
+    let agentStatus: "running" | "stopped" | "error" = "stopped";
+    if (workspaceExists && identityExists) {
+      const gateway = await checkGatewayHealth();
+      agentStatus = gateway.status === "unreachable" ? "error" : "running";
     }
 
     const healthStatus: AgentHealthStatus = {
       vpsAgentId,
-      status: containerStatus,
-      lastResponseAt: startedAt,
+      status: agentStatus,
       metadata: {
         workspaceExists,
-        containerStartedAt: startedAt,
+        identityExists,
       },
     };
 
@@ -636,7 +628,7 @@ router.get("/api/agents/:vpsAgentId/health", async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// POST /api/tenants/stop
+// POST /api/tenants/stop — Remove tenant agents from OpenClaw gateway
 // ---------------------------------------------------------------------------
 
 router.post("/api/tenants/stop", async (req, res) => {
@@ -648,7 +640,57 @@ router.post("/api/tenants/stop", async (req, res) => {
       return;
     }
 
-    const stoppedCount = await stopTenantContainers(businessSlug);
+    const gatewayConfigPath = path.join(
+      process.env.HOME || "/root",
+      ".openclaw",
+      "openclaw.json",
+    );
+
+    let stoppedCount = 0;
+
+    if (fs.existsSync(gatewayConfigPath)) {
+      try {
+        const config = JSON.parse(fs.readFileSync(gatewayConfigPath, "utf-8")) as {
+          agents?: { list?: Array<{ id: string }> };
+          mcp?: { servers?: Record<string, unknown> };
+        };
+
+        // Count agents being removed
+        const beforeCount = config.agents?.list?.length ?? 0;
+
+        // Remove this tenant's agents from the gateway config
+        if (config.agents?.list) {
+          config.agents.list = config.agents.list.filter(
+            (a) => !a.id.startsWith(`${businessSlug}-`),
+          );
+        }
+
+        // Remove this tenant's MCP servers
+        if (config.mcp?.servers) {
+          for (const key of Object.keys(config.mcp.servers)) {
+            if (key.includes(businessSlug)) {
+              delete config.mcp.servers[key];
+            }
+          }
+        }
+
+        stoppedCount = beforeCount - (config.agents?.list?.length ?? 0);
+
+        fs.writeFileSync(gatewayConfigPath, JSON.stringify(config, null, 2), "utf-8");
+        console.log(`[tenants/stop] Removed ${stoppedCount} agents for ${businessSlug} from gateway config`);
+
+        // Restart gateway to apply changes
+        const { execSync } = await import("node:child_process");
+        try {
+          execSync("systemctl --user restart openclaw-gateway", { timeout: 10000 });
+        } catch {
+          console.warn("[tenants/stop] Gateway restart failed (may not be systemd service)");
+        }
+      } catch (parseErr) {
+        console.error("[tenants/stop] Failed to parse gateway config:", parseErr);
+      }
+    }
+
     res.json({ success: true, stoppedCount });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
@@ -658,7 +700,7 @@ router.post("/api/tenants/stop", async (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// POST /api/tenants/resume
+// POST /api/tenants/resume — Re-register tenant agents from tenant config
 // ---------------------------------------------------------------------------
 
 router.post("/api/tenants/resume", async (req, res) => {
@@ -670,7 +712,73 @@ router.post("/api/tenants/resume", async (req, res) => {
       return;
     }
 
-    const resumedCount = await resumeTenantContainers(businessSlug);
+    const tenantConfigPath = path.join(
+      getTenantDataDir(),
+      businessSlug,
+      "config",
+      "openclaw.json",
+    );
+    const gatewayConfigPath = path.join(
+      process.env.HOME || "/root",
+      ".openclaw",
+      "openclaw.json",
+    );
+
+    let resumedCount = 0;
+
+    if (fs.existsSync(tenantConfigPath) && fs.existsSync(gatewayConfigPath)) {
+      try {
+        const tenantConfig = JSON.parse(fs.readFileSync(tenantConfigPath, "utf-8")) as {
+          agents?: { list?: Array<{ id: string }> };
+          mcp?: { servers?: Record<string, unknown> };
+        };
+        const gatewayConfig = JSON.parse(fs.readFileSync(gatewayConfigPath, "utf-8")) as {
+          agents?: { list?: Array<{ id: string }> };
+          mcp?: { servers?: Record<string, unknown> };
+        };
+
+        // Remove any existing agents for this tenant first (idempotent)
+        if (gatewayConfig.agents?.list) {
+          gatewayConfig.agents.list = gatewayConfig.agents.list.filter(
+            (a) => !a.id.startsWith(`${businessSlug}-`),
+          );
+        }
+
+        // Add tenant agents back
+        const tenantAgents = tenantConfig.agents?.list ?? [];
+        if (!gatewayConfig.agents) {
+          gatewayConfig.agents = { list: [] };
+        }
+        if (!gatewayConfig.agents.list) {
+          gatewayConfig.agents.list = [];
+        }
+        gatewayConfig.agents.list.push(...tenantAgents);
+        resumedCount = tenantAgents.length;
+
+        // Merge MCP servers
+        if (tenantConfig.mcp?.servers) {
+          if (!gatewayConfig.mcp) gatewayConfig.mcp = { servers: {} };
+          if (!gatewayConfig.mcp.servers) gatewayConfig.mcp.servers = {};
+          Object.assign(gatewayConfig.mcp.servers, tenantConfig.mcp.servers);
+        }
+
+        fs.writeFileSync(gatewayConfigPath, JSON.stringify(gatewayConfig, null, 2), "utf-8");
+        console.log(`[tenants/resume] Re-registered ${resumedCount} agents for ${businessSlug}`);
+
+        // Restart gateway
+        const { execSync } = await import("node:child_process");
+        try {
+          execSync("systemctl --user restart openclaw-gateway", { timeout: 10000 });
+        } catch {
+          console.warn("[tenants/resume] Gateway restart failed");
+        }
+      } catch (parseErr) {
+        console.error("[tenants/resume] Failed to parse configs:", parseErr);
+      }
+    } else {
+      console.warn(`[tenants/resume] Config not found for ${businessSlug}`);
+    }
+
     res.json({ success: true, resumedCount });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

@@ -1,8 +1,11 @@
 /**
  * OpenClaw gateway client using OpenAI-compatible endpoints.
  *
- * OpenClaw exposes /v1/chat/completions (OpenAI format), /v1/models,
- * and /healthz. Auth via Bearer token in Authorization header.
+ * Routes requests to specific agents via x-openclaw-agent-id header
+ * and maintains conversation history via x-openclaw-session-key header.
+ *
+ * Agent identity and behavior are defined by workspace files (IDENTITY.md,
+ * SOUL.md, AGENTS.md, TOOLS.md) — NOT by hardcoded system prompts here.
  */
 
 const GATEWAY_URL =
@@ -13,14 +16,111 @@ const DEFAULT_MODEL =
 const OPENCLAW_SCOPES =
   process.env.OPENCLAW_SCOPES || "operator.write";
 
+/** Timeout for chat/task completions (2 minutes) */
+const CHAT_TIMEOUT_MS = 120_000;
+
 /**
- * Send a message to an agent via OpenAI-compatible chat completions.
- * Uses the sessionKey as a system context identifier.
+ * Lightweight system rules applied to all agents.
+ * Agent-specific identity comes from workspace files, not here.
+ */
+const UNIVERSAL_RULES = `## Critical Rules
+
+1. **Never fabricate actions or results.** Do not pretend to search, query, or fetch data you cannot actually access. If a tool call fails, report the failure honestly.
+2. **Be honest about your capabilities.** If you cannot do something, say so clearly. Explain what you CAN help with and what requires integration that isn't set up yet.
+3. **Never invent data.** Do not make up lead lists, search results, metrics, or any other data. If you don't have real data, say so.
+
+## Task Handling
+
+For complex or multi-step requests:
+1. Reply with a brief plan: what you'll do, what you need, and what the deliverable will look like
+2. Ask the user to confirm before proceeding
+3. When confirmed, execute what you can and be clear about what still needs manual steps
+
+For simple questions or conversational messages: respond directly.`;
+
+/** Options for sending messages to agents */
+interface SendMessageOptions {
+  knowledgeContext?: string;
+  model?: string;
+  timeoutMs?: number;
+}
+
+/**
+ * Build common headers for OpenClaw requests.
+ * Includes agent targeting and session persistence headers.
+ */
+function buildHeaders(
+  vpsAgentId: string,
+  conversationId?: string,
+): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "x-openclaw-scopes": OPENCLAW_SCOPES,
+    "x-openclaw-agent-id": vpsAgentId,
+  };
+  if (conversationId) {
+    headers["x-openclaw-session-key"] = conversationId;
+  }
+  if (AUTH_TOKEN) {
+    headers["Authorization"] = `Bearer ${AUTH_TOKEN}`;
+  }
+  return headers;
+}
+
+/**
+ * Build messages array for a chat request.
+ * Applies universal rules as system message, optionally prepends
+ * knowledge context (RAG injection). Supports optional task preamble.
+ */
+function buildMessages(
+  message: string,
+  options?: SendMessageOptions & { taskPreamble?: string },
+): Array<{ role: string; content: string }> {
+  const messages: Array<{ role: string; content: string }> = [];
+
+  // Universal honesty/anti-hallucination rules + optional task preamble
+  let systemContent = UNIVERSAL_RULES;
+  if (options?.taskPreamble) {
+    systemContent = `${options.taskPreamble}\n\n${systemContent}`;
+  }
+  if (options?.knowledgeContext) {
+    systemContent = `## Relevant Context\n\n${options.knowledgeContext}\n\n${systemContent}`;
+  }
+  messages.push({ role: "system", content: systemContent });
+
+  messages.push({ role: "user", content: message });
+  return messages;
+}
+
+/**
+ * Create an AbortController with a timeout.
+ * Returns the controller and a cleanup function.
+ */
+function createTimeoutController(timeoutMs: number): {
+  controller: AbortController;
+  cleanup: () => void;
+} {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return {
+    controller,
+    cleanup: () => clearTimeout(timer),
+  };
+}
+
+/**
+ * Send a message to a specific agent via OpenAI-compatible chat completions.
+ *
+ * - Routes to the correct agent via x-openclaw-agent-id header
+ * - Maintains conversation history via x-openclaw-session-key header
+ * - Agent identity comes from workspace files, not system prompt
+ * - Includes a configurable timeout (default 2 minutes)
  */
 export async function sendMessageToAgent(
-  sessionKey: string,
+  vpsAgentId: string,
   message: string,
-  model?: string,
+  conversationId?: string,
+  options?: SendMessageOptions,
 ): Promise<{
   response: string;
   model?: string;
@@ -28,65 +128,64 @@ export async function sendMessageToAgent(
   tokenUsage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
 }> {
   const url = `${GATEWAY_URL}/v1/chat/completions`;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "x-openclaw-scopes": OPENCLAW_SCOPES,
-  };
-  if (AUTH_TOKEN) {
-    headers["Authorization"] = `Bearer ${AUTH_TOKEN}`;
+  const headers = buildHeaders(vpsAgentId, conversationId);
+  const { controller, cleanup } = createTimeoutController(
+    options?.timeoutMs ?? CHAT_TIMEOUT_MS,
+  );
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model: options?.model || DEFAULT_MODEL,
+        messages: buildMessages(message, options),
+      }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      throw new Error(
+        `OpenClaw gateway returned ${res.status}: ${await res.text()}`,
+      );
+    }
+
+    const data = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+      model?: string;
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
+    };
+
+    const content = data.choices?.[0]?.message?.content || "";
+    return {
+      response: content,
+      model: data.model,
+      tokens: data.usage?.total_tokens,
+      tokenUsage: data.usage ? {
+        prompt_tokens: data.usage.prompt_tokens ?? 0,
+        completion_tokens: data.usage.completion_tokens ?? 0,
+        total_tokens: data.usage.total_tokens ?? 0,
+      } : undefined,
+    };
+  } finally {
+    cleanup();
   }
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      model: model || DEFAULT_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: `You are agent ${sessionKey}. Respond helpfully and concisely.`,
-        },
-        { role: "user", content: message },
-      ],
-    }),
-  });
-
-  if (!res.ok) {
-    throw new Error(
-      `OpenClaw gateway returned ${res.status}: ${await res.text()}`,
-    );
-  }
-
-  const data = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-    model?: string;
-    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
-  };
-
-  const content = data.choices?.[0]?.message?.content || "";
-  return {
-    response: content,
-    model: data.model,
-    tokens: data.usage?.total_tokens,
-    tokenUsage: data.usage ? {
-      prompt_tokens: data.usage.prompt_tokens ?? 0,
-      completion_tokens: data.usage.completion_tokens ?? 0,
-      total_tokens: data.usage.total_tokens ?? 0,
-    } : undefined,
-  };
 }
 
 /**
- * Submit a task to an agent for execution.
+ * Submit a task to a specific agent for execution.
  * Routes through chat completions with task-formatted prompt.
+ * Uses the same buildMessages() pipeline as chat for consistent behavior.
  */
 export async function submitTaskToAgent(
-  sessionKey: string,
+  vpsAgentId: string,
   taskPayload: {
     taskId: string;
     title: string;
     payload: Record<string, unknown>;
   },
+  conversationId?: string,
+  options?: SendMessageOptions,
 ): Promise<{
   success: boolean;
   result?: Record<string, unknown>;
@@ -96,54 +195,52 @@ export async function submitTaskToAgent(
 }> {
   try {
     const url = `${GATEWAY_URL}/v1/chat/completions`;
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "x-openclaw-scopes": OPENCLAW_SCOPES,
-    };
-    if (AUTH_TOKEN) {
-      headers["Authorization"] = `Bearer ${AUTH_TOKEN}`;
-    }
+    const headers = buildHeaders(vpsAgentId, conversationId);
+    const { controller, cleanup } = createTimeoutController(
+      options?.timeoutMs ?? CHAT_TIMEOUT_MS,
+    );
 
-    const res = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        messages: [
-          {
-            role: "system",
-            content: `You are agent ${sessionKey}. Execute the following task and provide a structured response.`,
-          },
-          {
-            role: "user",
-            content: `Execute task: ${taskPayload.title}\n\nTask ID: ${taskPayload.taskId}\nPayload: ${JSON.stringify(taskPayload.payload)}`,
-          },
-        ],
-      }),
-    });
+    const taskMessage = `Execute task: ${taskPayload.title}\n\nTask ID: ${taskPayload.taskId}\nPayload: ${JSON.stringify(taskPayload.payload)}`;
 
-    if (!res.ok) {
-      const text = await res.text();
-      return {
-        success: false,
-        error: `Gateway returned ${res.status}: ${text}`,
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model: options?.model || DEFAULT_MODEL,
+          messages: buildMessages(taskMessage, {
+            ...options,
+            taskPreamble: "Execute the following task and provide a structured response.",
+          }),
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        return {
+          success: false,
+          error: `Gateway returned ${res.status}: ${text}`,
+        };
+      }
+
+      const data = (await res.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
       };
+
+      const content = data.choices?.[0]?.message?.content || "";
+      return {
+        success: true,
+        result: { response: content },
+        toolsUsed: [],
+        tokenUsage: data.usage as
+          | { prompt_tokens: number; completion_tokens: number }
+          | undefined,
+      };
+    } finally {
+      cleanup();
     }
-
-    const data = (await res.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-      usage?: { prompt_tokens?: number; completion_tokens?: number };
-    };
-
-    const content = data.choices?.[0]?.message?.content || "";
-    return {
-      success: true,
-      result: { response: content },
-      toolsUsed: [],
-      tokenUsage: data.usage as
-        | { prompt_tokens: number; completion_tokens: number }
-        | undefined,
-    };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return { success: false, error: message };
@@ -185,40 +282,35 @@ export async function checkGatewayHealth(): Promise<{
  *
  * Uses OpenAI-compatible streaming with stream: true.
  * Falls back to non-streaming HTTP POST if streaming fails.
+ *
+ * Routes to the correct agent via x-openclaw-agent-id header.
+ * Maintains conversation history via x-openclaw-session-key header.
  */
 export function streamChatFromAgent(
-  sessionKey: string,
+  vpsAgentId: string,
   message: string,
   onToken: (token: string) => void,
   onComplete: (fullResponse: string) => void,
   onError: (error: string) => void,
+  conversationId?: string,
+  options?: SendMessageOptions,
 ): () => void {
   let aborted = false;
   const controller = new AbortController();
+  // Stream timeout: abort if no data flows for 2 minutes
+  const streamTimer = setTimeout(() => controller.abort(), CHAT_TIMEOUT_MS);
 
   (async () => {
     try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-        "x-openclaw-scopes": OPENCLAW_SCOPES,
-      };
-      if (AUTH_TOKEN) {
-        headers["Authorization"] = `Bearer ${AUTH_TOKEN}`;
-      }
+      const headers = buildHeaders(vpsAgentId, conversationId);
 
       const res = await fetch(`${GATEWAY_URL}/v1/chat/completions`, {
         method: "POST",
         headers,
         body: JSON.stringify({
-          model: DEFAULT_MODEL,
+          model: options?.model || DEFAULT_MODEL,
           stream: true,
-          messages: [
-            {
-              role: "system",
-              content: `You are agent ${sessionKey}. Respond helpfully and concisely.`,
-            },
-            { role: "user", content: message },
-          ],
+          messages: buildMessages(message, options),
         }),
         signal: controller.signal,
       });
@@ -244,6 +336,7 @@ export function streamChatFromAgent(
           if (!line.startsWith("data: ")) continue;
           const payload = line.slice(6).trim();
           if (payload === "[DONE]") {
+            clearTimeout(streamTimer);
             onComplete(fullResponse);
             return;
           }
@@ -260,6 +353,7 @@ export function streamChatFromAgent(
               onToken(content);
             }
             if (chunk.choices?.[0]?.finish_reason === "stop") {
+              clearTimeout(streamTimer);
               onComplete(fullResponse);
               return;
             }
@@ -269,23 +363,26 @@ export function streamChatFromAgent(
         }
       }
 
+      clearTimeout(streamTimer);
       if (!aborted && fullResponse) {
         onComplete(fullResponse);
       }
     } catch (err) {
+      clearTimeout(streamTimer);
       if (!aborted) {
         console.error(
-          `[openclaw-client] Stream error for ${sessionKey}:`,
+          `[openclaw-client] Stream error for ${vpsAgentId}:`,
           err,
         );
         // Fallback to non-streaming HTTP
-        fallbackToHttp(sessionKey, message, onComplete, onError);
+        fallbackToHttp(vpsAgentId, message, onComplete, onError, conversationId, options);
       }
     }
   })();
 
   return () => {
     aborted = true;
+    clearTimeout(streamTimer);
     controller.abort();
   };
 }
@@ -294,13 +391,15 @@ export function streamChatFromAgent(
  * Fallback: send message via HTTP and call onComplete with full response.
  */
 async function fallbackToHttp(
-  sessionKey: string,
+  vpsAgentId: string,
   message: string,
   onComplete: (fullResponse: string) => void,
   onError: (error: string) => void,
+  conversationId?: string,
+  options?: SendMessageOptions,
 ): Promise<void> {
   try {
-    const result = await sendMessageToAgent(sessionKey, message);
+    const result = await sendMessageToAgent(vpsAgentId, message, conversationId, options);
     onComplete(result.response);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

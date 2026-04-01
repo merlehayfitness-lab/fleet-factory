@@ -307,6 +307,8 @@ function handleChatWebSocket(
             ws.send(JSON.stringify(errorEvent));
           }
         },
+        // conversationId — maintains session persistence across messages
+        conversationId,
       );
     } catch {
       const errorEvent: ChatStreamEvent = {

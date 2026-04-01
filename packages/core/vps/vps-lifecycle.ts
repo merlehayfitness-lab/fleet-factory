@@ -9,7 +9,8 @@ interface VpsLifecycleResult {
 }
 
 /**
- * Stop all VPS containers for a tenant (best-effort).
+ * Pause all agents for a tenant on VPS (best-effort).
+ * Removes tenant agents from the OpenClaw gateway config and restarts.
  * Returns gracefully when VPS is not configured or unreachable.
  * Never throws -- callers should check `result.success`.
  */
@@ -38,7 +39,8 @@ export async function pauseTenantContainers(
 }
 
 /**
- * Resume all VPS containers for a tenant (best-effort).
+ * Resume all agents for a tenant on VPS (best-effort).
+ * Re-registers tenant agents in the OpenClaw gateway config and restarts.
  * Returns gracefully when VPS is not configured or unreachable.
  * Never throws -- callers should check `result.success`.
  */

@@ -55,6 +55,12 @@ interface AgentInput {
   status: string;
   skill_definition: string | null;
   skills?: Array<{ name: string; content: string; level: "department" | "agent" }>;
+  parent_agent_id?: string | null;
+  token_budget?: number;
+  role_level?: number;
+  reporting_chain?: string | null;
+  mcp_servers?: Array<{ name: string; type: string; config: Record<string, unknown> }>;
+  skills_package?: Array<{ name: string; source: string; version?: string }>;
 }
 
 interface DepartmentInput {
@@ -148,16 +154,52 @@ export function generateOpenClawWorkspace(
     }
   }
 
-  // Generate shared openclaw.json
+  // Generate shared openclaw.json with full agent metadata
   const configAgents = activeAgents
     .map((agent) => {
       const dept = deptById.get(agent.department_id);
       if (!dept) return null;
+
+      // Build MCP server entries from template data
+      const mcpServers = (agent.mcp_servers ?? []).map((mcp) => ({
+        name: mcp.name,
+        command: (mcp.config?.command as string) ?? undefined,
+        args: (mcp.config?.args as string[]) ?? undefined,
+        url: (mcp.config?.url as string) ?? undefined,
+        env: (mcp.config?.env as Record<string, string>) ?? undefined,
+      }));
+
+      // Build skills package entries
+      const skillsPackage = (agent.skills_package ?? []).map((s) => ({
+        name: s.name,
+        source: s.source,
+        version: s.version,
+      }));
+
+      // Build reporting chain from parent agent
+      let reportingChain: string | undefined;
+      if (agent.reporting_chain) {
+        reportingChain = agent.reporting_chain;
+      } else if (agent.parent_agent_id) {
+        const parent = activeAgents.find((a) => a.id === agent.parent_agent_id);
+        if (parent) {
+          const parentDept = deptById.get(parent.department_id);
+          if (parentDept) {
+            reportingChain = `Reports to ${parent.name} (${parentDept.type})`;
+          }
+        }
+      }
+
       return {
         id: agent.id,
         departmentType: dept.type,
         name: agent.name,
         modelProfile: agent.model_profile,
+        mcpServers: mcpServers.length > 0 ? mcpServers : undefined,
+        skillsPackage: skillsPackage.length > 0 ? skillsPackage : undefined,
+        tokenBudget: agent.token_budget,
+        reportingChain,
+        roleLevel: agent.role_level,
       };
     })
     .filter((a): a is NonNullable<typeof a> => a !== null);
