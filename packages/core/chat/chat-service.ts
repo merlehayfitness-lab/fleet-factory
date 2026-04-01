@@ -14,6 +14,8 @@ import { generateStubResponse } from "./chat-stub";
 import { isVpsConfigured } from "../vps/vps-config";
 
 import { getVpsAgentId, sendChatToVps } from "../vps/vps-chat";
+import { executeWithRateLimit } from "../rate-limit/rate-limiter";
+import { shouldSendBudgetWarning } from "../rate-limit/budget-service";
 
 /**
  * Get or create a conversation for a business + department + user.
@@ -657,15 +659,68 @@ export async function routeAndRespond(
             ((agent as Record<string, unknown>).model_profile as Record<string, unknown>)
               ?.model as string | undefined;
 
-          const vpsResponse = await sendChatToVps(
-            businessId,
-            agent.id,
-            vpsAgentId,
-            conversationId,
-            userMessage,
-            knowledgeContext?.contextString || undefined,
-            agentModel || "claude-sonnet-4-6",
+          // Wrap VPS call in rate limiter with budget enforcement
+          const rateLimitResult = await executeWithRateLimit(
+            supabase,
+            {
+              businessId,
+              agentId: agent.id,
+              model: agentModel || "claude-sonnet-4-6",
+              provider: "anthropic",
+            },
+            async () => {
+              const startMs = Date.now();
+              const vpsResp = await sendChatToVps(
+                businessId,
+                agent.id,
+                vpsAgentId,
+                conversationId,
+                userMessage,
+                knowledgeContext?.contextString || undefined,
+                agentModel || "claude-sonnet-4-6",
+              );
+              const latencyMs = Date.now() - startMs;
+              const model = vpsResp.tokenUsage?.model || agentModel || "claude-sonnet-4-6";
+              return {
+                result: vpsResp,
+                usage: {
+                  promptTokens: vpsResp.tokenUsage?.promptTokens ?? 0,
+                  completionTokens: vpsResp.tokenUsage?.completionTokens ?? 0,
+                  model,
+                  provider: "anthropic",
+                  latencyMs,
+                },
+              };
+            },
           );
+
+          // Handle budget exceeded
+          if ("reason" in rateLimitResult && rateLimitResult.reason === "budget_exceeded") {
+            return sendMessage(
+              supabase,
+              businessId,
+              conversationId,
+              "This agent has reached its token budget for the month. Contact an admin to increase the budget or wait for the monthly reset.",
+              "system",
+            );
+          }
+
+          // Handle rate limited (queued)
+          if (!rateLimitResult.executed) {
+            return sendMessage(
+              supabase,
+              businessId,
+              conversationId,
+              JSON.stringify({ type: "queued", queueId: (rateLimitResult as { queueId: string }).queueId, position: (rateLimitResult as { queuePosition: number }).queuePosition }),
+              "system",
+              undefined,
+              undefined,
+              { isQueueStatus: true },
+            );
+          }
+
+          // Executed successfully
+          const vpsResponse = rateLimitResult.result;
 
           // Build message metadata with knowledge sources if available
           const vpsMessageMetadata: Record<string, unknown> = {};
@@ -702,6 +757,22 @@ export async function routeAndRespond(
           } catch {
             /* best-effort */
           }
+
+          // Budget warning check (best-effort, after successful execution)
+          try {
+            if (agent.id) {
+              const shouldWarn = await shouldSendBudgetWarning(supabase, businessId, agent.id);
+              if (shouldWarn) {
+                await supabase.from("audit_logs").insert({
+                  business_id: businessId,
+                  action: "budget_warning",
+                  entity_type: "agent",
+                  entity_id: agent.id,
+                  metadata: { agentName: agent.name, utilization: "80%+" },
+                });
+              }
+            }
+          } catch { /* best-effort */ }
 
           // Detect agent self-naming (best-effort, mutates agentMessage.agentName)
           await tryDetectSelfName(supabase, agentMessage, businessId);
