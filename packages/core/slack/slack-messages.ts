@@ -317,6 +317,67 @@ export async function getSlackFeedMessages(
 }
 
 /**
+ * Send a budget warning message to the business's Slack channel.
+ * Called when an agent hits 80% of its monthly token budget.
+ * Best-effort: failures are logged but don't affect agent operations.
+ */
+export async function sendBudgetWarningDM(
+  supabase: SupabaseClient,
+  businessId: string,
+  agentId: string,
+  agentName: string,
+  utilizationPercent: number,
+  tokensUsed: number,
+  tokenBudget: number,
+): Promise<void> {
+  try {
+    const client = await getSlackClient(supabase, businessId);
+    if (!client) return; // No Slack connected for this business
+
+    // Get the first mapped department channel as a visible alert
+    // (DM would require mapping business_users to Slack users, which we don't have yet)
+    const { data: channels } = await supabase
+      .from("slack_channel_mappings")
+      .select("slack_channel_id")
+      .eq("business_id", businessId)
+      .limit(1);
+
+    if (!channels || channels.length === 0) return;
+
+    const channelId = channels[0].slack_channel_id as string;
+
+    await client.chat.postMessage({
+      channel: channelId,
+      text: `Budget Warning: ${agentName} has used ${utilizationPercent}% of its monthly token budget`,
+      blocks: [
+        {
+          type: "header",
+          text: { type: "plain_text", text: "Budget Warning" },
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text:
+              `*${agentName}* has used *${utilizationPercent}%* of its monthly token budget.\n\n` +
+              `Tokens used: ${tokensUsed.toLocaleString()} / ${tokenBudget.toLocaleString()}\n` +
+              `At this rate, the budget will be exhausted before month end.\n\n` +
+              `_To increase the budget, visit the agent's config page in the admin panel._`,
+          },
+        },
+      ],
+      username: "Agency Factory",
+      icon_emoji: ":warning:",
+    });
+  } catch (err) {
+    console.error(
+      `[slack] Failed to send budget warning DM for agent ${agentId}:`,
+      err,
+    );
+  }
+}
+
+/**
  * Look up the bot_user_id from slack_installations for @mention detection.
  */
 async function lookupBotUserId(

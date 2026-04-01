@@ -238,6 +238,7 @@ export {
   postAgentResponseToSlack,
   syncMessageToSupabase,
   getSlackFeedMessages,
+  sendBudgetWarningDM,
 } from "./slack/slack-messages";
 export {
   formatAgentResponseBlocks,
