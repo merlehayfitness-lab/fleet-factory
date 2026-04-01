@@ -17,6 +17,14 @@ export interface ApiKeyEntry {
   required: boolean;
 }
 
+export interface ProviderInfo {
+  provider: string;
+  label: string;
+  placeholder: string;
+  required: boolean;
+  description: string;
+}
+
 interface ValidationStatus {
   status: "idle" | "validating" | "valid" | "invalid";
   error?: string;
@@ -25,15 +33,20 @@ interface ValidationStatus {
 interface Props {
   apiKeys: ApiKeyEntry[];
   onApiKeysChange: (keys: ApiKeyEntry[]) => void;
+  requiredProviders?: ProviderInfo[];
 }
 
-const API_KEY_PROVIDERS = [
+// ---------------------------------------------------------------------------
+// Fallback static providers (used when requiredProviders is not passed)
+// ---------------------------------------------------------------------------
+
+const DEFAULT_PROVIDERS: ProviderInfo[] = [
   {
     provider: "anthropic",
     label: "Anthropic",
     placeholder: "sk-ant-...",
     required: true,
-    description: "Required for Claude-powered agents",
+    description: "Powers your Sales and Support agents",
   },
   {
     provider: "openai",
@@ -63,13 +76,19 @@ const API_KEY_PROVIDERS = [
     required: false,
     description: "Required for R&D Council debates",
   },
-] as const;
+];
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function WizardApiKeysStep({ apiKeys, onApiKeysChange }: Props) {
+export function WizardApiKeysStep({
+  apiKeys,
+  onApiKeysChange,
+  requiredProviders,
+}: Props) {
+  const providers = requiredProviders ?? DEFAULT_PROVIDERS;
+
   const [showKeys, setShowKeys] = useState<Set<string>>(new Set());
   const [validationStatus, setValidationStatus] = useState<
     Record<string, ValidationStatus>
@@ -77,7 +96,7 @@ export function WizardApiKeysStep({ apiKeys, onApiKeysChange }: Props) {
 
   function updateKey(provider: string, value: string) {
     const existing = apiKeys.find((k) => k.provider === provider);
-    const providerInfo = API_KEY_PROVIDERS.find((p) => p.provider === provider);
+    const providerInfo = providers.find((p) => p.provider === provider);
 
     // Reset validation status when key changes
     setValidationStatus((prev) => ({
@@ -186,7 +205,7 @@ export function WizardApiKeysStep({ apiKeys, onApiKeysChange }: Props) {
       </p>
 
       <div className="space-y-3">
-        {API_KEY_PROVIDERS.map((provider) => {
+        {providers.map((provider) => {
           const currentKey =
             apiKeys.find((k) => k.provider === provider.provider)?.key ?? "";
           const isShowing = showKeys.has(provider.provider);

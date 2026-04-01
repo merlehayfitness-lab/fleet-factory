@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -32,7 +32,11 @@ import {
   DepartmentTreeSelect,
   type DepartmentTemplate,
 } from "./department-tree-select";
-import { WizardApiKeysStep, type ApiKeyEntry } from "./wizard-api-keys-step";
+import {
+  WizardApiKeysStep,
+  type ApiKeyEntry,
+  type ProviderInfo,
+} from "./wizard-api-keys-step";
 import { WizardSubdomainStep } from "./wizard-subdomain-step";
 
 // ---------------------------------------------------------------------------
@@ -70,48 +74,101 @@ function slugify(name: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Static templates (fetched from DB in production — stubbed for now)
+// Static templates (fetched from DB in production -- stubbed for now)
 // ---------------------------------------------------------------------------
 
 const DEPARTMENT_TEMPLATES: DepartmentTemplate[] = [
-  { id: "ceo", name: "CEO Agent", departmentType: "executive", description: "Chief executive — deploys first, orchestrates all departments", roleLevel: 0, reportingChain: "ceo", tokenBudget: 250000 },
+  { id: "ceo", name: "CEO Agent", departmentType: "executive", description: "Chief executive -- deploys first, orchestrates all departments", roleLevel: 0, reportingChain: "ceo", tokenBudget: 250000, modelProfile: "Claude Opus 4" },
   // Marketing
-  { id: "mkt-dir", name: "Marketing Director", departmentType: "marketing", description: "Oversees content, SEO, outreach, and social strategy", roleLevel: 1, reportingChain: "ceo.marketing", tokenBudget: 150000 },
-  { id: "mkt-content", name: "Content Writer", departmentType: "marketing", description: "Blog posts, newsletters, landing page copy", roleLevel: 2, reportingChain: "ceo.marketing.content", tokenBudget: 100000 },
-  { id: "mkt-seo", name: "SEO Analyst", departmentType: "marketing", description: "Keyword research, rank tracking, technical SEO", roleLevel: 2, reportingChain: "ceo.marketing.seo", tokenBudget: 80000 },
-  { id: "mkt-outreach", name: "Cold Outreach Agent", departmentType: "marketing", description: "Cold email and LinkedIn outreach campaigns", roleLevel: 2, reportingChain: "ceo.marketing.outreach", tokenBudget: 80000 },
-  { id: "mkt-social", name: "Social Media Manager", departmentType: "marketing", description: "Social content calendar and engagement", roleLevel: 2, reportingChain: "ceo.marketing.social", tokenBudget: 80000 },
+  { id: "mkt-dir", name: "Marketing Director", departmentType: "marketing", description: "Oversees content, SEO, outreach, and social strategy", roleLevel: 1, reportingChain: "ceo.marketing", tokenBudget: 150000, modelProfile: "Claude Sonnet 4" },
+  { id: "mkt-content", name: "Content Writer", departmentType: "marketing", description: "Blog posts, newsletters, landing page copy", roleLevel: 2, reportingChain: "ceo.marketing.content", tokenBudget: 100000, modelProfile: "Claude Sonnet 4" },
+  { id: "mkt-seo", name: "SEO Analyst", departmentType: "marketing", description: "Keyword research, rank tracking, technical SEO", roleLevel: 2, reportingChain: "ceo.marketing.seo", tokenBudget: 80000, modelProfile: "Claude Sonnet 4" },
+  { id: "mkt-outreach", name: "Cold Outreach Agent", departmentType: "marketing", description: "Cold email and LinkedIn outreach campaigns", roleLevel: 2, reportingChain: "ceo.marketing.outreach", tokenBudget: 80000, modelProfile: "Claude Sonnet 4" },
+  { id: "mkt-social", name: "Social Media Manager", departmentType: "marketing", description: "Social content calendar and engagement", roleLevel: 2, reportingChain: "ceo.marketing.social", tokenBudget: 80000, modelProfile: "Claude Sonnet 4" },
   // Sales
-  { id: "sales-head", name: "Sales Director", departmentType: "sales", description: "Lead generation, pipeline management, deal closing", roleLevel: 1, reportingChain: "ceo.sales", tokenBudget: 150000 },
-  { id: "sales-qualifier", name: "Lead Qualifier", departmentType: "sales", description: "Scores and qualifies inbound/outbound leads", roleLevel: 2, reportingChain: "ceo.sales.qualifier", tokenBudget: 80000 },
-  { id: "sales-proposal", name: "Proposal Writer", departmentType: "sales", description: "Sales proposals, pricing quotes, contracts", roleLevel: 2, reportingChain: "ceo.sales.proposals", tokenBudget: 100000 },
-  { id: "sales-crm", name: "CRM Manager", departmentType: "sales", description: "CRM hygiene, pipeline reporting, data quality", roleLevel: 2, reportingChain: "ceo.sales.crm", tokenBudget: 80000 },
+  { id: "sales-head", name: "Sales Director", departmentType: "sales", description: "Lead generation, pipeline management, deal closing", roleLevel: 1, reportingChain: "ceo.sales", tokenBudget: 150000, modelProfile: "Claude Sonnet 4" },
+  { id: "sales-qualifier", name: "Lead Qualifier", departmentType: "sales", description: "Scores and qualifies inbound/outbound leads", roleLevel: 2, reportingChain: "ceo.sales.qualifier", tokenBudget: 80000, modelProfile: "Claude Sonnet 4" },
+  { id: "sales-proposal", name: "Proposal Writer", departmentType: "sales", description: "Sales proposals, pricing quotes, contracts", roleLevel: 2, reportingChain: "ceo.sales.proposals", tokenBudget: 100000, modelProfile: "Claude Sonnet 4" },
+  { id: "sales-crm", name: "CRM Manager", departmentType: "sales", description: "CRM hygiene, pipeline reporting, data quality", roleLevel: 2, reportingChain: "ceo.sales.crm", tokenBudget: 80000, modelProfile: "Claude Sonnet 4" },
   // Operations
-  { id: "ops-head", name: "Operations Director", departmentType: "operations", description: "Workflows, scheduling, and coordination", roleLevel: 1, reportingChain: "ceo.operations", tokenBudget: 120000 },
-  { id: "ops-tasks", name: "Task Manager", departmentType: "operations", description: "Task creation, assignment, and tracking", roleLevel: 2, reportingChain: "ceo.operations.tasks", tokenBudget: 80000 },
-  { id: "ops-scheduler", name: "Scheduler", departmentType: "operations", description: "Calendar management and resource allocation", roleLevel: 2, reportingChain: "ceo.operations.scheduler", tokenBudget: 60000 },
-  { id: "ops-reporting", name: "Reporting Analyst", departmentType: "operations", description: "Cross-department reports and KPI dashboards", roleLevel: 2, reportingChain: "ceo.operations.reporting", tokenBudget: 100000 },
+  { id: "ops-head", name: "Operations Director", departmentType: "operations", description: "Workflows, scheduling, and coordination", roleLevel: 1, reportingChain: "ceo.operations", tokenBudget: 120000, modelProfile: "Claude Sonnet 4" },
+  { id: "ops-tasks", name: "Task Manager", departmentType: "operations", description: "Task creation, assignment, and tracking", roleLevel: 2, reportingChain: "ceo.operations.tasks", tokenBudget: 80000, modelProfile: "Claude Sonnet 4" },
+  { id: "ops-scheduler", name: "Scheduler", departmentType: "operations", description: "Calendar management and resource allocation", roleLevel: 2, reportingChain: "ceo.operations.scheduler", tokenBudget: 60000, modelProfile: "Claude Sonnet 4" },
+  { id: "ops-reporting", name: "Reporting Analyst", departmentType: "operations", description: "Cross-department reports and KPI dashboards", roleLevel: 2, reportingChain: "ceo.operations.reporting", tokenBudget: 100000, modelProfile: "Claude Sonnet 4" },
   // Support
-  { id: "support-head", name: "Support Director", departmentType: "support", description: "Customer support and ticket resolution", roleLevel: 1, reportingChain: "ceo.support", tokenBudget: 120000 },
-  { id: "support-tickets", name: "Ticket Handler", departmentType: "support", description: "First-line triage and ticket resolution", roleLevel: 2, reportingChain: "ceo.support.tickets", tokenBudget: 80000 },
-  { id: "support-kb", name: "Knowledge Base Manager", departmentType: "support", description: "Knowledge base articles and FAQ maintenance", roleLevel: 2, reportingChain: "ceo.support.knowledge", tokenBudget: 80000 },
-  { id: "support-escalation", name: "Escalation Manager", departmentType: "support", description: "Escalated issues and VIP customer management", roleLevel: 2, reportingChain: "ceo.support.escalation", tokenBudget: 100000 },
+  { id: "support-head", name: "Support Director", departmentType: "support", description: "Customer support and ticket resolution", roleLevel: 1, reportingChain: "ceo.support", tokenBudget: 120000, modelProfile: "Claude Sonnet 4" },
+  { id: "support-tickets", name: "Ticket Handler", departmentType: "support", description: "First-line triage and ticket resolution", roleLevel: 2, reportingChain: "ceo.support.tickets", tokenBudget: 80000, modelProfile: "Claude Sonnet 4" },
+  { id: "support-kb", name: "Knowledge Base Manager", departmentType: "support", description: "Knowledge base articles and FAQ maintenance", roleLevel: 2, reportingChain: "ceo.support.knowledge", tokenBudget: 80000, modelProfile: "Claude Sonnet 4" },
+  { id: "support-escalation", name: "Escalation Manager", departmentType: "support", description: "Escalated issues and VIP customer management", roleLevel: 2, reportingChain: "ceo.support.escalation", tokenBudget: 100000, modelProfile: "Claude Sonnet 4" },
   // R&D
-  { id: "rd-claude", name: "R&D Lead (Claude)", departmentType: "rd", description: "Reasoning and code analysis specialist", roleLevel: 2, reportingChain: "ceo.rd.claude", tokenBudget: 100000 },
-  { id: "rd-gpt4", name: "R&D Analyst (GPT-4)", departmentType: "rd", description: "Data analysis and creative ideation", roleLevel: 2, reportingChain: "ceo.rd.gpt4", tokenBudget: 100000 },
-  { id: "rd-gemini", name: "R&D Strategist (Gemini)", departmentType: "rd", description: "Multimodal analysis and web search", roleLevel: 2, reportingChain: "ceo.rd.gemini", tokenBudget: 80000 },
-  { id: "rd-mistral", name: "R&D Engineer (Mistral)", departmentType: "rd", description: "Efficient code generation and prototyping", roleLevel: 2, reportingChain: "ceo.rd.mistral", tokenBudget: 60000 },
-  { id: "rd-deepseek", name: "R&D Researcher (DeepSeek)", departmentType: "rd", description: "Deep technical research and math", roleLevel: 2, reportingChain: "ceo.rd.deepseek", tokenBudget: 60000 },
+  { id: "rd-claude", name: "R&D Lead (Claude)", departmentType: "rd", description: "Reasoning and code analysis specialist", roleLevel: 2, reportingChain: "ceo.rd.claude", tokenBudget: 100000, modelProfile: "Claude Sonnet 4" },
+  { id: "rd-gpt4", name: "R&D Analyst (GPT-4)", departmentType: "rd", description: "Data analysis and creative ideation", roleLevel: 2, reportingChain: "ceo.rd.gpt4", tokenBudget: 100000, modelProfile: "GPT-4o" },
+  { id: "rd-gemini", name: "R&D Strategist (Gemini)", departmentType: "rd", description: "Multimodal analysis and web search", roleLevel: 2, reportingChain: "ceo.rd.gemini", tokenBudget: 80000, modelProfile: "Gemini Pro" },
+  { id: "rd-mistral", name: "R&D Engineer (Mistral)", departmentType: "rd", description: "Efficient code generation and prototyping", roleLevel: 2, reportingChain: "ceo.rd.mistral", tokenBudget: 60000, modelProfile: "Mistral Large" },
+  { id: "rd-deepseek", name: "R&D Researcher (DeepSeek)", departmentType: "rd", description: "Deep technical research and math", roleLevel: 2, reportingChain: "ceo.rd.deepseek", tokenBudget: 60000, modelProfile: "DeepSeek V3" },
 ];
 
-// Default selection: CEO + all department heads + a few key specialists
-const DEFAULT_SELECTED = new Set([
-  "ceo",
-  "mkt-dir", "mkt-content", "mkt-seo",
-  "sales-head", "sales-qualifier", "sales-crm",
-  "ops-head", "ops-tasks", "ops-reporting",
-  "support-head", "support-tickets",
-]);
+// Full hierarchy pre-selected by default (user decision from 18-CONTEXT.md)
+const DEFAULT_SELECTED = new Set(DEPARTMENT_TEMPLATES.map((t) => t.id));
+
+// ---------------------------------------------------------------------------
+// Dynamic provider derivation
+// ---------------------------------------------------------------------------
+
+function deriveRequiredProviders(
+  selectedTemplateIds: Set<string>,
+  templates: DepartmentTemplate[],
+): ProviderInfo[] {
+  const providers: ProviderInfo[] = [
+    {
+      provider: "anthropic",
+      label: "Anthropic",
+      placeholder: "sk-ant-...",
+      required: true,
+      description: "Powers your Sales and Support agents",
+    },
+  ];
+
+  // Check if any R&D department templates are selected
+  const hasRd = templates.some(
+    (t) => selectedTemplateIds.has(t.id) && t.departmentType === "rd",
+  );
+
+  if (hasRd) {
+    providers.push(
+      {
+        provider: "openai",
+        label: "OpenAI",
+        placeholder: "sk-...",
+        required: false,
+        description: "Required for R&D Council debates (GPT-4o)",
+      },
+      {
+        provider: "google",
+        label: "Google AI",
+        placeholder: "AIza...",
+        required: false,
+        description: "Required for R&D Council debates (Gemini)",
+      },
+      {
+        provider: "mistral",
+        label: "Mistral",
+        placeholder: "...",
+        required: false,
+        description: "Required for R&D Council debates (Mistral Large)",
+      },
+      {
+        provider: "deepseek",
+        label: "DeepSeek",
+        placeholder: "sk-...",
+        required: false,
+        description: "Required for R&D Council debates (DeepSeek V3)",
+      },
+    );
+  }
+
+  return providers;
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -154,6 +211,12 @@ export function CreateBusinessWizard() {
   const handleSubdomainChange = useCallback((value: string) => {
     setSubdomain(value);
   }, []);
+
+  // Derive required providers from selected templates
+  const requiredProviders = useMemo(
+    () => deriveRequiredProviders(selectedTemplates, DEPARTMENT_TEMPLATES),
+    [selectedTemplates],
+  );
 
   async function goToStep(nextStep: number) {
     if (nextStep > step) {
@@ -349,7 +412,11 @@ export function CreateBusinessWizard() {
             <CardTitle>API Keys</CardTitle>
           </CardHeader>
           <CardContent>
-            <WizardApiKeysStep apiKeys={apiKeys} onApiKeysChange={setApiKeys} />
+            <WizardApiKeysStep
+              apiKeys={apiKeys}
+              onApiKeysChange={setApiKeys}
+              requiredProviders={requiredProviders}
+            />
           </CardContent>
           <CardFooter className="justify-between">
             <Button type="button" variant="outline" onClick={() => goToStep(1)}>
@@ -394,11 +461,22 @@ export function CreateBusinessWizard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* Business summary */}
+              {/* Business Details section */}
               <div className="rounded-lg border p-4">
-                <h3 className="mb-2 text-sm font-medium text-muted-foreground">
-                  Business
-                </h3>
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Business Details
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setStep(0)}
+                  >
+                    Edit
+                  </Button>
+                </div>
                 <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                   <dt className="text-muted-foreground">Name</dt>
                   <dd className="font-medium">{name || "-"}</dd>
@@ -406,18 +484,25 @@ export function CreateBusinessWizard() {
                   <dd className="font-mono text-xs">{slug || "-"}</dd>
                   <dt className="text-muted-foreground">Industry</dt>
                   <dd>{industryLabel}</dd>
-                  <dt className="text-muted-foreground">Subdomain</dt>
-                  <dd className="font-mono text-xs">
-                    {subdomain ? `${subdomain}.agencyfactory.ai` : "-"}
-                  </dd>
                 </dl>
               </div>
 
-              {/* Agents summary */}
+              {/* Departments section */}
               <div className="rounded-lg border p-4">
-                <h3 className="mb-2 text-sm font-medium text-muted-foreground">
-                  Agents ({selectedCount})
-                </h3>
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Departments ({selectedCount} agents)
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setStep(1)}
+                  >
+                    Edit
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {DEPARTMENT_TEMPLATES.filter((t) => selectedTemplates.has(t.id)).map(
                     (t) => (
@@ -432,11 +517,22 @@ export function CreateBusinessWizard() {
                 </p>
               </div>
 
-              {/* API Keys summary */}
+              {/* API Keys section */}
               <div className="rounded-lg border p-4">
-                <h3 className="mb-2 text-sm font-medium text-muted-foreground">
-                  API Keys
-                </h3>
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    API Keys
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setStep(2)}
+                  >
+                    Edit
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {apiKeys
                     .filter((k) => k.key.length > 0)
@@ -451,6 +547,27 @@ export function CreateBusinessWizard() {
                     </span>
                   )}
                 </div>
+              </div>
+
+              {/* Subdomain section */}
+              <div className="rounded-lg border p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Subdomain
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setStep(3)}
+                  >
+                    Edit
+                  </Button>
+                </div>
+                <p className="text-sm font-mono">
+                  {subdomain ? `${subdomain}.agencyfactory.ai` : "-"}
+                </p>
               </div>
 
               {/* What will be created */}
