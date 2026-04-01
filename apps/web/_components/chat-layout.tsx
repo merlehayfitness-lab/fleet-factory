@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { WifiOff } from "lucide-react";
+import { WifiOff, Loader2 } from "lucide-react";
 import { ChatChannelList } from "./chat-channel-list";
 import { ChatMessageList } from "./chat-message-list";
 import { ChatMessageInput } from "./chat-message-input";
@@ -118,9 +118,63 @@ function SlackChatUI({
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [hasMoreMessages, setHasMoreMessages] = useState(false);
+  const [isAgentTyping, setIsAgentTyping] = useState(false);
+  const isAgentTypingRef = useRef(false);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const queuePollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Keep ref in sync with state (for use inside interval callbacks)
+  useEffect(() => {
+    isAgentTypingRef.current = isAgentTyping;
+  }, [isAgentTyping]);
+
+  // Queue status polling: when the latest message is a queue status, poll for real response
+  useEffect(() => {
+    const lastMsg = messages[messages.length - 1];
+    const isQueueStatus = lastMsg?.role === "system" && lastMsg?.metadata?.isQueueStatus;
+
+    if (!isQueueStatus || !selectedDepartmentId) {
+      if (queuePollRef.current) {
+        clearInterval(queuePollRef.current);
+        queuePollRef.current = null;
+      }
+      return;
+    }
+
+    queuePollRef.current = setInterval(async () => {
+      const result = await getSlackFeedMessagesAction(
+        businessId,
+        selectedDepartmentId,
+        50,
+      );
+      if ("messages" in result && result.messages.length > 0) {
+        const lastFeedMsg = result.messages[result.messages.length - 1];
+        const stillQueued = lastFeedMsg?.role === "system" && lastFeedMsg?.metadata?.isQueueStatus;
+        if (!stillQueued) {
+          // Real response arrived, replace messages and clear queue poll
+          setMessages(result.messages);
+          if (queuePollRef.current) {
+            clearInterval(queuePollRef.current);
+            queuePollRef.current = null;
+          }
+        }
+      }
+    }, 3000);
+
+    return () => {
+      if (queuePollRef.current) {
+        clearInterval(queuePollRef.current);
+        queuePollRef.current = null;
+      }
+    };
+  }, [messages, selectedDepartmentId, businessId]);
 
   const isVpsOffline = vpsStatus?.status === "offline";
+
+  // Detect high demand from queue status messages
+  const lastMessage = messages[messages.length - 1];
+  const isHighDemand = lastMessage?.role === "system" && lastMessage?.metadata?.isQueueStatus;
 
   // Get selected channel info from department channels
   const selectedChannel = channels.find(
@@ -144,6 +198,8 @@ function SlackChatUI({
     setMessages([]);
     setConversationId(null);
     setHasMoreMessages(false);
+    setIsAgentTyping(false);
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
 
     async function loadExistingMessages() {
       // Refresh channels
@@ -201,6 +257,17 @@ function SlackChatUI({
       );
       if ("messages" in result && result.messages.length > 0) {
         setMessages((prev) => {
+          // Check if agent responded (new agent message appeared)
+          if (isAgentTypingRef.current) {
+            const hasNewAgentMsg = result.messages.some(
+              (m) => m.role === "agent" && !prev.find((p) => p.id === m.id),
+            );
+            if (hasNewAgentMsg) {
+              setIsAgentTyping(false);
+              if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            }
+          }
+
           // Merge: use feed as source of truth, keep optimistic messages
           const feedIds = new Set(result.messages.map((m) => m.id));
           const optimistic = prev.filter((m) => !feedIds.has(m.id));
@@ -299,6 +366,12 @@ function SlackChatUI({
 
       // Step 3: Trigger agent response with file context
       const deptId = selectedDepartmentId;
+
+      // Show typing indicator while waiting for agent
+      setIsAgentTyping(true);
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => setIsAgentTyping(false), 60_000);
+
       triggerAgentResponseAction(
         businessId,
         deptId,
@@ -307,12 +380,23 @@ function SlackChatUI({
         fileContext,
       ).catch((err) => {
         console.error("Agent response trigger failed:", err);
+        setIsAgentTyping(false);
       });
 
       // Quick re-polls to pick up agent response faster than the 10s interval
+      const prevMsgCount = messages.length + 1; // +1 for the optimistic user message
       const quickPoll = async () => {
         const r = await getSlackFeedMessagesAction(businessId, deptId, 50);
         if ("messages" in r && r.messages.length > 0) {
+          // Check if agent responded (new agent message appeared)
+          const hasNewAgentMsg = r.messages.some(
+            (m) => m.role === "agent" && !messages.find((prev) => prev.id === m.id),
+          );
+          if (hasNewAgentMsg) {
+            setIsAgentTyping(false);
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+          }
+
           setMessages((prev) => {
             // Merge: keep any optimistic messages not yet in the feed
             const feedIds = new Set(r.messages.map((m) => m.id));
@@ -416,11 +500,18 @@ function SlackChatUI({
             ) : (
               <ChatMessageList
                 messages={messages}
-                isAgentTyping={false}
+                isAgentTyping={isAgentTyping}
                 departmentName={selectedChannel.departmentName}
                 onLoadMore={handleLoadMore}
                 hasMoreMessages={hasMoreMessages}
               />
+            )}
+
+            {isHighDemand && (
+              <div className="flex items-center justify-center gap-1.5 py-1 text-[11px] text-amber-600">
+                <Loader2 className="size-3 animate-spin" />
+                <span>High demand -- your message is being processed</span>
+              </div>
             )}
 
             <ChatMessageInput

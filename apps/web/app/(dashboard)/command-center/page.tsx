@@ -8,12 +8,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+function formatCost(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
 export default async function CommandCenterPage() {
   const supabase = await createServerClient();
   const [summary, activity] = await Promise.all([
     getCSuiteSummary(supabase),
     getLiveActivityFeed(supabase, 15),
   ]);
+
+  // Sort provider/model breakdowns by cost descending
+  const topProviders = Object.entries(summary.totals.costByProvider)
+    .sort(([, a], [, b]) => b - a);
+  const topModels = Object.entries(summary.totals.costByModel)
+    .sort(([, a], [, b]) => b - a);
 
   return (
     <div className="space-y-6">
@@ -40,9 +50,75 @@ export default async function CommandCenterPage() {
           alert={summary.totals.totalPendingTasks > 20}
         />
         <StatCard
-          label="Tokens Today"
-          value={`${(summary.totals.totalTokensToday / 1000).toFixed(0)}k`}
+          label="Cost Today"
+          value={formatCost(summary.totals.totalCostToday)}
+          subtitle={`${(summary.totals.totalTokensToday / 1000).toFixed(0)}k tokens`}
         />
+      </div>
+
+      {/* Cost Breakdown */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Cost by Period</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Today</span>
+                <span className="font-mono font-medium">{formatCost(summary.totals.totalCostToday)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">This Week</span>
+                <span className="font-mono font-medium">{formatCost(summary.totals.costThisWeek)}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">This Month</span>
+                <span className="font-mono font-medium">{formatCost(summary.totals.costThisMonth)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Cost by Provider</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {topProviders.length > 0 ? (
+                topProviders.map(([provider, cents]) => (
+                  <div key={provider} className="flex items-center justify-between text-sm">
+                    <span className="capitalize text-muted-foreground">{provider}</span>
+                    <span className="font-mono font-medium">{formatCost(cents)}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted-foreground">No usage recorded</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Cost by Model</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {topModels.length > 0 ? (
+                topModels.slice(0, 5).map(([model, cents]) => (
+                  <div key={model} className="flex items-center justify-between text-sm">
+                    <span className="truncate text-muted-foreground mr-2">{model}</span>
+                    <span className="font-mono font-medium whitespace-nowrap">{formatCost(cents)}</span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-muted-foreground">No usage recorded</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -150,10 +226,12 @@ function StatCard({
   label,
   value,
   alert,
+  subtitle,
 }: {
   label: string;
   value: string | number;
   alert?: boolean;
+  subtitle?: string;
 }) {
   return (
     <Card>
@@ -164,6 +242,9 @@ function StatCard({
         >
           {value}
         </p>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+        )}
       </CardContent>
     </Card>
   );

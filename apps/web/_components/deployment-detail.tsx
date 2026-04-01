@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Check,
   X,
@@ -27,7 +27,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { retryDeploymentAction } from "@/_actions/deployment-actions";
+import { retryDeploymentAction, getDeploymentStatusAction } from "@/_actions/deployment-actions";
 import { DeploymentProgressStream } from "@/_components/deployment-progress-stream";
 import { DeploymentDiffViewer } from "@/_components/deployment-diff-viewer";
 import type { DeploymentStatus } from "@agency-factory/core";
@@ -141,8 +141,11 @@ function formatRelativeTime(dateStr: string): string {
  * Includes header, status stepper, per-stage error timeline,
  * artifact viewer, and config snapshot section.
  */
+const ACTIVE_STATUSES = new Set(["queued", "building", "deploying", "verifying"]);
+const POLL_INTERVAL_MS = 3000;
+
 export function DeploymentDetail({
-  deployment,
+  deployment: initialDeployment,
   businessId,
   vpsWsUrl,
   vpsConfigured,
@@ -150,6 +153,38 @@ export function DeploymentDetail({
 }: DeploymentDetailProps) {
   const [isRetrying, setIsRetrying] = useState(false);
   const [snapshotOpen, setSnapshotOpen] = useState(false);
+  const [deployment, setDeployment] = useState(initialDeployment);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Sync when parent passes a new deployment (different ID or final status after revalidate)
+  useEffect(() => {
+    setDeployment(initialDeployment);
+  }, [initialDeployment?.id, initialDeployment?.status]);
+
+  // Poll for status updates while deployment is active
+  useEffect(() => {
+    if (!deployment || !ACTIVE_STATUSES.has(deployment.status)) {
+      if (pollRef.current) clearInterval(pollRef.current);
+      return;
+    }
+
+    pollRef.current = setInterval(async () => {
+      const result = await getDeploymentStatusAction(deployment.id);
+      if ("deployment" in result && result.deployment) {
+        const updated = result.deployment as unknown as Deployment;
+        setDeployment((prev) =>
+          prev ? { ...prev, ...updated } : prev
+        );
+        if (!ACTIVE_STATUSES.has(updated.status)) {
+          if (pollRef.current) clearInterval(pollRef.current);
+        }
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [deployment?.id, deployment?.status]);
 
   if (!deployment) {
     return (

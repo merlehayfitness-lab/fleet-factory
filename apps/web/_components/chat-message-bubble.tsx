@@ -1,6 +1,6 @@
 "use client";
 
-import { Wrench, FileText, Bot, User } from "lucide-react";
+import { Wrench, FileText, Bot, User, Loader2, AlertCircle } from "lucide-react";
 import type { ChatMessage } from "@agency-factory/core";
 import { KnowledgeSourceFootnotes } from "./knowledge-source-footnotes";
 
@@ -47,6 +47,36 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
 
   // System messages
   if (isSystem) {
+    // Queue status messages (rate-limited)
+    const isQueueStatus = message.metadata?.isQueueStatus;
+    if (isQueueStatus) {
+      try {
+        const queueInfo = JSON.parse(message.content) as { type: string; position: number };
+        return (
+          <div className="flex justify-center my-2">
+            <div className="flex items-center gap-2 rounded-full bg-amber-500/10 border border-amber-500/20 px-4 py-2 text-sm text-amber-600">
+              <Loader2 className="size-4 animate-spin" />
+              <span>Your message is queued (position #{queueInfo.position}). It will be processed shortly.</span>
+            </div>
+          </div>
+        );
+      } catch {
+        // Fallback to normal system message
+      }
+    }
+
+    // Budget-exceeded messages
+    if (message.content.includes("token budget")) {
+      return (
+        <div className="flex justify-center my-2">
+          <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-2 text-sm text-destructive">
+            <AlertCircle className="size-4" />
+            <span>{message.content}</span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="flex justify-center py-2">
         <p className="text-xs text-muted-foreground bg-muted/50 rounded-full px-4 py-1.5">
@@ -104,7 +134,11 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
 
         {/* Message content */}
         <p className="text-sm whitespace-pre-wrap text-foreground/90">
-          {message.content}
+          {message.content?.trim()
+            ? message.content
+            : isAgent
+              ? <span className="italic text-muted-foreground">(no response)</span>
+              : message.content}
         </p>
 
         {/* File attachment cards */}
