@@ -445,6 +445,7 @@ router.post("/api/agents/:vpsAgentId/chat", (req, res) => {
             content: result.response,
             agentId: chatReq.agentId || vpsAgentId,
             toolCalls: [],
+            tokenUsage: result.tokenUsage ?? null,
           };
           console.log(
             `[chat] Async request ${requestId} complete for agent ${vpsAgentId} (${result.response.length} chars)`,

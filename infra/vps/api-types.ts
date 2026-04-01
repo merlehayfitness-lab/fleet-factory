@@ -60,6 +60,7 @@ export interface ChatResponse {
     inputs?: Record<string, unknown>;
     outputs?: Record<string, unknown>;
   }>;
+  tokenUsage?: TokenUsage | null;
 }
 
 /** Task execution request from admin app */
@@ -149,6 +150,14 @@ export interface TerminalMessage {
   cols?: number;
   rows?: number;
   data?: string;
+}
+
+/** Token usage from OpenClaw response */
+export interface TokenUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  model?: string;
 }
 
 /** Tenant stop/resume request */

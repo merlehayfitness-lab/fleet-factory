@@ -21,7 +21,12 @@ export async function sendMessageToAgent(
   sessionKey: string,
   message: string,
   model?: string,
-): Promise<{ response: string; model?: string; tokens?: number }> {
+): Promise<{
+  response: string;
+  model?: string;
+  tokens?: number;
+  tokenUsage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+}> {
   const url = `${GATEWAY_URL}/v1/chat/completions`;
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -55,7 +60,7 @@ export async function sendMessageToAgent(
   const data = (await res.json()) as {
     choices?: Array<{ message?: { content?: string } }>;
     model?: string;
-    usage?: { total_tokens?: number };
+    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
   };
 
   const content = data.choices?.[0]?.message?.content || "";
@@ -63,6 +68,11 @@ export async function sendMessageToAgent(
     response: content,
     model: data.model,
     tokens: data.usage?.total_tokens,
+    tokenUsage: data.usage ? {
+      prompt_tokens: data.usage.prompt_tokens ?? 0,
+      completion_tokens: data.usage.completion_tokens ?? 0,
+      total_tokens: data.usage.total_tokens ?? 0,
+    } : undefined,
   };
 }
 
