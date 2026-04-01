@@ -20,6 +20,10 @@ export interface BudgetCheckResult {
   agentUtilization?: number; // 0-100 percent
   businessUtilization?: number; // 0-100 percent
   warningLevel?: "none" | "amber" | "red";
+  agentTokensUsed?: number;
+  agentTokenBudget?: number;
+  businessTokensUsed?: number;
+  businessTokenLimit?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,6 +93,8 @@ export async function checkBudget(
           allowed: false,
           reason: "Monthly token limit reached for business",
           businessUtilization,
+          businessTokensUsed: businessTotalTokens,
+          businessTokenLimit: monthlyLimit,
           warningLevel: "red",
         };
       }
@@ -100,6 +106,8 @@ export async function checkBudget(
 
     // 4. Check agent-level budget if agentId provided
     let agentUtilization: number | undefined;
+    let agentTokensUsed: number | undefined;
+    let agentTokenBudgetValue: number | undefined;
 
     if (agentId) {
       // Get agent's token_budget, falling back to template token_budget via JOIN
@@ -115,6 +123,8 @@ export async function checkBudget(
         const agentBudget = agentData.token_budget ?? template?.token_budget ?? null;
 
         if (agentBudget !== null) {
+          agentTokenBudgetValue = agentBudget;
+
           // Get agent's monthly usage
           const { data: agentUsage, error: agentUsageError } = await supabase
             .from("api_usage")
@@ -128,6 +138,7 @@ export async function checkBudget(
               agentTotalTokens += (r.prompt_tokens ?? 0) + (r.completion_tokens ?? 0);
             }
 
+            agentTokensUsed = agentTotalTokens;
             agentUtilization = Math.round((agentTotalTokens / agentBudget) * 100);
 
             if (agentTotalTokens >= agentBudget) {
@@ -135,7 +146,11 @@ export async function checkBudget(
                 allowed: false,
                 reason: "Agent token budget exceeded",
                 agentUtilization,
+                agentTokensUsed: agentTotalTokens,
+                agentTokenBudget: agentBudget,
                 businessUtilization,
+                businessTokensUsed: businessTotalTokens,
+                businessTokenLimit: monthlyLimit ?? undefined,
                 warningLevel: "red",
               };
             }
@@ -151,7 +166,11 @@ export async function checkBudget(
     return {
       allowed: true,
       agentUtilization,
+      agentTokensUsed,
+      agentTokenBudget: agentTokenBudgetValue,
       businessUtilization,
+      businessTokensUsed: businessTotalTokens,
+      businessTokenLimit: monthlyLimit ?? undefined,
       warningLevel,
     };
   } catch (err) {

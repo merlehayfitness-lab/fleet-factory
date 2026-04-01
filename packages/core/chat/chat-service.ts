@@ -15,7 +15,7 @@ import { isVpsConfigured } from "../vps/vps-config";
 
 import { getVpsAgentId, sendChatToVps } from "../vps/vps-chat";
 import { executeWithRateLimit } from "../rate-limit/rate-limiter";
-import { shouldSendBudgetWarning } from "../rate-limit/budget-service";
+import { checkBudget, shouldSendBudgetWarning } from "../rate-limit/budget-service";
 
 /**
  * Get or create a conversation for a business + department + user.
@@ -761,15 +761,36 @@ export async function routeAndRespond(
           // Budget warning check (best-effort, after successful execution)
           try {
             if (agent.id) {
+              const budgetCheck = await checkBudget(supabase, businessId, agent.id);
               const shouldWarn = await shouldSendBudgetWarning(supabase, businessId, agent.id);
-              if (shouldWarn) {
+              if (shouldWarn && budgetCheck.agentUtilization !== undefined && budgetCheck.agentUtilization >= 80) {
+                // 1. Create audit log entry
                 await supabase.from("audit_logs").insert({
                   business_id: businessId,
                   action: "budget_warning",
                   entity_type: "agent",
                   entity_id: agent.id,
-                  metadata: { agentName: agent.name, utilization: "80%+" },
+                  metadata: {
+                    agentName: agent.name,
+                    utilization: budgetCheck.agentUtilization,
+                    tokensUsed: budgetCheck.agentTokensUsed,
+                    tokenBudget: budgetCheck.agentTokenBudget,
+                  },
                 });
+
+                // 2. Send Slack DM (dynamic import to avoid circular deps)
+                try {
+                  const { sendBudgetWarningDM } = await import("../slack/slack-messages");
+                  await sendBudgetWarningDM(
+                    supabase,
+                    businessId,
+                    agent.id,
+                    agent.name,
+                    budgetCheck.agentUtilization,
+                    budgetCheck.agentTokensUsed ?? 0,
+                    budgetCheck.agentTokenBudget ?? 0,
+                  );
+                } catch { /* Slack not configured, skip */ }
               }
             }
           } catch { /* best-effort */ }
