@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
+import { XCircle } from "lucide-react";
 import { createServerClient } from "@/_lib/supabase/server";
 import { HealthDashboard } from "@/_components/health-dashboard";
-import { getSystemHealth } from "@agency-factory/core/server";
+import { getSystemHealth, checkBudget } from "@agency-factory/core/server";
 import type { UsageSummaryData } from "@/_components/usage-summary";
 
 /**
@@ -140,15 +141,48 @@ export default async function BusinessPage({
   const vpsConfigured = !!(process.env.VPS_API_URL && process.env.VPS_API_KEY);
   const effectiveVpsStatus = health.vpsStatus ?? (vpsConfigured ? { status: "checking", lastCheckedAt: new Date().toISOString() } : null);
 
+  // Check business-level budget (no agentId = business-wide check)
+  const budgetInfo = await checkBudget(supabase, id);
+
   return (
-    <HealthDashboard
-      business={business}
-      initialHealth={health}
-      usageSummary={usageSummary}
-      vpsStatus={effectiveVpsStatus}
-      vpsWarning={vpsWarning}
-      bannerAgents={agentsForBanner}
-      bannerDepartments={departmentsForBanner}
-    />
+    <div className="space-y-0">
+      {/* Business-level budget banner */}
+      {budgetInfo.warningLevel === "red" && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <XCircle className="size-4 shrink-0" />
+          <div>
+            <p className="font-medium">Monthly token limit reached</p>
+            <p className="mt-1 text-destructive/80">
+              All agents are blocked from making API calls.
+              Upgrade your plan or add credits via the Anthropic console.
+              Usage resets on the 1st of next month.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Plan tier badge and utilization indicator */}
+      <div className="mb-4 flex items-center gap-3">
+        <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
+          {((business.plan_tier as string) ?? "PRO").toUpperCase()} Plan
+        </span>
+        {budgetInfo.businessUtilization != null && budgetInfo.businessUtilization > 50 && (
+          <p className="text-xs text-muted-foreground">
+            {budgetInfo.businessTokensUsed?.toLocaleString()} / {budgetInfo.businessTokenLimit?.toLocaleString()} tokens used this month
+            ({budgetInfo.businessUtilization}%)
+          </p>
+        )}
+      </div>
+
+      <HealthDashboard
+        business={business}
+        initialHealth={health}
+        usageSummary={usageSummary}
+        vpsStatus={effectiveVpsStatus}
+        vpsWarning={vpsWarning}
+        bannerAgents={agentsForBanner}
+        bannerDepartments={departmentsForBanner}
+      />
+    </div>
   );
 }
