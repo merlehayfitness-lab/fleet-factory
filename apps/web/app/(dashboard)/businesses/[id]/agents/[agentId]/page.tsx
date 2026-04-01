@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { AlertTriangle, ArrowLeft, XCircle } from "lucide-react";
 import { createServerClient } from "@/_lib/supabase/server";
+import { checkBudget } from "@agency-factory/core/server";
 import { StatusBadge } from "@/_components/status-badge";
 import { AgentDetailTabs } from "@/_components/agent-detail-tabs";
 
@@ -137,6 +138,9 @@ export default async function AgentDetailPage({
     type: i.type as string,
   }));
 
+  // Fetch budget info for this agent
+  const budgetInfo = await checkBudget(supabase, businessId, agentId);
+
   return (
     <div className="space-y-6">
       {/* Page header */}
@@ -167,6 +171,28 @@ export default async function AgentDetailPage({
           </p>
         )}
       </div>
+
+      {/* Budget warning banners */}
+      {budgetInfo.warningLevel === "amber" && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="size-4 shrink-0" />
+          <span>
+            This agent has used <strong>{budgetInfo.agentUtilization}%</strong> of its monthly token budget
+            ({budgetInfo.agentTokensUsed?.toLocaleString()} / {budgetInfo.agentTokenBudget?.toLocaleString()} tokens).
+            Consider increasing the budget or redistributing from other agents.
+          </span>
+        </div>
+      )}
+
+      {budgetInfo.warningLevel === "red" && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <XCircle className="size-4 shrink-0" />
+          <span>
+            This agent has exceeded its monthly token budget and is currently blocked from making API calls.
+            Increase the budget or wait for the monthly reset on the 1st.
+          </span>
+        </div>
+      )}
 
       <AgentDetailTabs
         agent={agent}
