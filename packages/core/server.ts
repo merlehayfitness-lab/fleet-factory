@@ -304,11 +304,13 @@ export {
   getCSuiteSummary,
   getRevOpsSummary,
   getLiveActivityFeed,
+  getUsageAnalytics,
 } from "./dashboard/dashboard-service";
 export type {
   CSuiteSummary,
   RevOpsSummary,
   LiveActivityEntry,
+  UsageAnalytics,
 } from "./dashboard/dashboard-service";
 
 // R&D Council (server-only -- autonomous agent sessions)
