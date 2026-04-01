@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 18 — Enhanced Business Wizard & Agent Hierarchy
+**Current focus:** Phase 19 — Rate Limiting & API Cost Tracking
 
 ## Current Position
 
-Phase: 18 of 18 (Enhanced Business Wizard & Agent Hierarchy)
-Plan: 2 of 2 in current phase (2 complete)
-Status: Phase Complete
-Last activity: 2026-04-01 -- Completed 18-02 (wizard UX polish: tooltips, dynamic providers, inline editing)
+Phase: 19 of 22 (Rate Limiting & API Cost Tracking)
+Plan: 1 of 4 in current phase (1 complete)
+Status: In Progress
+Last activity: 2026-04-01 -- Completed 19-01 (rate limiting foundation: DB-backed slots, budget service, model pricing)
 
-Progress: [███████████████████████████████████] 100% (56/56 plans)
+Progress: [████████████████████████████████░░░] 93% (57/61 plans)
 
 ## Performance Metrics
 
@@ -107,6 +107,7 @@ Progress: [███████████████████████
 | Phase 15 P04 | 2min | 2 tasks | 3 files |
 | Phase 18 P01 | 5min | 2 tasks | 4 files |
 | Phase 18 P02 | 5min | 2 tasks | 3 files |
+| Phase 19 P01 | 6min | 4 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -336,6 +337,12 @@ Recent decisions affecting current work:
 - [Phase 18-02]: Provider derivation checks departmentType === "rd" to trigger multi-model provider additions (OpenAI, Google, Mistral, DeepSeek)
 - [Phase 18-02]: Review step Edit buttons use setStep() directly to skip validation when navigating backward
 - [Phase 18-02]: WizardApiKeysStep accepts optional requiredProviders prop with fallback to hardcoded defaults
+- [19-01]: DB-backed slot counting via COUNT WHERE status=processing instead of in-memory counter
+- [19-01]: Per-business stagger tracking kept in-memory (non-critical latency smoothing)
+- [19-01]: Budget checks are best-effort: failure allows the API call through (never blocks)
+- [19-01]: Agent token_budget uses COALESCE pattern with template fallback via Supabase JOIN
+- [19-01]: metering.ts deleted; all usage recording consolidated to logApiUsage in rate-limiter.ts
+- [19-01]: usage_records table dropped in favor of api_usage (richer rate-limit-aware fields)
 
 ### Pending Todos
 
@@ -348,5 +355,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-01
-Stopped at: Completed 18-02-PLAN.md (Phase 18 complete, all plans delivered)
-Resume file: N/A -- all phases complete
+Stopped at: Completed 19-01-PLAN.md
+Resume file: .planning/phases/19-rate-limiting-api-cost-tracking/19-02-PLAN.md
