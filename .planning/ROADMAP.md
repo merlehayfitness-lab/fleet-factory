@@ -2,7 +2,11 @@
 
 ## Overview
 
-Agency Factory delivers a multi-tenant SaaS platform for deploying and managing AI agent stacks for client businesses. The admin web app deploys to Vercel; agent runtime runs on a Hostinger VPS via Claude Code + OpenClaw. The roadmap follows a strict dependency chain: tenant isolation and provisioning first (the foundation everything builds on), then agent management (what gets deployed), then the deployment pipeline (how it gets deployed), then live operations with task execution and approvals (agents doing real work), then observability and the command center (seeing and directing what agents do), then OpenClaw-native VPS deployment with live routing (making agents real), then RAG knowledge bases (making agents smart), and finally role definition and prompt generation (making agent setup easy). Each phase delivers a complete, verifiable capability that unlocks the next.
+Agency Factory delivers a multi-tenant SaaS platform for deploying and managing AI agent stacks for client businesses. The admin web app deploys to Vercel; agent runtime runs on a Hostinger VPS via Claude Code + OpenClaw.
+
+**Milestone 1 (v1 — Phases 1-17):** Foundation through operational MVP — auth, agents, deployment, observability, integrations, and live VPS runtime. Complete.
+
+**Milestone 2 (v2 — Phases 18-32):** Scale & self-serve — enhanced provisioning, cost tracking, multi-channel integrations, AI tooling, client portal, billing, and infrastructure hardening.
 
 ## Phases
 
@@ -30,7 +34,26 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 16: Tenant Disable Fix & Dashboard Freeze** - Fix 404 on disable, frozen dashboard banner, stop VPS activity (completed 2026-03-30)
 - [x] **Phase 17: VPS Activation & Embedded Terminal** - First real VPS deployment, gear icon to terminal page, embedded SSH terminal (completed 2026-03-30)
 
+### Milestone 2: Scale & Self-Serve
+- [x] **Phase 18: Enhanced Business Wizard & Agent Hierarchy** - Subdomain routing, API key collection, hierarchical department tree (completed 2026-03-31)
+- [x] **Phase 19: Rate Limiting & API Cost Tracking** - Concurrency control, priority queue, per-model cost calculation (completed 2026-03-31)
+- [x] **Phase 20: SSH Deployment & Automated Provisioning** - SSH-based deployment, idempotent provisioning, port allocation (completed 2026-03-31)
+- [x] **Phase 21: Command Center & RevOps Dashboard** - Cross-tenant C-suite overview, per-business RevOps with budget tracking (completed 2026-03-31)
+- [x] **Phase 22: Client Portal App** - Tenant-facing Next.js app with dashboard and activity feed (completed 2026-03-31)
+- [ ] **Phase 23: WhatsApp Integration** - Twilio/Meta webhook, command parsing, alerts, daily digest
+- [ ] **Phase 24: R&D Council** - Multi-model 5-agent debate sessions, scheduled memos with votes
+- [ ] **Phase 25: Designer Agent** - AI code generation chat, system-level VPS agent
+- [ ] **Phase 26: MCP Services & Skill Packages** - MCP server auto-assignment, 40+ builtin skill packages
+- [ ] **Phase 27: CRM Integration (Twenty)** - Contact/deal/activity sync, RevOps pipeline
+- [ ] **Phase 28: Billing & Monetization** - Stripe billing, usage-based pricing, plan tiers
+- [ ] **Phase 29: One-Click VPS Provisioning** - Admin UI deploys bootstrap OpenClaw agent, which self-replicates to deploy all remaining agents
+- [ ] **Phase 30: Hardening & Governance** - OAuth, MFA, SSO/SAML, compliance, policy overrides
+- [ ] **Phase 31: Horizontal Scaling** - Multi-VPS strategy, load balancing, tenant migration
+- [ ] **Phase 32: Industry Templates & Marketplace** - Vertical template packs, real integrations, community marketplace
+
 ## Phase Details
+
+### Milestone 1: MVP
 
 ### Phase 1: Foundation and Tenant Provisioning
 **Goal**: Admin can sign in, create a business tenant in one atomic flow, and see the provisioned workspace with departments -- all scoped by RLS so tenants never see each other's data
@@ -315,62 +338,246 @@ Plans:
 
 ## Milestone 2 (v2): Scale & Self-Serve
 
-**Prerequisite**: Phases 1-9 (MVP) complete and deployed.
+**Prerequisite**: Milestone 1 (Phases 1-17) complete.
 
-These are post-MVP capabilities identified during the Phase 1-8 build. They are listed here for planning purposes — scoping and phase breakdown will happen when v2 begins.
+Milestone 2 delivers the platform capabilities needed to scale beyond a single admin operator: automated provisioning, cost tracking, multi-channel integrations, AI-powered tooling, client-facing access, billing, and infrastructure hardening. Phases 18-27 were developed during the V1-V2 transition; Phases 28-32 are planned future work.
 
-### v2 Themes
+**V2 Phase Overview:**
+- [x] **Phase 18: Enhanced Business Wizard & Agent Hierarchy** - Subdomain routing, API key collection, hierarchical department tree with role levels and token budgets (completed 2026-03-31)
+- [x] **Phase 19: Rate Limiting & API Cost Tracking** - Concurrency control, priority queue, per-model cost calculation, usage analytics (completed 2026-03-31)
+- [x] **Phase 20: SSH Deployment & Automated Provisioning** - Direct SSH deployment replacing REST API, idempotent provisioning scripts, port allocation for multi-tenant isolation (completed 2026-03-31)
+- [x] **Phase 21: Command Center & RevOps Dashboard** - Cross-tenant C-suite command center with KPIs and bottleneck detection; per-business RevOps with token usage, agent performance, and budget tracking (completed 2026-03-31)
+- [x] **Phase 22: Client Portal App** - Separate tenant-facing Next.js app with business dashboard, agent stats, and activity feed (completed 2026-03-31)
+- [ ] **Phase 23: WhatsApp Integration** - Twilio/Meta webhook, command parsing, alert formatting, notification preferences, daily digest
+- [ ] **Phase 24: R&D Council** - Multi-model 5-agent debate sessions (Claude, GPT-4, Gemini, Mistral, DeepSeek), scheduled sessions, structured memos with votes
+- [ ] **Phase 25: Designer Agent** - AI-powered code generation chat for Next.js/Tailwind/shadcn components, system-level VPS agent
+- [ ] **Phase 26: MCP Services & Skill Packages** - MCP server auto-assignment from templates, 40+ builtin skill packages organized by department
+- [ ] **Phase 27: CRM Integration (Twenty)** - Contact, deal, and activity sync from Twenty CRM, pipeline visualization in RevOps dashboard
+- [ ] **Phase 28: Billing & Monetization** - Stripe subscription billing, usage-based pricing, plan tiers, per-tenant API key provisioning
+- [ ] **Phase 29: One-Click VPS Provisioning** - UI-driven VPS setup from admin panel, auto-provision directories, auto-spin containers, wizard integration
+- [ ] **Phase 30: Hardening & Governance** - OAuth/social login, MFA/2FA, SSO/SAML, compliance tooling, per-business approval policy overrides
+- [ ] **Phase 31: Horizontal Scaling** - Multi-VPS strategy, tenant-to-VPS assignment, load balancing, dedicated VPS option for enterprise
+- [ ] **Phase 32: Industry Templates & Marketplace** - Industry-specific template packs, real third-party integrations, community marketplace
 
-**Theme 0: VPS Activation (Phase 6 Intentional Gap)** ✅ *Completed in Phase 17*
-- ~~Remove TODO stubs in `infra/vps/api-routes.ts`~~ Done: all 6 stubs replaced with real Docker/OpenClaw implementations
-- ~~Run `infra/vps/setup.sh` on Hostinger VPS~~ Done: setup script tested, proxy running
-- ~~Bootstrap Claude Code~~ Blocked: OpenClaw not yet available on npm
-- ~~Embedded SSH terminal~~ Done: xterm.js + ssh2 bridge, accessible from dashboard
-- Remaining: OpenClaw availability for live agent chat/task routing
+## V2 Phase Details
 
-**Theme A: Client-Facing Portal**
-- Self-serve business onboarding wizard (business owners sign up and provision their own workspace)
-- Simplified business owner view (read-only dashboard, task submission, conversation access — not the full admin panel)
-- Per-business branding/white-label options
+### Phase 18: Enhanced Business Wizard & Agent Hierarchy
+**Goal**: Business creation wizard collects subdomain, API keys, and lets the admin select from a hierarchical department tree with role levels, reporting chains, and token budgets per agent
+**Depends on**: Phase 17
+**Requirements**: WIZ-01, WIZ-02, WIZ-03, HIER-01, HIER-02, HIER-03
+**Success Criteria** (what must be TRUE):
+  1. Wizard includes subdomain step with availability checking and preview (subdomain.agencyfactory.ai)
+  2. Wizard includes API keys step collecting Anthropic (required), OpenAI, Google, and Mistral keys with secure storage
+  3. Department tree selector shows hierarchical structure (CEO > Department Heads > Specialists) with expand/collapse and cascade selection
+  4. Agent templates store role_level (0=C-suite, 1=dept head, 2=specialist), reporting_chain, token_budget, and parent_template_id
+  5. Business subdomain is unique across all tenants (UNIQUE constraint enforced)
+**Key files**: `wizard-subdomain-step.tsx`, `wizard-api-keys-step.tsx`, `department-tree-select.tsx`, `create-business-wizard.tsx`, migrations 042/043/048/049
+**Plans**: 2 plans
 
-**Theme B: Billing & Monetization**
-- Stripe integration for subscription billing
-- Usage-based billing tied to existing metering (Phase 4)
-- Plan tiers (free trial, starter, pro, enterprise)
-- Per-tenant API key provisioning and rotation UI
+Plans:
+- [ ] 18-01-PLAN.md -- Server-side validation (subdomain check, API key validation) and template-aware V2 provisioning
+- [ ] 18-02-PLAN.md -- Wizard UX polish (hover tooltips, dynamic provider list, inline review editing, hierarchy enforcement)
 
-**Theme C: Hardening & Governance**
-- OAuth/social login + MFA/2FA
-- SSO/SAML for enterprise tenants
-- Advanced SLOs, regression testing, and compliance tooling
-- Per-business role overrides for approval risk policies
+### Phase 19: Rate Limiting & API Cost Tracking
+**Goal**: API calls are rate-limited with concurrency control (max 3 concurrent), queued when capacity is exceeded with priority ordering, and all usage is logged with per-model cost calculation
+**Depends on**: Phase 17
+**Requirements**: RATE-01, RATE-02, RATE-03, USAGE-01, USAGE-02
+**Success Criteria** (what must be TRUE):
+  1. Rate limiter enforces max 3 concurrent API calls with 2-second stagger
+  2. Overflow requests are queued in Supabase-backed `api_call_queue` with priority + FIFO ordering and optimistic locking
+  3. All API calls are logged in `api_usage` table with model, provider, prompt/completion tokens, cost (cents), latency, and status
+  4. Cost calculation uses per-model pricing for Claude (Opus/Sonnet/Haiku), GPT-4/mini, Gemini, Mistral, and DeepSeek
+  5. Usage summaries queryable by business, date range, and status (completed/failed/rate_limited/queued)
+**Key files**: `packages/core/rate-limit/`, migration 045
+**Plans**: TBD
 
-**Theme D: Horizontal Scaling**
-- Multi-VPS strategy (what happens when one Hostinger VPS hits capacity)
-- Tenant-to-VPS assignment and migration
-- Load balancing across VPS fleet
-- Per-tenant dedicated VPS option for enterprise
+### Phase 20: SSH Deployment & Automated Provisioning
+**Goal**: VPS deployment uses direct SSH instead of REST API, with idempotent provisioning scripts, port allocation for multi-tenant isolation, and real-time progress reporting
+**Depends on**: Phase 17
+**Requirements**: SSHD-01, SSHD-02, SSHD-03, PORT-01, PORT-02
+**Success Criteria** (what must be TRUE):
+  1. SSH client connects to VPS via node-ssh with reusable connection pooling and progress callbacks
+  2. `sshDeployBusiness()` uploads workspace files, executes provision-tenant.sh, and deploys agents with CEO first then sub-agents (2s stagger)
+  3. `provision-tenant.sh` is idempotent — safe to re-run, preserves memory directories across redeploys, validates config before starting
+  4. Port allocator assigns contiguous port ranges per business and prevents collisions across tenants
+  5. Agent statuses are updated in database after deployment with real-time progress logging
+**Key files**: `packages/core/vps/ssh-client.ts`, `ssh-deploy.ts`, `infra/vps/provision-tenant.sh`, `provision-designer.sh`, `packages/core/deployment/port-allocator.ts`, migration 044
+**Plans**: TBD
 
-**Theme E: Vertical Expansion**
-- Industry-specific template packs (lawn care, real estate, e-commerce, etc.)
-- Deep third-party integrations (replace mock adapters with real CRM, email, helpdesk connectors)
-- Marketplace for community-contributed agent templates
+### Phase 21: Command Center & RevOps Dashboard
+**Goal**: Cross-tenant command center gives C-suite visibility into all businesses with KPIs, bottleneck detection, and live activity feed; per-business RevOps dashboard tracks token usage, agent performance, and budget utilization
+**Depends on**: Phase 19
+**Requirements**: CMDC-01, CMDC-02, CMDC-03, REVOPS-01, REVOPS-02, REVOPS-03
+**Success Criteria** (what must be TRUE):
+  1. Command center shows KPI cards: total businesses, active agents ratio, pending tasks (with alert threshold), tokens consumed today
+  2. All businesses listed with agent count, task count, status badge, and quick-link navigation
+  3. Bottleneck detection flags businesses with >10 pending tasks or <50% agents active
+  4. Live activity feed shows 15 most recent audit log entries across all tenants
+  5. RevOps dashboard shows per-agent token usage vs budget with color-coded utilization bars (green <50%, amber 50-80%, red >80%)
+  6. Flagged agents section highlights low-utilization agents (<50% of budget)
+**Key files**: `apps/web/app/(dashboard)/command-center/`, `apps/web/app/(dashboard)/businesses/[id]/revops/`, `packages/core/dashboard/`
+**Plans**: TBD
 
-**Theme F: One-Click VPS Provisioning**
-- One-click VPS setup per business from the admin panel (no SSH required)
-- Auto-provision `/data/tenants/{slug}/` directory structure on VPS during business creation
-- Auto-spin Docker containers for each department's agents
-- Auto-configure OpenClaw sessions for each agent
-- Integrated into the business creation wizard or as a "Deploy to VPS" button on the dashboard
-- Per-business VPS terminal isolation with pre-populated workspace
-- Status: replaces manual `setup.sh` + SSH workflow with a fully automated UI-driven flow
+### Phase 22: Client Portal App
+**Goal**: Separate tenant-facing portal app where business owners can sign in and view their dashboard with agent stats, task counts, and activity feed — without accessing the full admin panel
+**Depends on**: Phase 18
+**Requirements**: PORTAL-01, PORTAL-02, PORTAL-03, PORTAL-04
+**Success Criteria** (what must be TRUE):
+  1. Portal runs as standalone Next.js app on port 3001 with its own sign-in flow
+  2. Multi-tenant sign-in auto-resolves to the first business the user belongs to
+  3. Dashboard shows stat cards: Active Agents, Open Tasks, Contacts, Open Deals
+  4. Recent activity log shows business audit trail with timestamps
+  5. Business status badge displays correctly (active/provisioning/suspended/disabled)
+**Key files**: `apps/portal/`
+**Plans**: TBD
+
+### Phase 23: WhatsApp Integration
+**Goal**: Business alerts and status queries via WhatsApp with support for both Twilio and Meta providers, command parsing, configurable notification preferences, and scheduled daily digest
+**Depends on**: Phase 17
+**Requirements**: WA-01, WA-02, WA-03, WA-04, WA-05
+**Success Criteria** (what must be TRUE):
+  1. Webhook endpoint handles both Twilio and Meta formats with signature verification
+  2. Command parser recognizes intents: status, list_tasks, approve, reject, agent_query
+  3. Per-business WhatsApp config stores provider credentials and 6 notification toggles (deployment_complete, approval_needed, new_crm_lead, follow_up_due, daily_digest, spend_alert)
+  4. Alert formatting generates provider-appropriate messages for deployment, approval, CRM, and spend events
+  5. Scheduled daily digest sends business summary at configured time (default 9:00 AM)
+**Key files**: `apps/web/app/api/whatsapp/`, `packages/core/whatsapp/`, migration 047
+**Status**: 75% — webhook and command parsing working; daily digest and scheduled alerts pending
+**Plans**: TBD
+
+### Phase 24: R&D Council
+**Goal**: Multi-model AI council with 5 agents (Claude Lead, GPT-4 Analyst, Gemini Strategist, Mistral Engineer, DeepSeek Researcher) runs scheduled debate sessions and produces structured memos with votes
+**Depends on**: Phase 19
+**Requirements**: RDC-01, RDC-02, RDC-03, RDC-04
+**Success Criteria** (what must be TRUE):
+  1. Council consists of 5 agents across different providers, each with defined strengths and roles
+  2. Sessions run on schedule (9:00 AM & 5:00 PM daily with 15-min jitter) and can be triggered ad-hoc or as emergency sessions
+  3. Each session produces a structured memo with title, summary, content, proposer agent, and votes from all 5 agents
+  4. Council UI shows agent members with roles, session schedule, and recent memos with vote breakdowns
+  5. Memos stored in `rd_memos` table with RLS (business members see their memos, system memos visible to all)
+**Key files**: `packages/core/rd-council/`, `apps/web/app/(dashboard)/businesses/[id]/rd-council/`, migration 046
+**Status**: 50% — types, UI, and schema complete; session execution and memo generation pending
+**Plans**: TBD
+
+### Phase 25: Designer Agent
+**Goal**: AI-powered code generation agent that generates Next.js/Tailwind/shadcn components from natural language prompts, deployed as a system-level VPS agent with persistent memory
+**Depends on**: Phase 20
+**Requirements**: DSGN-01, DSGN-02, DSGN-03
+**Success Criteria** (what must be TRUE):
+  1. Designer chat interface accepts natural language prompts and returns generated code blocks
+  2. Generated code follows project conventions: TypeScript, shadcn/ui, Tailwind v4, Server Components by default
+  3. Designer agent runs as system-level VPS instance at `/data/system/designer-agent/` with SOUL.md defining generation rules
+  4. Agent uses claude-sonnet-4-6 with 500k token budget and preserves memory across sessions
+**Key files**: `apps/web/_components/designer-chat.tsx`, `apps/web/app/(dashboard)/designer/`, `infra/vps/provision-designer.sh`
+**Status**: 60% — UI complete; VPS wiring and real code generation pending
+**Plans**: TBD
+
+### Phase 26: MCP Services & Skill Packages
+**Goal**: Agents auto-receive MCP server configurations from their templates, and a skill package installer provides 40+ builtin packages organized by department with support for npm, GitHub, and URL sources
+**Depends on**: Phase 17
+**Requirements**: MCP-01, MCP-02, SPKG-01, SPKG-02
+**Success Criteria** (what must be TRUE):
+  1. MCP service auto-assigns MCP servers from template configs (supabase, slack, google-analytics, cms, search-console, email, crm)
+  2. MCP server configs generate OpenClaw-compatible npx command execution entries
+  3. Skill package installer resolves 40+ builtin packages across 6 departments (CEO, Marketing, Sales, Operations, Support, R&D)
+  4. Package sources supported: builtin, npm, github, and URL with version pinning
+**Key files**: `packages/core/agent/mcp-service.ts`, `packages/core/skill/package-installer.ts`
+**Status**: 60% — registry and types complete; assignment and installation logic partial
+**Plans**: TBD
+
+### Phase 27: CRM Integration (Twenty)
+**Goal**: Sync contacts, deals, and activities from Twenty CRM into per-business tables with pipeline visualization in the RevOps dashboard and activity logging per agent
+**Depends on**: Phase 21
+**Requirements**: CRM-01, CRM-02, CRM-03, CRM-04
+**Success Criteria** (what must be TRUE):
+  1. CRM tables store contacts (name, email, company, score, tags), deals (value, stage, probability, assigned agent), and activities (type, linked to contacts/deals/agents)
+  2. Twenty CRM API client authenticates and syncs data bidirectionally
+  3. Sync orchestration runs on schedule with conflict resolution
+  4. RevOps dashboard shows pipeline totals: open deals count, total pipeline value, conversion rates
+  5. CRM activities link to agents for attribution tracking
+**Key files**: `packages/core/crm/`, migration 050
+**Status**: 20% — schema complete; API client, sync, and service are stubs
+**Plans**: TBD
+
+### Phase 28: Billing & Monetization
+**Goal**: Stripe subscription billing with usage-based pricing tied to API cost tracking, plan tiers for different business sizes, and per-tenant API key provisioning with rotation UI
+**Depends on**: Phase 19, Phase 22
+**Requirements**: BILL-01, BILL-02, BILL-03, BILL-04, BILL-05
+**Success Criteria** (what must be TRUE):
+  1. Stripe integration handles subscription creation, upgrades, downgrades, and cancellation
+  2. Usage-based billing pulls from `api_usage` table (Phase 19) and generates monthly invoices
+  3. Plan tiers defined: Free Trial (limited agents/tokens), Starter, Pro, Enterprise with feature gating
+  4. Per-tenant API key provisioning with rotation UI and expiration management
+  5. Billing dashboard in portal shows current plan, usage, invoices, and payment method
+**Plans**: TBD
+
+### Phase 29: One-Click VPS Provisioning
+**Goal**: Fully automated VPS deployment from the admin panel UI — zero terminal access required. Admin clicks "Deploy to VPS" and the system deploys a single bootstrap OpenClaw agent to a Docker container. That first agent then self-replicates to deploy all remaining department leads and sub-agents by copying its own proven Docker setup, configs, and files onto new containers on the same VPS.
+**Depends on**: Phase 20
+**Requirements**: ONEVPS-01, ONEVPS-02, ONEVPS-03, ONEVPS-04, ONEVPS-05
+**Architecture** (key design decision):
+  - Step 1: Admin UI triggers deployment of ONE bootstrap OpenClaw agent into a Docker container on the VPS
+  - Step 2: Bootstrap agent is verified working (health check, can respond)
+  - Step 3: Bootstrap agent copies its own container setup (Docker config, OpenClaw config, env vars, entrypoint, directory structure) to create new containers — one per remaining department lead and sub-agent
+  - Step 4: Each cloned container gets its own SOUL.md, SKILL.md, and agent-specific config injected after copy
+  - Rationale: "Get one working, then replicate the proven setup" — no manual config per agent, no risk of setup drift
+**Success Criteria** (what must be TRUE):
+  1. "Deploy to VPS" button on business dashboard triggers full automated provisioning with zero terminal/SSH access needed by the admin
+  2. First OpenClaw agent deploys to Docker container on VPS and passes health check entirely from admin UI flow
+  3. Bootstrap agent self-replicates by copying its own Docker setup onto new containers for each remaining department lead and sub-agent
+  4. Each replicated container receives agent-specific config (SOUL.md, SKILL.md, system prompt, port, env vars) after cloning
+  5. All agents are running and responsive after replication completes — verified from admin UI
+  6. Per-business VPS terminal isolation with pre-populated workspace (optional access, not required for deployment)
+  7. Replaces all manual `setup.sh` + SSH workflows with fully automated UI-driven flow
+**Plans**: TBD
+
+### Phase 30: Hardening & Governance
+**Goal**: Production-grade auth with OAuth/social login, MFA/2FA, SSO/SAML for enterprise tenants, advanced compliance tooling, and per-business approval policy overrides
+**Depends on**: Phase 22, Phase 28
+**Requirements**: HARD-01, HARD-02, HARD-03, HARD-04, HARD-05
+**Success Criteria** (what must be TRUE):
+  1. OAuth/social login (Google, GitHub) alongside existing email/password
+  2. MFA/2FA with TOTP (authenticator app) and SMS fallback
+  3. SSO/SAML integration for enterprise tenants (tied to Enterprise plan tier)
+  4. Per-business role overrides for approval risk policies (custom risk thresholds, auto-approve rules)
+  5. Compliance audit export (CSV/PDF) for SOC 2 and data residency reporting
+**Plans**: TBD
+
+### Phase 31: Horizontal Scaling
+**Goal**: Multi-VPS infrastructure with tenant-to-VPS assignment, load balancing across VPS fleet, migration tooling for rebalancing, and dedicated VPS option for enterprise customers
+**Depends on**: Phase 29
+**Requirements**: SCALE-01, SCALE-02, SCALE-03, SCALE-04
+**Success Criteria** (what must be TRUE):
+  1. VPS fleet registry tracks capacity, health, and tenant assignments per VPS
+  2. New businesses auto-assigned to VPS with most available capacity
+  3. Tenant migration tool moves a business from one VPS to another with zero downtime
+  4. Load balancer distributes incoming requests across VPS fleet
+  5. Enterprise tenants can be assigned to a dedicated VPS with isolated resources
+**Plans**: TBD
+
+### Phase 32: Industry Templates & Marketplace
+**Goal**: Industry-specific template packs for vertical markets, real third-party integrations replacing mock adapters, and a community marketplace for sharing and discovering agent templates
+**Depends on**: Phase 26, Phase 30
+**Requirements**: MKTPL-01, MKTPL-02, MKTPL-03, MKTPL-04
+**Success Criteria** (what must be TRUE):
+  1. Industry template packs available for at least 3 verticals (lawn care, real estate, e-commerce) with pre-configured departments, agents, skills, and integrations
+  2. Mock adapters replaced with real CRM, email, and helpdesk connectors (at minimum: HubSpot, SendGrid, Zendesk)
+  3. Community marketplace where users can publish and discover agent templates
+  4. Template rating, review, and version management in marketplace
+  5. One-click install from marketplace into business workspace
+**Plans**: TBD
 
 ---
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16 -> 17
+
+**Milestone 1 (v1):** 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15 -> 16 -> 17
+
+**Milestone 2 (v2):** 18 -> 19 -> 20 -> 21 -> 22 -> 23 -> 24 -> 25 -> 26 -> 27 -> 28 -> 29 -> 30 -> 31 -> 32
+
+### Milestone 1: MVP (Complete)
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -383,11 +590,31 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | 7. RAG Knowledge Base | 3/3 | Complete | 2026-03-27 |
 | 8. Role Definition & Prompt Generation | 3/3 | Complete | 2026-03-27 |
 | 9. Skill Management & Deployment | 4/4 | Complete | 2026-03-28 |
-| 10. Template Profiles & Model Configuration | 3/3 | Complete    | 2026-03-29 |
-| 11. Sub-Agent Management | 3/3 | Complete    | 2026-03-30 |
-| 12. Integrations Catalog & Setup | 2/2 | Complete    | 2026-03-29 |
-| 13. Secrets Management UX | 3/3 | Complete    | 2026-03-30 |
-| 14. Slack Integration & Chat Replacement | 3/3 | Complete    | 2026-03-30 |
-| 15. AITMPL Template Catalog | 4/4 | Complete    | 2026-03-30 |
-| 16. Tenant Disable Fix & Dashboard Freeze | 3/3 | Complete    | 2026-03-30 |
-| 17. VPS Activation & Embedded Terminal | 3/3 | Complete   | 2026-03-30 |
+| 10. Template Profiles & Model Configuration | 3/3 | Complete | 2026-03-29 |
+| 11. Sub-Agent Management | 3/3 | Complete | 2026-03-30 |
+| 12. Integrations Catalog & Setup | 2/2 | Complete | 2026-03-29 |
+| 13. Secrets Management UX | 3/3 | Complete | 2026-03-30 |
+| 14. Slack Integration & Chat Replacement | 3/3 | Complete | 2026-03-30 |
+| 15. AITMPL Template Catalog | 4/4 | Complete | 2026-03-30 |
+| 16. Tenant Disable Fix & Dashboard Freeze | 3/3 | Complete | 2026-03-30 |
+| 17. VPS Activation & Embedded Terminal | 3/3 | Complete | 2026-03-30 |
+
+### Milestone 2: Scale & Self-Serve
+
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 18. Enhanced Business Wizard & Agent Hierarchy | — | Complete | 2026-03-31 |
+| 19. Rate Limiting & API Cost Tracking | — | Complete | 2026-03-31 |
+| 20. SSH Deployment & Automated Provisioning | — | Complete | 2026-03-31 |
+| 21. Command Center & RevOps Dashboard | — | Complete | 2026-03-31 |
+| 22. Client Portal App | — | Complete | 2026-03-31 |
+| 23. WhatsApp Integration | — | In Progress (75%) | — |
+| 24. R&D Council | — | In Progress (50%) | — |
+| 25. Designer Agent | — | In Progress (60%) | — |
+| 26. MCP Services & Skill Packages | — | In Progress (60%) | — |
+| 27. CRM Integration (Twenty) | — | In Progress (20%) | — |
+| 28. Billing & Monetization | — | Planned | — |
+| 29. One-Click VPS Provisioning | — | Planned | — |
+| 30. Hardening & Governance | — | Planned | — |
+| 31. Horizontal Scaling | — | Planned | — |
+| 32. Industry Templates & Marketplace | — | Planned | — |
