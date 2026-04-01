@@ -101,6 +101,7 @@ const DEPARTMENT_TEMPLATES: DepartmentTemplate[] = [
   { id: "support-kb", name: "Knowledge Base Manager", departmentType: "support", description: "Knowledge base articles and FAQ maintenance", roleLevel: 2, reportingChain: "ceo.support.knowledge", tokenBudget: 80000, modelProfile: "Claude Sonnet 4" },
   { id: "support-escalation", name: "Escalation Manager", departmentType: "support", description: "Escalated issues and VIP customer management", roleLevel: 2, reportingChain: "ceo.support.escalation", tokenBudget: 100000, modelProfile: "Claude Sonnet 4" },
   // R&D
+  { id: "rd-dir", name: "R&D Director", departmentType: "rd", description: "Oversees multi-model research council and technical investigations", roleLevel: 1, reportingChain: "ceo.rd", tokenBudget: 150000, modelProfile: "Claude Sonnet 4" },
   { id: "rd-claude", name: "R&D Lead (Claude)", departmentType: "rd", description: "Reasoning and code analysis specialist", roleLevel: 2, reportingChain: "ceo.rd.claude", tokenBudget: 100000, modelProfile: "Claude Sonnet 4" },
   { id: "rd-gpt4", name: "R&D Analyst (GPT-4)", departmentType: "rd", description: "Data analysis and creative ideation", roleLevel: 2, reportingChain: "ceo.rd.gpt4", tokenBudget: 100000, modelProfile: "GPT-4o" },
   { id: "rd-gemini", name: "R&D Strategist (Gemini)", departmentType: "rd", description: "Multimodal analysis and web search", roleLevel: 2, reportingChain: "ceo.rd.gemini", tokenBudget: 80000, modelProfile: "Gemini Pro" },
