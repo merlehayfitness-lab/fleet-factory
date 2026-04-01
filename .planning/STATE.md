@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-25)
 
 **Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 17 UAT approved — Milestone 1 complete
+**Current focus:** Phase 18 — Enhanced Business Wizard & Agent Hierarchy
 
 ## Current Position
 
-Phase: 17 of 17 (VPS Activation & Embedded Terminal)
-Plan: 3 of 3 in current phase (3 complete)
-Status: Phase 17 UAT approved
-Last activity: 2026-03-31 -- Phase 17 UAT approved (VPS-TERM-02, 03, 04 passed; 01, 05 blocked on OpenClaw)
+Phase: 18 of 18 (Enhanced Business Wizard & Agent Hierarchy)
+Plan: 1 of 2 in current phase (1 complete)
+Status: Executing
+Last activity: 2026-04-01 -- Completed 18-01 (server-side validation and template-aware provisioning)
 
-Progress: [███████████████████████████████████] 100% (54/54 plans)
+Progress: [██████████████████████████████████░] 97% (55/56 plans)
 
 ## Performance Metrics
 
@@ -105,6 +105,7 @@ Progress: [███████████████████████
 | Phase 17 P02 | 4min | 2 tasks | 8 files |
 | Phase 17 P03 | 3min | 2 tasks | 2 files |
 | Phase 15 P04 | 2min | 2 tasks | 3 files |
+| Phase 18 P01 | 5min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -325,6 +326,10 @@ Recent decisions affecting current work:
 - [Phase 17]: [Phase 17-03]: Auto-poll uses mount-refresh + 30s setInterval with cleanup on unmount (matches health-dashboard pattern)
 - [15-04]: businessId guard added to both useEffect and dismiss handler for consistent localStorage key protection
 - [15-04]: Supabase departments join returns object (belongsTo not array) -- used unknown cast for type safety
+- [Phase 18]: Short ID to template name mapping for wizard-to-DB template resolution (wizard uses static string IDs, DB uses UUIDs)
+- [Phase 18]: V2 provisioning is additive after base RPC -- base creates 4 default departments, V2 adds missing ones (executive, marketing, rd, hr) and skips duplicate agents
+- [Phase 18]: API key validation uses real HTTP calls with 10s AbortController timeout per provider (Anthropic, OpenAI, Google, Mistral, DeepSeek)
+- [Phase 18]: Parent agent resolution uses three strategies: explicit parent_template_id, dept heads default to CEO, specialists default to their department head
 
 ### Pending Todos
 
@@ -336,6 +341,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-31
-Stopped at: Phase 17 UAT approved -- all v1 milestone phases complete
-Resume file: .planning/phases/17-vps-activation-embedded-terminal/17-VERIFICATION.md
+Last session: 2026-04-01
+Stopped at: Completed 18-01-PLAN.md
+Resume file: .planning/phases/18-enhanced-business-wizard-agent-hierarchy/18-02-PLAN.md
