@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.businesses (
   industry text DEFAULT 'general',
   status text NOT NULL DEFAULT 'provisioning'
     CHECK (status IN ('provisioning', 'active', 'suspended', 'disabled')),
+  vps_config jsonb,
   created_at timestamptz DEFAULT now() NOT NULL,
   updated_at timestamptz DEFAULT now() NOT NULL
 );
@@ -249,7 +250,7 @@ CREATE TABLE IF NOT EXISTS public.deployments (
   business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
   version integer NOT NULL DEFAULT 1,
   status text NOT NULL DEFAULT 'queued'
-    CHECK (status IN ('queued', 'building', 'deploying', 'live', 'failed', 'rolled_back')),
+    CHECK (status IN ('queued', 'building', 'deploying', 'verifying', 'live', 'failed', 'rolled_back')),
   config_snapshot jsonb,
   error_message text,
   started_at timestamptz,

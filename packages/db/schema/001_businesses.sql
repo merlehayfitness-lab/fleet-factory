@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.businesses (
   industry text DEFAULT 'general',
   status text NOT NULL DEFAULT 'provisioning'
     CHECK (status IN ('provisioning', 'active', 'suspended', 'disabled')),
+  vps_config jsonb,
   created_at timestamptz DEFAULT now() NOT NULL,
   updated_at timestamptz DEFAULT now() NOT NULL
 );

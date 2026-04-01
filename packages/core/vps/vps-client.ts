@@ -1,26 +1,28 @@
-import { getVpsConfig } from "./vps-config";
+import { getVpsConfig, type VpsConfig } from "./vps-config";
 
 /**
  * POST request to VPS with API key auth and timeout.
  * Returns parsed JSON on success, or { success: false, error: message } on failure.
  * Pass a custom timeoutMs for long-running operations like chat.
+ * Pass config to override global env vars (per-business VPS targets).
  */
 export async function vpsPost<T = Record<string, unknown>>(
   path: string,
   body: unknown,
   timeoutMs?: number,
+  config?: VpsConfig,
 ): Promise<T & { success?: boolean; error?: string }> {
-  const config = getVpsConfig();
-  const url = `${config.baseUrl}${path}`;
+  const cfg = config ?? getVpsConfig();
+  const url = `${cfg.baseUrl}${path}`;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs ?? config.timeoutMs);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs ?? cfg.timeoutMs);
 
   try {
     const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-API-Key": config.apiKey,
+        "X-API-Key": cfg.apiKey,
       },
       body: JSON.stringify(body),
       signal: controller.signal,
@@ -41,7 +43,7 @@ export async function vpsPost<T = Record<string, unknown>>(
       err instanceof Error ? err.message : "Unknown error";
     return {
       success: false,
-      error: isTimeout ? `VPS timeout after ${timeoutMs ?? config.timeoutMs}ms` : `VPS unreachable: ${message}`,
+      error: isTimeout ? `VPS timeout after ${timeoutMs ?? cfg.timeoutMs}ms` : `VPS unreachable: ${message}`,
       _timeout: isTimeout,
     } as T & { success: boolean; error: string; _timeout?: boolean };
   } finally {
@@ -52,20 +54,22 @@ export async function vpsPost<T = Record<string, unknown>>(
 /**
  * GET request to VPS with API key auth and timeout.
  * Returns parsed JSON on success, or { success: false, error: message } on failure.
+ * Pass config to override global env vars (per-business VPS targets).
  */
 export async function vpsGet<T = Record<string, unknown>>(
   path: string,
+  config?: VpsConfig,
 ): Promise<T & { success?: boolean; error?: string }> {
-  const config = getVpsConfig();
-  const url = `${config.baseUrl}${path}`;
+  const cfg = config ?? getVpsConfig();
+  const url = `${cfg.baseUrl}${path}`;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
+  const timeout = setTimeout(() => controller.abort(), cfg.timeoutMs);
 
   try {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        "X-API-Key": config.apiKey,
+        "X-API-Key": cfg.apiKey,
       },
       signal: controller.signal,
     });

@@ -12,6 +12,54 @@ import {
 } from "@agency-factory/core/server";
 
 // ---------------------------------------------------------------------------
+// VPS SSH connection test
+// ---------------------------------------------------------------------------
+
+/**
+ * Test SSH connectivity for a given VPS config.
+ * Used in the wizard Deployment Target step.
+ */
+export async function testVpsSshConnection(params: {
+  host: string;
+  sshUser: string;
+  sshPassword: string;
+  sshPort: number;
+}): Promise<{ ok: boolean; message: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { ok: false, message: "Not authenticated" };
+  }
+
+  try {
+    const { getConnection, disconnect } = await import(
+      "@agency-factory/core/vps/ssh-client"
+    );
+    const ssh = await getConnection({
+      host: params.host,
+      port: params.sshPort || 22,
+      username: params.sshUser || "root",
+      password: params.sshPassword || undefined,
+    });
+    // Run a simple test command
+    const result = await ssh.execCommand("echo ok");
+    disconnect();
+    if (result.stdout.trim() === "ok") {
+      return { ok: true, message: "Connected successfully" };
+    }
+    return { ok: false, message: "Connected but test command failed" };
+  } catch (err) {
+    return {
+      ok: false,
+      message: err instanceof Error ? err.message : "Connection failed",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Subdomain availability check
 // ---------------------------------------------------------------------------
 
@@ -249,6 +297,15 @@ export async function createBusinessV2(formData: FormData) {
   const apiKeys: Array<{ provider: string; key: string }> = JSON.parse(
     (formData.get("apiKeys") as string) || "[]",
   );
+  const vpsConfigRaw = formData.get("vpsConfig") as string | null;
+  const vpsConfigInput: {
+    host: string;
+    sshUser: string;
+    sshPassword: string;
+    proxyApiKey: string;
+    sshPort: string;
+    proxyPort: string;
+  } | null = vpsConfigRaw ? JSON.parse(vpsConfigRaw) : null;
 
   // 2. Provision business (atomic RPC — creates business, membership, 4 default departments, default agents, deployment)
   let businessId: string;
@@ -285,14 +342,42 @@ export async function createBusinessV2(formData: FormData) {
     };
   }
 
-  // 5. Allocate port block
+  // 5. Save per-business VPS config (if provided)
+  if (vpsConfigInput?.host) {
+    try {
+      // Non-sensitive config stored in businesses.vps_config
+      await supabase
+        .from("businesses")
+        .update({
+          vps_config: {
+            host: vpsConfigInput.host,
+            ssh_user: vpsConfigInput.sshUser || "root",
+            ssh_port: Number(vpsConfigInput.sshPort) || 22,
+            proxy_port: Number(vpsConfigInput.proxyPort) || 3100,
+          },
+        })
+        .eq("id", businessId);
+
+      // Sensitive credentials stored encrypted in secrets table
+      const vpsSecrets: Record<string, string> = {};
+      if (vpsConfigInput.sshPassword) vpsSecrets.ssh_password = vpsConfigInput.sshPassword;
+      if (vpsConfigInput.proxyApiKey) vpsSecrets.proxy_api_key = vpsConfigInput.proxyApiKey;
+      if (Object.keys(vpsSecrets).length > 0) {
+        await saveProviderCredentials(supabase, businessId, "vps", vpsSecrets);
+      }
+    } catch {
+      // Non-critical: VPS config can be set later in settings
+    }
+  }
+
+  // 6. Allocate port block
   try {
     await allocatePortBlock(supabase, businessId);
   } catch {
     // Non-critical: port allocation can be retried
   }
 
-  // 6. Template-aware provisioning: create V2 departments and agents
+  // 7. Template-aware provisioning: create V2 departments and agents
   try {
     await provisionV2Agents(supabase, businessId, selectedTemplateIds);
   } catch (err) {
@@ -300,11 +385,17 @@ export async function createBusinessV2(formData: FormData) {
     console.error("V2 agent provisioning error:", err);
   }
 
-  // 7. SSH Deploy (if configured) — dynamic import to avoid native node-ssh/ssh2 in webpack bundle
+  // 8. SSH Deploy (if configured) — dynamic import to avoid native node-ssh/ssh2 in webpack bundle
   const { isSshConfigured } = await import(
     "@agency-factory/core/vps/ssh-client"
   );
-  if (isSshConfigured()) {
+  // Resolve per-business SSH config for this deploy
+  const { getVpsConfigForBusiness } = await import(
+    "@agency-factory/core/vps/vps-config"
+  );
+  const perBusinessVps = await getVpsConfigForBusiness(supabase, businessId).catch(() => null);
+
+  if (isSshConfigured(perBusinessVps?.sshConfig)) {
     try {
       const portAllocation = await allocatePortBlock(supabase, businessId);
       const { sshDeployBusiness } = await import(
@@ -350,6 +441,7 @@ export async function createBusinessV2(formData: FormData) {
         ),
         workspaceFiles: [],
         openclawConfig: "{}",
+        sshConfig: perBusinessVps?.sshConfig,
       });
     } catch {
       // Non-critical: SSH deploy can be retried from deployments page

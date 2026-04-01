@@ -1,7 +1,7 @@
 /**
  * SSH connection manager for VPS deployment.
  *
- * Uses node-ssh for key-based auth, command execution, and file uploads.
+ * Uses node-ssh for key-based or password auth, command execution, and file uploads.
  * Connection is reused within a deployment session then disconnected.
  */
 
@@ -15,7 +15,10 @@ export interface SshConfig {
   host: string;
   port: number;
   username: string;
-  privateKeyPath: string;
+  /** Path to private key file. Use instead of password. */
+  privateKeyPath?: string;
+  /** Password auth. Used when privateKeyPath is not set. */
+  password?: string;
 }
 
 export interface SshCommandResult {
@@ -35,19 +38,26 @@ export function getSshConfig(): SshConfig {
   if (!host) throw new Error("VPS_SSH_HOST environment variable is required");
 
   const privateKeyPath = process.env.VPS_SSH_KEY_PATH;
-  if (!privateKeyPath)
-    throw new Error("VPS_SSH_KEY_PATH environment variable is required");
+  const password = process.env.VPS_SSH_PASSWORD;
+
+  if (!privateKeyPath && !password) {
+    throw new Error("VPS_SSH_KEY_PATH or VPS_SSH_PASSWORD environment variable is required");
+  }
 
   return {
     host,
     port: Number(process.env.VPS_SSH_PORT) || 22,
     username: process.env.VPS_SSH_USER || "root",
-    privateKeyPath,
+    privateKeyPath: privateKeyPath || undefined,
+    password: password || undefined,
   };
 }
 
-export function isSshConfigured(): boolean {
-  return !!(process.env.VPS_SSH_HOST && process.env.VPS_SSH_KEY_PATH);
+export function isSshConfigured(overrideConfig?: SshConfig): boolean {
+  if (overrideConfig) {
+    return !!(overrideConfig.host && (overrideConfig.privateKeyPath || overrideConfig.password));
+  }
+  return !!(process.env.VPS_SSH_HOST && (process.env.VPS_SSH_KEY_PATH || process.env.VPS_SSH_PASSWORD));
 }
 
 // ---------------------------------------------------------------------------
@@ -59,26 +69,39 @@ let activeConnection: NodeSSH | null = null;
 /**
  * Get or create an SSH connection.
  * Reuses existing connection if still connected.
+ * If a config override is provided, always creates a fresh connection.
  */
 export async function getConnection(
   config?: SshConfig,
 ): Promise<NodeSSH> {
-  if (activeConnection?.isConnected()) {
+  // If a custom config is provided, don't reuse the global connection
+  if (!config && activeConnection?.isConnected()) {
     return activeConnection;
   }
 
   const cfg = config ?? getSshConfig();
   const ssh = new NodeSSH();
 
-  await ssh.connect({
+  const connectOptions: Parameters<NodeSSH["connect"]>[0] = {
     host: cfg.host,
     port: cfg.port,
     username: cfg.username,
-    privateKeyPath: cfg.privateKeyPath,
     readyTimeout: 10000,
-  });
+  };
 
-  activeConnection = ssh;
+  if (cfg.privateKeyPath) {
+    connectOptions.privateKeyPath = cfg.privateKeyPath;
+  } else if (cfg.password) {
+    connectOptions.password = cfg.password;
+  }
+
+  await ssh.connect(connectOptions);
+
+  // Only cache the global (no-override) connection
+  if (!config) {
+    activeConnection = ssh;
+  }
+
   return ssh;
 }
 
@@ -107,9 +130,10 @@ export async function execCommand(
     onStdout?: SshProgressCallback;
     onStderr?: SshProgressCallback;
     timeout?: number;
+    sshConfig?: SshConfig;
   },
 ): Promise<SshCommandResult> {
-  const ssh = await getConnection();
+  const ssh = await getConnection(options?.sshConfig);
 
   const result = await ssh.execCommand(command, {
     cwd: options?.cwd,
@@ -150,14 +174,15 @@ export async function uploadFile(
 }
 
 /**
- * Upload content as a file on the VPS (writes locally first via putFile alternative).
- * For string content, use writeRemoteFile instead.
+ * Upload content as a file on the VPS.
+ * For string content, use this instead of uploadFile.
  */
 export async function writeRemoteFile(
   remotePath: string,
   content: string,
+  sshConfig?: SshConfig,
 ): Promise<void> {
-  const ssh = await getConnection();
+  const ssh = await getConnection(sshConfig);
 
   // Ensure parent directory exists
   const dir = remotePath.substring(0, remotePath.lastIndexOf("/"));

@@ -38,6 +38,11 @@ import {
   type ProviderInfo,
 } from "./wizard-api-keys-step";
 import { WizardSubdomainStep } from "./wizard-subdomain-step";
+import {
+  WizardVpsStep,
+  type VpsConfigInput,
+  defaultVpsConfig,
+} from "./wizard-vps-step";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -59,6 +64,7 @@ const STEPS = [
   "Business Details",
   "Departments",
   "API Keys",
+  "Deployment Target",
   "Subdomain",
   "Review & Deploy",
 ] as const;
@@ -185,6 +191,7 @@ export function CreateBusinessWizard() {
   // V2 state
   const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(DEFAULT_SELECTED);
   const [apiKeys, setApiKeys] = useState<ApiKeyEntry[]>([]);
+  const [vpsConfig, setVpsConfig] = useState<VpsConfigInput>(defaultVpsConfig);
   const [subdomain, setSubdomain] = useState("");
 
   const {
@@ -247,6 +254,7 @@ export function CreateBusinessWizard() {
         }
         setError(null);
       }
+      // Step 3 = Deployment Target: no required fields, always allow advance
     }
     setStep(nextStep);
   }
@@ -263,6 +271,9 @@ export function CreateBusinessWizard() {
     formData.set("subdomain", subdomain);
     formData.set("selectedTemplates", JSON.stringify(Array.from(selectedTemplates)));
     formData.set("apiKeys", JSON.stringify(apiKeys));
+    if (vpsConfig.host) {
+      formData.set("vpsConfig", JSON.stringify(vpsConfig));
+    }
 
     try {
       const result = await createBusinessV2(formData);
@@ -430,17 +441,16 @@ export function CreateBusinessWizard() {
         </Card>
       )}
 
-      {/* Step 4: Subdomain */}
+      {/* Step 4: Deployment Target */}
       {step === 3 && (
         <Card>
           <CardHeader>
-            <CardTitle>Subdomain</CardTitle>
+            <CardTitle>Deployment Target</CardTitle>
           </CardHeader>
           <CardContent>
-            <WizardSubdomainStep
-              slug={slug}
-              subdomain={subdomain}
-              onSubdomainChange={handleSubdomainChange}
+            <WizardVpsStep
+              vpsConfig={vpsConfig}
+              onVpsConfigChange={setVpsConfig}
             />
           </CardContent>
           <CardFooter className="justify-between">
@@ -454,8 +464,32 @@ export function CreateBusinessWizard() {
         </Card>
       )}
 
-      {/* Step 5: Review & Deploy */}
+      {/* Step 5: Subdomain */}
       {step === 4 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Subdomain</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <WizardSubdomainStep
+              slug={slug}
+              subdomain={subdomain}
+              onSubdomainChange={handleSubdomainChange}
+            />
+          </CardContent>
+          <CardFooter className="justify-between">
+            <Button type="button" variant="outline" onClick={() => goToStep(3)}>
+              Back
+            </Button>
+            <Button type="button" onClick={() => goToStep(5)}>
+              Next
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      {/* Step 6: Review & Deploy */}
+      {step === 5 && (
         <Card>
           <CardHeader>
             <CardTitle>Review & Deploy</CardTitle>
@@ -550,6 +584,38 @@ export function CreateBusinessWizard() {
                 </div>
               </div>
 
+              {/* Deployment Target section */}
+              <div className="rounded-lg border p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    Deployment Target
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setStep(3)}
+                  >
+                    Edit
+                  </Button>
+                </div>
+                {vpsConfig.host ? (
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <dt className="text-muted-foreground">Host</dt>
+                    <dd className="font-mono text-xs">{vpsConfig.host}</dd>
+                    <dt className="text-muted-foreground">User</dt>
+                    <dd className="font-mono text-xs">{vpsConfig.sshUser || "root"}</dd>
+                    <dt className="text-muted-foreground">SSH Password</dt>
+                    <dd className="font-mono text-xs">
+                      {vpsConfig.sshPassword ? "****" + vpsConfig.sshPassword.slice(-2) : "-"}
+                    </dd>
+                  </dl>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Platform default VPS</p>
+                )}
+              </div>
+
               {/* Subdomain section */}
               <div className="rounded-lg border p-4">
                 <div className="mb-2 flex items-center justify-between">
@@ -561,7 +627,7 @@ export function CreateBusinessWizard() {
                     variant="ghost"
                     size="sm"
                     className="h-7 text-xs"
-                    onClick={() => setStep(3)}
+                    onClick={() => setStep(4)}
                   >
                     Edit
                   </Button>
@@ -626,7 +692,7 @@ export function CreateBusinessWizard() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => goToStep(3)}
+              onClick={() => goToStep(4)}
               disabled={submitting}
             >
               Back

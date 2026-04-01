@@ -9,7 +9,7 @@ import {
   generateAllAgentConfigs,
   generateOpenClawWorkspace,
 } from "@agency-factory/runtime";
-import { isVpsConfigured } from "../vps/vps-config";
+import { isVpsConfigured, getVpsConfigForBusiness } from "../vps/vps-config";
 import { deriveVpsAgentId } from "../vps/vps-naming";
 import { pushDeploymentToVps, pushRollbackToVps, runPostDeployHealthCheck } from "../vps/vps-deploy";
 import { getSkillsForAgent } from "../skill/skill-service";
@@ -410,6 +410,9 @@ export async function triggerDeployment(
       // Update deploy_target to 'vps'
       await supabase.from("deployments").update({ deploy_target: "vps" }).eq("id", deploymentId);
 
+      // Resolve per-business VPS config (falls back to global env if null)
+      const perBusinessVps = await getVpsConfigForBusiness(supabase, businessId).catch(() => null);
+
       // Build agent metadata for VPS payload
       const deptById = new Map<string, { type: string }>();
       for (const d of departments ?? []) {
@@ -448,7 +451,12 @@ export async function triggerDeployment(
           completed_at: new Date().toISOString(),
         });
       } else {
-        const vpsResult = await pushDeploymentToVps(supabase, deploymentId, vpsPayload);
+        const vpsResult = await pushDeploymentToVps(
+          supabase,
+          deploymentId,
+          vpsPayload,
+          perBusinessVps?.vpsConfig,
+        );
 
         if (!vpsResult.success) {
           // VPS push failed but artifacts are generated -- mark as failed
@@ -683,6 +691,9 @@ export async function rollbackDeployment(
     if (isVpsConfigured() && oldSnapshot.openclaw_workspace) {
       await supabase.from("deployments").update({ deploy_target: "vps" }).eq("id", deploymentId);
 
+      // Resolve per-business VPS config
+      const perBusinessVps = await getVpsConfigForBusiness(supabase, businessId).catch(() => null);
+
       // Build agent metadata from snapshot
       const deptById = new Map<string, { type: string }>();
       for (const d of oldSnapshot.departments ?? []) {
@@ -711,6 +722,7 @@ export async function rollbackDeployment(
         rollbackAgents,
         oldSnapshot.openclaw_workspace.files,
         oldSnapshot.openclaw_workspace.config,
+        perBusinessVps?.vpsConfig,
       );
 
       if (!vpsResult.success) {

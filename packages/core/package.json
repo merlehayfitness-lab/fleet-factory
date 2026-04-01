@@ -8,7 +8,8 @@
     ".": "./index.ts",
     "./server": "./server.ts",
     "./vps/ssh-client": "./vps/ssh-client.ts",
-    "./vps/ssh-deploy": "./vps/ssh-deploy.ts"
+    "./vps/ssh-deploy": "./vps/ssh-deploy.ts",
+    "./vps/vps-config": "./vps/vps-config.ts"
   },
   "scripts": {
     "build": "tsc --noEmit",

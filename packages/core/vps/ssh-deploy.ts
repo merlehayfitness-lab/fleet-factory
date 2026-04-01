@@ -14,6 +14,7 @@ import {
   writeRemoteFile,
   disconnect,
   isSshConfigured,
+  type SshConfig,
   type SshProgressCallback,
 } from "./ssh-client";
 import { updateAgentVpsStatus } from "./vps-health";
@@ -33,6 +34,8 @@ export interface SshDeployOptions {
   workspaceFiles: Array<{ path: string; content: string }>;
   openclawConfig: string;
   onProgress?: SshProgressCallback;
+  /** Override SSH config (for per-business VPS targets). Falls back to global env vars. */
+  sshConfig?: SshConfig;
 }
 
 export interface SshDeployAgent {
@@ -80,11 +83,11 @@ export async function sshDeployBusiness(
   supabase: SupabaseClient,
   options: SshDeployOptions,
 ): Promise<SshDeployResult> {
-  if (!isSshConfigured()) {
+  if (!isSshConfigured(options.sshConfig)) {
     return {
       success: false,
       agentResults: [],
-      error: "SSH not configured (VPS_SSH_HOST and VPS_SSH_KEY_PATH required)",
+      error: "SSH not configured (VPS_SSH_HOST and VPS_SSH_KEY_PATH or VPS_SSH_PASSWORD required)",
     };
   }
 
@@ -95,22 +98,29 @@ export async function sshDeployBusiness(
   try {
     // 1. Create tenant directory structure
     log(`[ssh] Creating tenant directory: ${tenantDir}`);
-    await execCommand(`mkdir -p "${tenantDir}/workspace" "${tenantDir}/memory" "${tenantDir}/config"`);
+    await execCommand(
+      `mkdir -p "${tenantDir}/workspace" "${tenantDir}/memory" "${tenantDir}/config"`,
+      { sshConfig: options.sshConfig },
+    );
 
     // 2. Upload workspace files
     log(`[ssh] Uploading ${options.workspaceFiles.length} workspace files`);
     for (const file of options.workspaceFiles) {
       const remotePath = `${tenantDir}/workspace/${file.path}`;
-      await writeRemoteFile(remotePath, file.content);
+      await writeRemoteFile(remotePath, file.content, options.sshConfig);
     }
 
     // 3. Write OpenClaw config
     log("[ssh] Writing OpenClaw config");
-    await writeRemoteFile(`${tenantDir}/config/openclaw.json`, options.openclawConfig);
+    await writeRemoteFile(`${tenantDir}/config/openclaw.json`, options.openclawConfig, options.sshConfig);
 
     // 4. Write provision config (JSON consumed by provision-tenant.sh)
     const provisionConfig = buildProvisionConfig(options);
-    await writeRemoteFile(`${tenantDir}/config/provision.json`, JSON.stringify(provisionConfig, null, 2));
+    await writeRemoteFile(
+      `${tenantDir}/config/provision.json`,
+      JSON.stringify(provisionConfig, null, 2),
+      options.sshConfig,
+    );
 
     // 5. Sort agents: CEO first, then the rest
     const sortedAgents = [...options.agents].sort((a, b) => {
@@ -118,6 +128,8 @@ export async function sshDeployBusiness(
       if (!a.isCeo && b.isCeo) return 1;
       return 0;
     });
+
+    const ceoAgent = sortedAgents.find((a) => a.isCeo);
 
     // 6. Execute provision-tenant.sh (registers agents in OpenClaw, no Docker)
     log("[ssh] Running provision-tenant.sh");
@@ -128,6 +140,7 @@ export async function sshDeployBusiness(
         onStdout: (line) => log(`[provision] ${line}`),
         onStderr: (line) => log(`[provision:err] ${line}`),
         timeout: 120000,
+        sshConfig: options.sshConfig,
       },
     );
 
@@ -151,13 +164,36 @@ export async function sshDeployBusiness(
       return { success: false, agentResults, error: provisionResult.stderr };
     }
 
-    // 7. Verify each agent workspace exists on disk
-    log("[ssh] Verifying agent workspaces");
-    for (let i = 0; i < sortedAgents.length; i++) {
-      const agent = sortedAgents[i];
+    // 7. For sub-agents: copy from CEO workspace then overwrite identity files
+    if (ceoAgent) {
+      const ceoWorkspaceDir = `${tenantDir}/workspace/workspace-${ceoAgent.vpsAgentId}`;
+      for (const agent of sortedAgents) {
+        if (agent.isCeo) continue;
+        const subWorkspaceDir = `${tenantDir}/workspace/workspace-${agent.vpsAgentId}`;
+        log(`[ssh] Copying CEO workspace to ${agent.vpsAgentId}`);
+        await execCommand(
+          `cp -r "${ceoWorkspaceDir}/." "${subWorkspaceDir}/"`,
+          { sshConfig: options.sshConfig },
+        );
+        // Overwrite only the identity-specific files from the uploaded workspace files
+        const identityFiles = ["SOUL.md", "IDENTITY.md", "TOOLS.md", "SKILL.md"];
+        for (const fname of identityFiles) {
+          const uploadedFile = options.workspaceFiles.find(
+            (f) => f.path === `workspace-${agent.vpsAgentId}/${fname}`,
+          );
+          if (uploadedFile) {
+            await writeRemoteFile(`${subWorkspaceDir}/${fname}`, uploadedFile.content, options.sshConfig);
+          }
+        }
+      }
+    }
 
+    // 8. Verify each agent workspace exists on disk
+    log("[ssh] Verifying agent workspaces");
+    for (const agent of sortedAgents) {
       const checkResult = await execCommand(
         `test -f "${tenantDir}/workspace/workspace-${agent.vpsAgentId}/IDENTITY.md" && echo "ready" || echo "not_found"`,
+        { sshConfig: options.sshConfig },
       );
 
       const isReady = checkResult.stdout.trim() === "ready";
@@ -178,7 +214,7 @@ export async function sshDeployBusiness(
       );
 
       if (isReady) {
-        log(`[ssh] Agent ${agent.vpsAgentId} registered in OpenClaw`);
+        log(`[ssh] Agent ${agent.vpsAgentId} workspace ready`);
       } else {
         log(`[ssh] Agent ${agent.vpsAgentId} workspace not ready`);
       }
@@ -209,8 +245,13 @@ export async function sshDeployAgent(
   agent: SshDeployAgent,
   workspaceFiles: Array<{ path: string; content: string }>,
   onProgress?: SshProgressCallback,
+  options?: {
+    /** Copy workspace from CEO before overwriting identity files */
+    ceoVpsAgentId?: string;
+    sshConfig?: SshConfig;
+  },
 ): Promise<SshDeployResult> {
-  if (!isSshConfigured()) {
+  if (!isSshConfigured(options?.sshConfig)) {
     return {
       success: false,
       agentResults: [],
@@ -220,13 +261,34 @@ export async function sshDeployAgent(
 
   const log = onProgress ?? console.log;
   const tenantDir = `${TENANT_DATA_DIR}/${businessSlug}`;
+  const subWorkspaceDir = `${tenantDir}/workspace/workspace-${agent.vpsAgentId}`;
 
   try {
-    // Upload agent workspace files
-    log(`[ssh] Uploading workspace for ${agent.vpsAgentId}`);
-    for (const file of workspaceFiles) {
-      const remotePath = `${tenantDir}/workspace/${file.path}`;
-      await writeRemoteFile(remotePath, file.content);
+    // If CEO workspace available and this is a sub-agent, copy then overwrite identity files
+    if (options?.ceoVpsAgentId && !agent.isCeo) {
+      const ceoWorkspaceDir = `${tenantDir}/workspace/workspace-${options.ceoVpsAgentId}`;
+      log(`[ssh] Copying CEO workspace to ${agent.vpsAgentId}`);
+      await execCommand(
+        `cp -r "${ceoWorkspaceDir}/." "${subWorkspaceDir}/"`,
+        { sshConfig: options.sshConfig },
+      );
+      // Overwrite only identity-specific files
+      const identityFiles = ["SOUL.md", "IDENTITY.md", "TOOLS.md", "SKILL.md"];
+      for (const fname of identityFiles) {
+        const uploadedFile = workspaceFiles.find(
+          (f) => f.path === `workspace-${agent.vpsAgentId}/${fname}`,
+        );
+        if (uploadedFile) {
+          await writeRemoteFile(`${subWorkspaceDir}/${fname}`, uploadedFile.content, options.sshConfig);
+        }
+      }
+    } else {
+      // Full workspace upload (CEO or no copy source)
+      log(`[ssh] Uploading workspace for ${agent.vpsAgentId}`);
+      for (const file of workspaceFiles) {
+        const remotePath = `${tenantDir}/workspace/${file.path}`;
+        await writeRemoteFile(remotePath, file.content, options?.sshConfig);
+      }
     }
 
     // Restart OpenClaw gateway to pick up the new agent workspace
@@ -236,12 +298,14 @@ export async function sshDeployAgent(
       {
         onStdout: (line) => log(`[gateway] ${line}`),
         onStderr: (line) => log(`[gateway:err] ${line}`),
+        sshConfig: options?.sshConfig,
       },
     );
 
     // Verify workspace exists
     const checkResult = await execCommand(
-      `test -f "${tenantDir}/workspace/workspace-${agent.vpsAgentId}/IDENTITY.md" && echo "ready" || echo "not_found"`,
+      `test -f "${subWorkspaceDir}/IDENTITY.md" && echo "ready" || echo "not_found"`,
+      { sshConfig: options?.sshConfig },
     );
     const success = checkResult.stdout.trim() === "ready" && restartResult.code === 0;
 

@@ -8,6 +8,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { vpsPost } from "./vps-client";
 import { checkAgentHealth, updateAgentVpsStatus } from "./vps-health";
+import type { VpsConfig } from "./vps-config";
 import type {
   VpsDeployPayload,
   VpsDeployResult,
@@ -26,8 +27,9 @@ export async function pushDeploymentToVps(
   supabase: SupabaseClient,
   deploymentId: string,
   payload: VpsDeployPayload,
+  vpsConfig?: VpsConfig,
 ): Promise<VpsDeployResult> {
-  const result = await vpsPost<VpsDeployResult>("/api/deploy", payload);
+  const result = await vpsPost<VpsDeployResult>("/api/deploy", payload, undefined, vpsConfig);
 
   if (!result.success) {
     return {
@@ -139,6 +141,7 @@ export async function pushRollbackToVps(
   }>,
   storedWorkspaceFiles: Array<{ path: string; content: string }>,
   openclawConfig: string,
+  vpsConfig?: VpsConfig,
 ): Promise<VpsDeployResult> {
   const payload: VpsDeployPayload = {
     businessId,
@@ -152,7 +155,7 @@ export async function pushRollbackToVps(
     openclawConfig,
   };
 
-  const result = await vpsPost<VpsDeployResult>("/api/deploy", payload);
+  const result = await vpsPost<VpsDeployResult>("/api/deploy", payload, undefined, vpsConfig);
 
   if (!result.success) {
     return {

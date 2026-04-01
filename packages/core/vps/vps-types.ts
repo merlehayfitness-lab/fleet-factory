@@ -17,6 +17,8 @@ export interface VpsDeployPayload {
     vpsAgentId: string; // namespaced: {slug}-{dept}-{prefix}
     departmentType: string;
     model: string;
+    /** If set, VPS proxy should copy this agent's workspace rather than creating from scratch */
+    copyFromVpsAgentId?: string;
   }>;
   workspaceFiles: WorkspaceFile[];
   openclawConfig: string; // stringified openclaw.json
