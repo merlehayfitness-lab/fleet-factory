@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 18 of 18 (Enhanced Business Wizard & Agent Hierarchy)
-Plan: 1 of 2 in current phase (1 complete)
-Status: Executing
-Last activity: 2026-04-01 -- Completed 18-01 (server-side validation and template-aware provisioning)
+Plan: 2 of 2 in current phase (2 complete)
+Status: Phase Complete
+Last activity: 2026-04-01 -- Completed 18-02 (wizard UX polish: tooltips, dynamic providers, inline editing)
 
-Progress: [██████████████████████████████████░] 97% (55/56 plans)
+Progress: [███████████████████████████████████] 100% (56/56 plans)
 
 ## Performance Metrics
 
@@ -106,6 +106,7 @@ Progress: [███████████████████████
 | Phase 17 P03 | 3min | 2 tasks | 2 files |
 | Phase 15 P04 | 2min | 2 tasks | 3 files |
 | Phase 18 P01 | 5min | 2 tasks | 4 files |
+| Phase 18 P02 | 5min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -330,6 +331,11 @@ Recent decisions affecting current work:
 - [Phase 18]: V2 provisioning is additive after base RPC -- base creates 4 default departments, V2 adds missing ones (executive, marketing, rd, hr) and skips duplicate agents
 - [Phase 18]: API key validation uses real HTTP calls with 10s AbortController timeout per provider (Anthropic, OpenAI, Google, Mistral, DeepSeek)
 - [Phase 18]: Parent agent resolution uses three strategies: explicit parent_template_id, dept heads default to CEO, specialists default to their department head
+- [Phase 18-02]: CSS group/group-hover tooltip for department tree nodes (zero-dependency hover details, pointer-events-none)
+- [Phase 18-02]: All templates pre-selected by default per user decision; DEFAULT_SELECTED = all 23 template IDs
+- [Phase 18-02]: Provider derivation checks departmentType === "rd" to trigger multi-model provider additions (OpenAI, Google, Mistral, DeepSeek)
+- [Phase 18-02]: Review step Edit buttons use setStep() directly to skip validation when navigating backward
+- [Phase 18-02]: WizardApiKeysStep accepts optional requiredProviders prop with fallback to hardcoded defaults
 
 ### Pending Todos
 
@@ -342,5 +348,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-01
-Stopped at: Completed 18-01-PLAN.md
-Resume file: .planning/phases/18-enhanced-business-wizard-agent-hierarchy/18-02-PLAN.md
+Stopped at: Completed 18-02-PLAN.md (Phase 18 complete, all plans delivered)
+Resume file: N/A -- all phases complete
