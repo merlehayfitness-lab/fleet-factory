@@ -255,5 +255,12 @@ export {
   isDepartmentRecommended,
 } from "./aitmpl/category-mapping";
 
+// Dashboard types (client-safe -- types only, no runtime code)
+export type {
+  UsageAnalytics,
+  CSuiteSummary,
+  RevOpsSummary,
+} from "./dashboard/dashboard-service";
+
 // NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker, approval service)
 // are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.
