@@ -17,3 +17,16 @@ export type {
   ApiCallResult,
   QueuedCall,
 } from "./rate-limiter";
+
+export {
+  MODEL_PRICING,
+  PLAN_LIMITS,
+  calculateCost,
+} from "./model-pricing";
+
+export {
+  checkBudget,
+  shouldSendBudgetWarning,
+} from "./budget-service";
+
+export type { BudgetCheckResult } from "./budget-service";

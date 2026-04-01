@@ -52,9 +52,7 @@ export { runTool, runAgentTask } from "./worker/tool-runner";
 // Worker sandbox validation (server-only operations)
 export { validateSandbox, validateToolAccess, assertSandbox } from "./worker/sandbox";
 
-// Worker metering (server-only -- records to database)
-export { recordUsage, estimateTokens, calculateCost, getUsageSummary } from "./worker/metering";
-export type { UsageSummary } from "./worker/metering";
+// Worker metering -- REMOVED (replaced by rate-limit/model-pricing and rate-limit/budget-service)
 
 // Approval service (server-only -- database operations)
 export {
@@ -285,6 +283,11 @@ export type {
   ApiCallResult,
   QueuedCall,
 } from "./rate-limit/rate-limiter";
+
+// Model pricing and budget enforcement (server-only)
+export { MODEL_PRICING, PLAN_LIMITS, calculateCost } from "./rate-limit/model-pricing";
+export { checkBudget, shouldSendBudgetWarning } from "./rate-limit/budget-service";
+export type { BudgetCheckResult } from "./rate-limit/budget-service";
 
 // Port allocation service (server-only -- database operations)
 export {

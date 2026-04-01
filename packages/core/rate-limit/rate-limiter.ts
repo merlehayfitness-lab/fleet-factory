@@ -1,12 +1,17 @@
 /**
  * Rate limit service for API calls.
  *
- * Enforces max concurrent calls (default 3), 2-second stagger between calls,
- * and an overflow queue backed by Supabase's api_call_queue table.
- * All completed calls are logged to api_usage for cost tracking.
+ * DB-backed slot counting via api_call_queue (status=processing).
+ * Tier-aware concurrency limits from business plan_tier.
+ * Budget checking before slot acquisition.
+ * All completed calls logged to api_usage for cost tracking.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { calculateCost } from "./model-pricing";
+import { PLAN_LIMITS } from "./model-pricing";
+import { checkBudget } from "./budget-service";
+import type { BudgetCheckResult } from "./budget-service";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -39,59 +44,108 @@ export interface QueuedCall {
 }
 
 const DEFAULT_CONFIG: RateLimitConfig = {
-  maxConcurrent: 3,
+  maxConcurrent: 5,
   staggerMs: 2000,
   maxQueueSize: 100,
   maxRetries: 3,
 };
 
 // ---------------------------------------------------------------------------
-// In-memory concurrency tracking
+// Per-business stagger tracking (non-critical, in-memory is fine)
 // ---------------------------------------------------------------------------
 
-let activeSlots = 0;
-let lastCallTimestamp = 0;
+const lastCallByBusiness = new Map<string, number>();
+
+// ---------------------------------------------------------------------------
+// DB-backed slot counting
+// ---------------------------------------------------------------------------
 
 /**
- * Get the current number of active (in-flight) API calls.
+ * Get the current number of active (in-flight) API calls from the database.
  */
-export function getActiveSlotCount(): number {
-  return activeSlots;
+export async function getActiveSlotCount(
+  supabase: SupabaseClient,
+): Promise<number> {
+  const { count } = await supabase
+    .from("api_call_queue")
+    .select("*", { count: "exact", head: true })
+    .eq("status", "processing");
+  return count ?? 0;
 }
 
 // ---------------------------------------------------------------------------
-// Slot acquisition with stagger
+// Slot acquisition with DB-backed counting and tier-aware limits
 // ---------------------------------------------------------------------------
 
 /**
- * Acquire a rate-limit slot. Waits for stagger delay if needed.
- * Returns false if max concurrent slots are already occupied.
+ * Acquire a rate-limit slot. Checks plan tier concurrency limit for the business.
+ * Creates a processing entry in api_call_queue to claim the slot.
+ * Returns the slot ID on success, or null if no slot available.
  */
 export async function acquireSlot(
-  config: RateLimitConfig = DEFAULT_CONFIG,
-): Promise<boolean> {
-  if (activeSlots >= config.maxConcurrent) {
-    return false;
-  }
+  supabase: SupabaseClient,
+  businessId: string,
+  config?: Partial<RateLimitConfig>,
+): Promise<string | null> {
+  // 1. Get business plan tier
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("plan_tier")
+    .eq("id", businessId)
+    .single();
+  const tier = (business?.plan_tier as string) ?? "starter";
+  const limits = PLAN_LIMITS[tier] ?? PLAN_LIMITS["starter"];
+  const maxConcurrent = config?.maxConcurrent ?? limits.maxConcurrent;
+  const staggerMs = config?.staggerMs ?? DEFAULT_CONFIG.staggerMs;
 
-  // Enforce stagger delay
+  // 2. Check current active count from DB
+  const active = await getActiveSlotCount(supabase);
+  if (active >= maxConcurrent) return null;
+
+  // 3. Enforce per-business stagger delay
   const now = Date.now();
-  const elapsed = now - lastCallTimestamp;
-  if (elapsed < config.staggerMs && lastCallTimestamp > 0) {
-    const waitMs = config.staggerMs - elapsed;
+  const lastCall = lastCallByBusiness.get(businessId) ?? 0;
+  const elapsed = now - lastCall;
+  if (elapsed < staggerMs && lastCall > 0) {
+    const waitMs = staggerMs - elapsed;
     await sleep(waitMs);
   }
 
-  activeSlots++;
-  lastCallTimestamp = Date.now();
-  return true;
+  // 4. Create a processing entry to "claim" the slot
+  const { data, error } = await supabase
+    .from("api_call_queue")
+    .insert({
+      business_id: businessId,
+      status: "processing",
+      started_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) return null;
+
+  lastCallByBusiness.set(businessId, Date.now());
+  return data.id;
 }
 
 /**
- * Release a rate-limit slot after API call completes.
+ * Release a rate-limit slot by marking the queue entry as completed.
  */
-export function releaseSlot(): void {
-  activeSlots = Math.max(0, activeSlots - 1);
+export async function releaseSlot(
+  supabase: SupabaseClient,
+  slotId: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("api_call_queue")
+    .update({
+      status: "completed",
+      completed_at: new Date().toISOString(),
+    })
+    .eq("id", slotId);
+
+  if (error) {
+    console.error(`Failed to release slot ${slotId}:`, error.message);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -261,6 +315,7 @@ export async function logApiUsage(
     latencyMs?: number;
     status?: "completed" | "failed" | "rate_limited" | "queued";
     errorMessage?: string;
+    keySource?: "platform" | "business";
   },
 ): Promise<void> {
   try {
@@ -275,6 +330,7 @@ export async function logApiUsage(
       latency_ms: params.latencyMs ?? null,
       status: params.status ?? "completed",
       error_message: params.errorMessage ?? null,
+      key_source: params.keySource ?? null,
     });
 
     if (error) {
@@ -338,34 +394,47 @@ export async function getApiUsageSummary(
 }
 
 // ---------------------------------------------------------------------------
-// High-level: execute with rate limiting
+// High-level: execute with rate limiting + budget checks
 // ---------------------------------------------------------------------------
 
 /**
- * Execute an API call with rate limiting.
+ * Execute an API call with rate limiting and budget enforcement.
  *
- * Tries to acquire a slot. If successful, executes the call immediately.
- * If not, enqueues the call and returns a queue ID.
+ * 1. Check budget (agent + business level)
+ * 2. Try to acquire a DB-backed slot
+ * 3. If acquired, execute; otherwise enqueue
+ * 4. After execution, attempt to drain one queued item (best-effort)
  *
- * Returns either the call result (if executed) or a queue entry (if enqueued).
+ * Returns either:
+ * - executed: true with result and usage
+ * - executed: false with queueId and position (rate-limited)
+ * - executed: false with reason "budget_exceeded" (over budget)
  */
 export async function executeWithRateLimit<T>(
   supabase: SupabaseClient,
   params: {
-    businessId?: string;
+    businessId: string;
     agentId?: string;
     model?: string;
     provider?: string;
   },
   fn: () => Promise<{ result: T; usage: ApiCallResult }>,
-  config: RateLimitConfig = DEFAULT_CONFIG,
+  config?: Partial<RateLimitConfig>,
 ): Promise<
   | { executed: true; result: T; usage: ApiCallResult }
-  | { executed: false; queueId: string }
+  | { executed: false; queueId: string; queuePosition: number }
+  | { executed: false; reason: "budget_exceeded"; budgetInfo: BudgetCheckResult }
 > {
-  const acquired = await acquireSlot(config);
+  // 1. Budget check
+  const budgetResult = await checkBudget(supabase, params.businessId, params.agentId);
+  if (!budgetResult.allowed) {
+    return { executed: false, reason: "budget_exceeded", budgetInfo: budgetResult };
+  }
 
-  if (!acquired) {
+  // 2. Acquire DB-backed slot
+  const slotId = await acquireSlot(supabase, params.businessId, config);
+
+  if (!slotId) {
     // Enqueue for later processing
     const queueId = await enqueueCall(supabase, {
       businessId: params.businessId,
@@ -373,6 +442,8 @@ export async function executeWithRateLimit<T>(
       payload: { model: params.model ?? "claude-sonnet" },
       priority: 0,
     });
+
+    const queuePosition = await getQueueDepth(supabase);
 
     // Log rate-limited event
     await logApiUsage(supabase, {
@@ -386,14 +457,14 @@ export async function executeWithRateLimit<T>(
       status: "rate_limited",
     });
 
-    return { executed: false, queueId };
+    return { executed: false, queueId, queuePosition };
   }
 
   const startMs = Date.now();
   try {
     const { result, usage } = await fn();
 
-    const costCents = calculateCostFromUsage(usage);
+    const costCents = calculateCost(usage.promptTokens, usage.completionTokens, usage.model);
 
     // Log successful usage
     await logApiUsage(supabase, {
@@ -428,7 +499,19 @@ export async function executeWithRateLimit<T>(
 
     throw err;
   } finally {
-    releaseSlot();
+    // Release slot
+    await releaseSlot(supabase, slotId);
+
+    // Best-effort: try to drain one queued item
+    try {
+      const next = await dequeueCall(supabase);
+      if (next) {
+        // Queue drain: item is now marked as processing,
+        // the queued call's poller will pick it up on next retry
+      }
+    } catch {
+      /* best-effort */
+    }
   }
 }
 
@@ -438,25 +521,4 @@ export async function executeWithRateLimit<T>(
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** Per-MTok pricing for cost calculation */
-const MODEL_PRICING: Record<string, { input: number; output: number }> = {
-  "claude-opus-4-6": { input: 5, output: 25 },
-  "claude-sonnet-4-6": { input: 3, output: 15 },
-  "claude-haiku-4-5-20251001": { input: 1, output: 5 },
-  "claude-sonnet": { input: 3, output: 15 },
-  "claude-haiku": { input: 1, output: 5 },
-  "claude-opus": { input: 5, output: 25 },
-  "gpt-4o": { input: 2.5, output: 10 },
-  "gpt-4o-mini": { input: 0.15, output: 0.6 },
-  "gemini-2.0-flash": { input: 0.1, output: 0.4 },
-  default: { input: 3, output: 15 },
-};
-
-function calculateCostFromUsage(usage: ApiCallResult): number {
-  const pricing = MODEL_PRICING[usage.model] ?? MODEL_PRICING["default"];
-  const inputCostDollars = (usage.promptTokens / 1_000_000) * pricing.input;
-  const outputCostDollars = (usage.completionTokens / 1_000_000) * pricing.output;
-  return Math.round((inputCostDollars + outputCostDollars) * 10000) / 100; // 2 decimal cents
 }
