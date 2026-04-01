@@ -36,7 +36,14 @@ export async function deployAction(businessId: string) {
     const deployment = await triggerDeployment(supabase, businessId, user.id);
     revalidatePath(`/businesses/${businessId}/deployments`);
     revalidatePath(`/businesses/${businessId}`);
-    return { success: true, deploymentId: deployment?.id };
+    if (!deployment) {
+      return { error: "Deployment failed: no record returned" };
+    }
+    if ((deployment as { status?: string }).status === "failed") {
+      const msg = (deployment as { error_message?: string }).error_message;
+      return { error: msg ?? "Deployment failed" };
+    }
+    return { success: true, deploymentId: (deployment as { id: string }).id };
   } catch (err) {
     return { error: err instanceof Error ? err.message : "Deployment failed" };
   }
@@ -154,7 +161,7 @@ export async function getDeploymentStatusAction(deploymentId: string) {
 
   const { data, error } = await supabase
     .from("deployments")
-    .select("id, status, version, config_snapshot, created_at, updated_at")
+    .select("id, status, version, config_snapshot, created_at, updated_at, started_at, completed_at, error_message")
     .eq("id", deploymentId)
     .single();
 

@@ -36,11 +36,32 @@ export function ChatMessageList({
   streamingAgentName = null,
 }: ChatMessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const prevCountRef = useRef(messages.length);
+  const prevCountRef = useRef(0);
+  const hasScrolledInitial = useRef(false);
 
-  // Auto-scroll to bottom on new messages
+  // Scroll to bottom instantly on initial load (land at newest messages)
   useEffect(() => {
-    if (messages.length > prevCountRef.current || messages.length === 0) {
+    if (!hasScrolledInitial.current && messages.length > 0) {
+      hasScrolledInitial.current = true;
+      // Use requestAnimationFrame to ensure DOM has painted
+      requestAnimationFrame(() => {
+        bottomRef.current?.scrollIntoView({ behavior: "instant" });
+      });
+      prevCountRef.current = messages.length;
+    }
+  }, [messages.length]);
+
+  // Reset on channel switch (messages go to [])
+  useEffect(() => {
+    if (messages.length === 0) {
+      hasScrolledInitial.current = false;
+      prevCountRef.current = 0;
+    }
+  }, [messages.length]);
+
+  // Auto-scroll to bottom on new messages (smooth for subsequent messages)
+  useEffect(() => {
+    if (hasScrolledInitial.current && messages.length > prevCountRef.current) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
     prevCountRef.current = messages.length;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DeploymentList } from "@/_components/deployment-list";
 import { DeploymentDetail } from "@/_components/deployment-detail";
 import { useBusinessStatus } from "@/_components/business-status-provider";
@@ -41,13 +41,22 @@ export function DeploymentCenter({
     deployments[0]?.id ?? null
   );
 
+  // When deployments list changes (e.g. after a new deploy), auto-select newest
+  useEffect(() => {
+    const newest = deployments[0]?.id ?? null;
+    if (newest && newest !== selectedId) {
+      setSelectedId(newest);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deployments[0]?.id]);
+
   const selectedDeployment =
     deployments.find((d) => d.id === selectedId) ?? null;
 
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       {/* Left panel: deployment history list */}
-      <div className="w-full shrink-0 lg:w-1/3">
+      <div className="w-full shrink-0 lg:w-72">
         <DeploymentList
           deployments={deployments}
           selectedId={selectedId}

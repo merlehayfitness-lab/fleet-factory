@@ -126,23 +126,29 @@ export function DeploymentList({
               type="button"
               onClick={() => onSelect(deployment.id)}
               className={cn(
-                "flex w-full flex-col gap-1 rounded-md border px-3 py-2.5 text-left text-sm transition-colors",
+                "flex w-full flex-col gap-0.5 rounded-md border px-3 py-2.5 text-left text-sm transition-colors",
                 isSelected
                   ? "border-primary/30 bg-accent"
                   : "border-transparent hover:bg-accent/50"
               )}
             >
-              <div className="flex items-center justify-between">
+              {/* Version + badge: keep together, badge right-aligned */}
+              <div className="flex min-w-0 items-center gap-2">
                 <span className="font-semibold">v{deployment.version}</span>
-                <StatusBadge status={deployment.status} />
+                <span className="ml-auto shrink-0">
+                  <StatusBadge status={deployment.status} />
+                </span>
               </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>{formatRelativeTime(deployment.created_at)}</span>
-                <span>
+              {/* Timestamp + agent count */}
+              <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="shrink-0">{formatRelativeTime(deployment.created_at)}</span>
+                <span className="text-muted-foreground/40">&middot;</span>
+                <span className="truncate">
                   {agentCount} agent{agentCount !== 1 ? "s" : ""} &middot; Manual
                 </span>
               </div>
-              <span className="text-xs text-muted-foreground/70">
+              {/* Diff summary */}
+              <span className="truncate text-xs text-muted-foreground/60">
                 {diffSummary}
               </span>
             </button>

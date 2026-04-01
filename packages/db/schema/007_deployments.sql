@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS public.deployments (
   business_id uuid NOT NULL REFERENCES public.businesses ON DELETE CASCADE,
   version integer NOT NULL DEFAULT 1,
   status text NOT NULL DEFAULT 'queued'
-    CHECK (status IN ('queued', 'building', 'deploying', 'live', 'failed', 'rolled_back')),
+    CHECK (status IN ('queued', 'building', 'deploying', 'verifying', 'live', 'failed', 'rolled_back')),
   config_snapshot jsonb,
   error_message text,
   started_at timestamptz,
