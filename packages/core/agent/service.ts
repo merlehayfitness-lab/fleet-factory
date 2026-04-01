@@ -291,6 +291,66 @@ export async function syncFromTemplate(
 }
 
 /**
+ * Update an agent's display name (self-naming).
+ *
+ * Called when an agent declares a name for itself (e.g. "I'm Quota Quinn").
+ * Validates name length, updates agents.name, and creates an audit log.
+ */
+export async function updateAgentName(
+  supabase: SupabaseClient,
+  agentId: string,
+  businessId: string,
+  newName: string,
+): Promise<void> {
+  const trimmed = newName.trim();
+  if (trimmed.length < 2 || trimmed.length > 50) {
+    throw new Error("Agent name must be 2-50 characters");
+  }
+
+  // Fetch current name for audit log
+  const { data: agent, error: fetchError } = await supabase
+    .from("agents")
+    .select("id, name")
+    .eq("id", agentId)
+    .eq("business_id", businessId)
+    .single();
+
+  if (fetchError || !agent) {
+    throw new Error(
+      `Agent not found: ${fetchError?.message ?? "No agent with that ID in this business"}`,
+    );
+  }
+
+  const previousName = agent.name as string;
+
+  const { error: updateError } = await supabase
+    .from("agents")
+    .update({ name: trimmed })
+    .eq("id", agentId)
+    .eq("business_id", businessId);
+
+  if (updateError) {
+    throw new Error(`Failed to update agent name: ${updateError.message}`);
+  }
+
+  // Audit log (best-effort)
+  try {
+    await supabase.from("audit_logs").insert({
+      business_id: businessId,
+      action: "agent.self_renamed",
+      entity_type: "agent",
+      entity_id: agentId,
+      metadata: {
+        previous_name: previousName,
+        new_name: trimmed,
+      },
+    });
+  } catch {
+    console.error("Failed to create agent rename audit log");
+  }
+}
+
+/**
  * Check if reparenting an agent would create a circular reference.
  * Walks up the parent chain from targetParentId; if it encounters agentId, it's a cycle.
  */

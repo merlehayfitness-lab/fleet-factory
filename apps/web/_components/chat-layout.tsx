@@ -14,6 +14,8 @@ import {
   getDepartmentChannelsAction,
   getConversationsAction,
   sendSlackMessageAction,
+  triggerAgentResponseAction,
+  uploadChatFilesAction,
 } from "@/_actions/chat-actions";
 import { getSlackFeedMessagesAction } from "@/_actions/slack-actions";
 import type { ChatMessage, DepartmentChannel, SlackConnectionStatus, SlackChannelMapping } from "@agency-factory/core";
@@ -193,21 +195,21 @@ function SlackChatUI({
     if (!selectedDepartmentId) return;
 
     pollingRef.current = setInterval(async () => {
-      // Use Slack feed messages for polling (only Slack-synced messages)
       const result = await getSlackFeedMessagesAction(
         businessId,
         selectedDepartmentId,
       );
-      if ("messages" in result) {
+      if ("messages" in result && result.messages.length > 0) {
         setMessages((prev) => {
-          const existingIds = new Set(prev.map((m) => m.id));
-          const newMsgs = result.messages.filter(
-            (m) => !existingIds.has(m.id),
+          // Merge: use feed as source of truth, keep optimistic messages
+          const feedIds = new Set(result.messages.map((m) => m.id));
+          const optimistic = prev.filter((m) => !feedIds.has(m.id));
+          if (optimistic.length === 0) return result.messages;
+          return [...result.messages, ...optimistic].sort(
+            (a, b) =>
+              new Date(a.createdAt).getTime() -
+              new Date(b.createdAt).getTime(),
           );
-          if (newMsgs.length > 0) {
-            return [...prev, ...newMsgs];
-          }
-          return prev;
         });
       }
     }, 10000);
@@ -229,17 +231,54 @@ function SlackChatUI({
   const handleSendMessage = useCallback(
     async (
       content: string,
-      fileMetadata?: { name: string; size: number; type: string },
+      files?: File[],
     ) => {
       if (!selectedDepartmentId || isSending) return;
 
       setIsSending(true);
 
+      // Step 1: Upload files if any
+      let filesMeta: { name: string; size: number; type: string; url?: string }[] | undefined;
+      let fileContext: string | undefined;
+
+      if (files && files.length > 0) {
+        const formData = new FormData();
+        formData.set("businessId", businessId);
+        for (const file of files) {
+          formData.append("files", file);
+        }
+
+        const uploadResult = await uploadChatFilesAction(formData);
+        if ("error" in uploadResult) {
+          console.error("File upload failed:", uploadResult.error);
+          setIsSending(false);
+          return;
+        }
+
+        // Build files metadata with real URLs
+        filesMeta = uploadResult.uploads.map((u) => ({
+          name: u.name,
+          size: u.size,
+          type: u.type,
+          url: u.url,
+        }));
+
+        // Build file context string from extracted text
+        const textParts = uploadResult.uploads
+          .filter((u) => u.extractedText)
+          .map((u) => `## File: ${u.name}\n${u.extractedText}`);
+
+        if (textParts.length > 0) {
+          fileContext = textParts.join("\n\n---\n\n");
+        }
+      }
+
+      // Step 2: Send message to Slack with real file URLs
       const result = await sendSlackMessageAction(
         businessId,
         selectedDepartmentId,
         content,
-        fileMetadata,
+        filesMeta,
       );
 
       if ("error" in result) {
@@ -247,16 +286,49 @@ function SlackChatUI({
         return;
       }
 
-      // Show user message immediately
+      // Show user message immediately (agent response arrives via polling)
       setMessages((prev) => [...prev, result.userMessage]);
 
-      // Update conversation ID if this is the first message
-      if (!conversationId && result.userMessage.conversationId) {
-        setConversationId(result.userMessage.conversationId);
+      // Update conversation ID
+      const convId = result.conversationId;
+      if (!conversationId && convId) {
+        setConversationId(convId);
       }
 
       setIsSending(false);
-      // Agent response comes asynchronously via Slack events + polling
+
+      // Step 3: Trigger agent response with file context
+      const deptId = selectedDepartmentId;
+      triggerAgentResponseAction(
+        businessId,
+        deptId,
+        convId,
+        content,
+        fileContext,
+      ).catch((err) => {
+        console.error("Agent response trigger failed:", err);
+      });
+
+      // Quick re-polls to pick up agent response faster than the 10s interval
+      const quickPoll = async () => {
+        const r = await getSlackFeedMessagesAction(businessId, deptId, 50);
+        if ("messages" in r && r.messages.length > 0) {
+          setMessages((prev) => {
+            // Merge: keep any optimistic messages not yet in the feed
+            const feedIds = new Set(r.messages.map((m) => m.id));
+            const optimistic = prev.filter((m) => !feedIds.has(m.id));
+            if (optimistic.length === 0) return r.messages;
+            return [...r.messages, ...optimistic].sort(
+              (a, b) =>
+                new Date(a.createdAt).getTime() -
+                new Date(b.createdAt).getTime(),
+            );
+          });
+        }
+      };
+      setTimeout(quickPoll, 3000);
+      setTimeout(quickPoll, 6000);
+      setTimeout(quickPoll, 10000);
     },
     [businessId, selectedDepartmentId, isSending, conversationId],
   );

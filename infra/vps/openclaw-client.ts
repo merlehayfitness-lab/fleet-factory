@@ -1,35 +1,49 @@
 /**
- * OpenClaw gateway HTTP and WebSocket client for agent interaction.
+ * OpenClaw gateway client using OpenAI-compatible endpoints.
  *
- * Wraps OpenClaw gateway API: sendMessageToAgent, submitTaskToAgent,
- * checkGatewayHealth with Bearer token auth. Provides streamChatFromAgent
- * for real-time WebSocket token streaming.
+ * OpenClaw exposes /v1/chat/completions (OpenAI format), /v1/models,
+ * and /healthz. Auth via Bearer token in Authorization header.
  */
-
-import { WebSocket } from "ws";
 
 const GATEWAY_URL =
   process.env.OPENCLAW_HTTP_URL || "http://127.0.0.1:18789";
-const GATEWAY_WS_URL =
-  process.env.OPENCLAW_WS_URL || "ws://127.0.0.1:18789";
 const AUTH_TOKEN = process.env.OPENCLAW_AUTH_TOKEN || "";
+const DEFAULT_MODEL =
+  process.env.OPENCLAW_MODEL || "openclaw/default";
+const OPENCLAW_SCOPES =
+  process.env.OPENCLAW_SCOPES || "operator.write";
 
 /**
- * Send a message to an agent via HTTP POST.
- * Returns the agent's response.
+ * Send a message to an agent via OpenAI-compatible chat completions.
+ * Uses the sessionKey as a system context identifier.
  */
 export async function sendMessageToAgent(
   sessionKey: string,
   message: string,
+  model?: string,
 ): Promise<{ response: string; model?: string; tokens?: number }> {
-  const url = `${GATEWAY_URL}/api/sessions/${sessionKey}/messages`;
+  const url = `${GATEWAY_URL}/v1/chat/completions`;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "x-openclaw-scopes": OPENCLAW_SCOPES,
+  };
+  if (AUTH_TOKEN) {
+    headers["Authorization"] = `Bearer ${AUTH_TOKEN}`;
+  }
+
   const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${AUTH_TOKEN}`,
-    },
-    body: JSON.stringify({ message }),
+    headers,
+    body: JSON.stringify({
+      model: model || DEFAULT_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: `You are agent ${sessionKey}. Respond helpfully and concisely.`,
+        },
+        { role: "user", content: message },
+      ],
+    }),
   });
 
   if (!res.ok) {
@@ -38,19 +52,23 @@ export async function sendMessageToAgent(
     );
   }
 
-  const data = (await res.json()) as Record<string, unknown>;
+  const data = (await res.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+    model?: string;
+    usage?: { total_tokens?: number };
+  };
+
+  const content = data.choices?.[0]?.message?.content || "";
   return {
-    response:
-      (data.content as string) || (data.response as string) || "",
-    model: data.model as string | undefined,
-    tokens: (data.usage as Record<string, number> | undefined)
-      ?.total_tokens,
+    response: content,
+    model: data.model,
+    tokens: data.usage?.total_tokens,
   };
 }
 
 /**
  * Submit a task to an agent for execution.
- * Returns structured task result.
+ * Routes through chat completions with task-formatted prompt.
  */
 export async function submitTaskToAgent(
   sessionKey: string,
@@ -67,15 +85,30 @@ export async function submitTaskToAgent(
   error?: string;
 }> {
   try {
-    const url = `${GATEWAY_URL}/api/sessions/${sessionKey}/messages`;
+    const url = `${GATEWAY_URL}/v1/chat/completions`;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "x-openclaw-scopes": OPENCLAW_SCOPES,
+    };
+    if (AUTH_TOKEN) {
+      headers["Authorization"] = `Bearer ${AUTH_TOKEN}`;
+    }
+
     const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${AUTH_TOKEN}`,
-      },
+      headers,
       body: JSON.stringify({
-        message: `Execute task: ${taskPayload.title}\n\nPayload: ${JSON.stringify(taskPayload.payload)}`,
+        model: DEFAULT_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: `You are agent ${sessionKey}. Execute the following task and provide a structured response.`,
+          },
+          {
+            role: "user",
+            content: `Execute task: ${taskPayload.title}\n\nTask ID: ${taskPayload.taskId}\nPayload: ${JSON.stringify(taskPayload.payload)}`,
+          },
+        ],
       }),
     });
 
@@ -87,18 +120,19 @@ export async function submitTaskToAgent(
       };
     }
 
-    const data = (await res.json()) as Record<string, unknown>;
+    const data = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+      usage?: { prompt_tokens?: number; completion_tokens?: number };
+    };
+
+    const content = data.choices?.[0]?.message?.content || "";
     return {
       success: true,
-      result: {
-        response:
-          (data.content as string) || (data.response as string) || "",
-      },
-      toolsUsed: (data.tools_used as string[]) || [],
-      tokenUsage: (data.usage as {
-        prompt_tokens: number;
-        completion_tokens: number;
-      }) || undefined,
+      result: { response: content },
+      toolsUsed: [],
+      tokenUsage: data.usage as
+        | { prompt_tokens: number; completion_tokens: number }
+        | undefined,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -107,8 +141,7 @@ export async function submitTaskToAgent(
 }
 
 /**
- * Check OpenClaw gateway health.
- * Returns status and session count, or unreachable on failure.
+ * Check OpenClaw gateway health via /healthz endpoint.
  */
 export async function checkGatewayHealth(): Promise<{
   status: string;
@@ -118,10 +151,7 @@ export async function checkGatewayHealth(): Promise<{
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 3000);
 
-    const res = await fetch(`${GATEWAY_URL}/api/status`, {
-      headers: {
-        Authorization: `Bearer ${AUTH_TOKEN}`,
-      },
+    const res = await fetch(`${GATEWAY_URL}/healthz`, {
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -133,7 +163,7 @@ export async function checkGatewayHealth(): Promise<{
     const data = (await res.json()) as Record<string, unknown>;
     return {
       status: (data.status as string) || "connected",
-      sessions: (data.sessions as number) || 0,
+      sessions: 0,
     };
   } catch {
     return { status: "unreachable", sessions: 0 };
@@ -141,10 +171,10 @@ export async function checkGatewayHealth(): Promise<{
 }
 
 /**
- * Stream chat tokens from an agent via WebSocket.
+ * Stream chat tokens from an agent via SSE (server-sent events).
  *
- * Returns a cleanup function to close the connection.
- * Falls back to HTTP POST if WebSocket connection fails.
+ * Uses OpenAI-compatible streaming with stream: true.
+ * Falls back to non-streaming HTTP POST if streaming fails.
  */
 export function streamChatFromAgent(
   sessionKey: string,
@@ -153,60 +183,100 @@ export function streamChatFromAgent(
   onComplete: (fullResponse: string) => void,
   onError: (error: string) => void,
 ): () => void {
-  let closed = false;
-  let ws: WebSocket | null = null;
+  let aborted = false;
+  const controller = new AbortController();
 
-  try {
-    ws = new WebSocket(
-      `${GATEWAY_WS_URL}/api/sessions/${sessionKey}/stream?token=${AUTH_TOKEN}`,
-    );
-
-    ws.on("open", () => {
-      ws!.send(JSON.stringify({ message }));
-    });
-
-    ws.on("message", (rawData) => {
-      try {
-        const event = JSON.parse(rawData.toString()) as {
-          type: string;
-          content?: string;
-        };
-        if (event.type === "token" && event.content) {
-          onToken(event.content);
-        } else if (event.type === "complete" && event.content) {
-          onComplete(event.content);
-        } else if (event.type === "error") {
-          onError(event.content || "Unknown streaming error");
-        }
-      } catch {
-        // Non-JSON message, ignore
+  (async () => {
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "x-openclaw-scopes": OPENCLAW_SCOPES,
+      };
+      if (AUTH_TOKEN) {
+        headers["Authorization"] = `Bearer ${AUTH_TOKEN}`;
       }
-    });
 
-    ws.on("error", (err) => {
-      if (!closed) {
+      const res = await fetch(`${GATEWAY_URL}/v1/chat/completions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          model: DEFAULT_MODEL,
+          stream: true,
+          messages: [
+            {
+              role: "system",
+              content: `You are agent ${sessionKey}. Respond helpfully and concisely.`,
+            },
+            { role: "user", content: message },
+          ],
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error(`Stream request failed: ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let fullResponse = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done || aborted) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const payload = line.slice(6).trim();
+          if (payload === "[DONE]") {
+            onComplete(fullResponse);
+            return;
+          }
+          try {
+            const chunk = JSON.parse(payload) as {
+              choices?: Array<{
+                delta?: { content?: string };
+                finish_reason?: string | null;
+              }>;
+            };
+            const content = chunk.choices?.[0]?.delta?.content;
+            if (content) {
+              fullResponse += content;
+              onToken(content);
+            }
+            if (chunk.choices?.[0]?.finish_reason === "stop") {
+              onComplete(fullResponse);
+              return;
+            }
+          } catch {
+            // Skip malformed SSE lines
+          }
+        }
+      }
+
+      if (!aborted && fullResponse) {
+        onComplete(fullResponse);
+      }
+    } catch (err) {
+      if (!aborted) {
         console.error(
-          `[openclaw-client] WebSocket error for ${sessionKey}:`,
-          err.message,
+          `[openclaw-client] Stream error for ${sessionKey}:`,
+          err,
         );
-        // Fallback to HTTP
+        // Fallback to non-streaming HTTP
         fallbackToHttp(sessionKey, message, onComplete, onError);
       }
-    });
-
-    ws.on("close", () => {
-      closed = true;
-    });
-  } catch {
-    // WebSocket connection failed, fall back to HTTP
-    fallbackToHttp(sessionKey, message, onComplete, onError);
-  }
+    }
+  })();
 
   return () => {
-    closed = true;
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.close();
-    }
+    aborted = true;
+    controller.abort();
   };
 }
 

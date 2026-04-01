@@ -12,6 +12,8 @@ const SLACK_BOT_SCOPES = [
   "channels:read",
   "channels:history",
   "chat:write",
+  "chat:write.customize",
+  "files:write",
   "users:read",
   "app_mentions:read",
 ].join(",");

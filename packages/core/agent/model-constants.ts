@@ -74,9 +74,9 @@ export const CLAUDE_MODELS: ClaudeModel[] = [
  * Owner gets opus (oversight), sales/ops get sonnet, support gets haiku (high volume).
  */
 export const DEPARTMENT_DEFAULT_MODELS: Record<string, string> = {
-  owner: "claude-opus-4-6",
+  owner: "claude-sonnet-4-6",
   sales: "claude-sonnet-4-6",
-  support: "claude-haiku-4-5-20251001",
+  support: "claude-sonnet-4-6",
   operations: "claude-sonnet-4-6",
 };
 

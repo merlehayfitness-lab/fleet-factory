@@ -117,6 +117,23 @@ export interface ChatStreamEvent {
   timestamp: string;
 }
 
+/** Async chat request state (in-memory, auto-cleaned) */
+export interface AsyncChatState {
+  requestId: string;
+  status: "processing" | "complete" | "failed";
+  result?: ChatResponse;
+  error?: string;
+  createdAt: number;
+}
+
+/** Async chat response returned to the polling client */
+export interface AsyncChatResponse {
+  requestId: string;
+  status: "processing" | "complete" | "failed";
+  result?: ChatResponse;
+  error?: string;
+}
+
 /** In-memory deployment state tracking */
 export interface DeploymentState {
   deployId: string;

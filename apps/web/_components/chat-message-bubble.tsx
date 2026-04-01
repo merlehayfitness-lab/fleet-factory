@@ -69,10 +69,12 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
     displayName = "You";
   }
 
-  // File attachment from metadata
-  const fileInfo = message.metadata?.file as
-    | { name: string; size: number; type: string }
-    | undefined;
+  // File attachments from metadata (multi-file or legacy single-file)
+  const filesArr = (message.metadata?.files as
+    | { name: string; size: number; type: string; url?: string }[]
+    | undefined) ?? (message.metadata?.file
+    ? [message.metadata.file as { name: string; size: number; type: string; url?: string }]
+    : []);
 
   return (
     <div className="flex gap-2.5 py-1.5 hover:bg-muted/20 rounded px-1 -mx-1">
@@ -105,14 +107,29 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
           {message.content}
         </p>
 
-        {/* File attachment card */}
-        {fileInfo && (
-          <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground mt-1 w-fit">
-            <FileText className="size-3.5 shrink-0" />
-            <span className="truncate">{fileInfo.name}</span>
-            <span className="shrink-0 text-[10px]">
-              {(fileInfo.size / 1024).toFixed(1)}KB
-            </span>
+        {/* File attachment cards */}
+        {filesArr.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-1">
+            {filesArr.map((f, i) => {
+              const hasUrl = f.url && f.url !== "pending";
+              const Tag = hasUrl ? "a" : "div";
+              const linkProps = hasUrl
+                ? { href: f.url, target: "_blank", rel: "noopener noreferrer" }
+                : {};
+              return (
+                <Tag
+                  key={`${f.name}-${i}`}
+                  {...linkProps}
+                  className={`flex items-center gap-2 rounded-md border bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground w-fit ${hasUrl ? "hover:bg-muted/60 hover:border-primary/30 cursor-pointer transition-colors" : ""}`}
+                >
+                  <FileText className="size-3.5 shrink-0" />
+                  <span className="truncate">{f.name}</span>
+                  <span className="shrink-0 text-[10px]">
+                    {(f.size / 1024).toFixed(1)}KB
+                  </span>
+                </Tag>
+              );
+            })}
           </div>
         )}
 

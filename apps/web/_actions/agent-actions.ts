@@ -324,3 +324,44 @@ export async function testMcpConnectionAction(
   );
   return validateMcpServerUrl(url, transport);
 }
+
+/**
+ * Update an agent's display name (persona name).
+ * Validates length and updates agents.name in the database.
+ */
+export async function updateAgentNameAction(
+  agentId: string,
+  businessId: string,
+  newName: string,
+): Promise<{ error?: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
+  const trimmed = newName.trim();
+  if (trimmed.length < 2 || trimmed.length > 50) {
+    return { error: "Name must be 2-50 characters" };
+  }
+
+  const { error } = await supabase
+    .from("agents")
+    .update({ name: trimmed })
+    .eq("id", agentId)
+    .eq("business_id", businessId);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/businesses/${businessId}/agents`);
+  revalidatePath(`/businesses/${businessId}/agents/${agentId}`);
+  return {};
+}

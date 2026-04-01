@@ -6,10 +6,14 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { vpsPost } from "./vps-client";
+import { vpsPost, vpsGet } from "./vps-client";
 import { getVpsConfig } from "./vps-config";
 import { deriveVpsAgentId } from "./vps-naming";
-import type { VpsChatResponse } from "./vps-types";
+import type {
+  VpsChatResponse,
+  AsyncChatSubmitResponse,
+  AsyncChatPollResponse,
+} from "./vps-types";
 
 /**
  * Look up the vps_agent_id for an agent from the agent_vps_status table.
@@ -70,11 +74,18 @@ export async function getVpsAgentId(
   );
 }
 
+const SUBMIT_TIMEOUT = 10_000; // 10s — just submitting, should be instant
+const POLL_INTERVAL = 3_000; // 3s between polls
+const MAX_POLL_TIME = 5 * 60 * 1000; // 5 minutes max wait
+
 /**
  * Send a chat message to a VPS agent and return its response.
  *
- * POSTs to /api/agents/{vpsAgentId}/chat on the VPS.
- * On error, returns a fallback response indicating the agent is unavailable.
+ * Uses an async submit + poll pattern:
+ * 1. POST to /api/agents/{vpsAgentId}/chat — returns { requestId } immediately
+ * 2. Poll GET /api/chat-results/{requestId} every 3s until complete (max 5 min)
+ *
+ * This eliminates timeouts for complex multi-step Claude responses.
  */
 export async function sendChatToVps(
   businessId: string,
@@ -83,24 +94,37 @@ export async function sendChatToVps(
   conversationId: string,
   message: string,
   knowledgeContext?: string,
+  model?: string,
 ): Promise<VpsChatResponse> {
+  const payload: Record<string, unknown> = {
+    businessId,
+    agentId,
+    vpsAgentId,
+    conversationId,
+    message,
+  };
+  if (knowledgeContext) {
+    payload.knowledgeContext = knowledgeContext;
+  }
+  if (model) {
+    payload.model = model;
+  }
+
+  const chatPath = `/api/agents/${encodeURIComponent(vpsAgentId)}/chat`;
+
+  // Step 1: Submit the chat request (returns immediately with requestId)
+  let requestId: string;
   try {
-    const payload: Record<string, unknown> = {
-      businessId,
-      agentId,
-      vpsAgentId,
-      conversationId,
-      message,
-    };
-    if (knowledgeContext) {
-      payload.knowledgeContext = knowledgeContext;
-    }
-    const result = await vpsPost<VpsChatResponse>(
-      `/api/agents/${encodeURIComponent(vpsAgentId)}/chat`,
+    const submitResult = await vpsPost<AsyncChatSubmitResponse>(
+      chatPath,
       payload,
+      SUBMIT_TIMEOUT,
     );
 
-    if (result.error) {
+    if (submitResult.error || !submitResult.requestId) {
+      console.error(
+        `[vps-chat] Submit failed for ${vpsAgentId}: ${submitResult.error ?? "no requestId"}`,
+      );
       return {
         content:
           "Agent is temporarily unavailable. Your message has been saved.",
@@ -109,12 +133,15 @@ export async function sendChatToVps(
       };
     }
 
-    return {
-      content: result.content,
-      agentId: result.agentId ?? agentId,
-      toolCalls: result.toolCalls ?? [],
-    };
-  } catch {
+    requestId = submitResult.requestId;
+    console.log(
+      `[vps-chat] Async chat ${requestId} submitted for ${vpsAgentId}`,
+    );
+  } catch (err) {
+    console.error(
+      `[vps-chat] Submit exception for ${vpsAgentId}:`,
+      err,
+    );
     return {
       content:
         "Agent is temporarily unavailable. Your message has been saved.",
@@ -122,6 +149,77 @@ export async function sendChatToVps(
       toolCalls: [],
     };
   }
+
+  // Step 2: Poll for results
+  const pollPath = `/api/chat-results/${encodeURIComponent(requestId)}`;
+  const startTime = Date.now();
+
+  while (Date.now() - startTime < MAX_POLL_TIME) {
+    await sleep(POLL_INTERVAL);
+
+    try {
+      const poll = await vpsGet<AsyncChatPollResponse>(pollPath);
+
+      if (poll.error && !poll.status) {
+        // 404 or network error — VPS may have restarted
+        console.error(
+          `[vps-chat] Poll error for ${requestId}: ${poll.error}`,
+        );
+        return {
+          content:
+            "Agent connection was interrupted. Your message has been saved — please try again.",
+          agentId,
+          toolCalls: [],
+        };
+      }
+
+      if (poll.status === "complete" && poll.result) {
+        console.log(
+          `[vps-chat] Async chat ${requestId} complete after ${Math.round((Date.now() - startTime) / 1000)}s`,
+        );
+        return {
+          content: poll.result.content,
+          agentId: poll.result.agentId ?? agentId,
+          toolCalls: poll.result.toolCalls ?? [],
+        };
+      }
+
+      if (poll.status === "failed") {
+        console.error(
+          `[vps-chat] Async chat ${requestId} failed: ${poll.error}`,
+        );
+        return {
+          content:
+            "Agent encountered an error processing your request. Please try again.",
+          agentId,
+          toolCalls: [],
+        };
+      }
+
+      // Still processing — continue polling
+    } catch (err) {
+      console.error(
+        `[vps-chat] Poll exception for ${requestId}:`,
+        err,
+      );
+      // Network blip — keep polling, don't give up immediately
+    }
+  }
+
+  // Max poll time exceeded
+  console.warn(
+    `[vps-chat] Async chat ${requestId} exceeded max poll time (${MAX_POLL_TIME / 1000}s)`,
+  );
+  return {
+    content:
+      "The agent is still working on your request. Please check back in a moment.",
+    agentId,
+    toolCalls: [],
+  };
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
-import { Pause, Play, Snowflake, Trash2, AlertTriangle, Users, ArrowUpRight } from "lucide-react";
+import { Pause, Play, Snowflake, Trash2, AlertTriangle, Users, ArrowUpRight, Pencil, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/_components/status-badge";
 import { FreezeDialog } from "@/_components/freeze-dialog";
 import { RetireDialog } from "@/_components/retire-dialog";
-import { pauseAgent, resumeAgent } from "@/_actions/agent-actions";
+import { pauseAgent, resumeAgent, updateAgentNameAction } from "@/_actions/agent-actions";
 import type { AgentStatus } from "@agency-factory/core";
-import { getValidTransitions } from "@agency-factory/core";
+import { getValidTransitions, getModelFriendlyName } from "@agency-factory/core";
 
 interface Agent {
   id: string;
@@ -20,6 +20,7 @@ interface Agent {
   status: string;
   role: string | null;
   parent_agent_id: string | null;
+  model_profile: Record<string, unknown>;
   created_at: string;
   updated_at: string;
   departments: { id: string; name: string; type: string } | null;
@@ -50,8 +51,30 @@ interface AgentOverviewProps {
 export function AgentOverview({ agent, businessId, parentAgent, childAgents }: AgentOverviewProps) {
   const [freezeOpen, setFreezeOpen] = useState(false);
   const [retireOpen, setRetireOpen] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editName, setEditName] = useState(agent.name);
+  const [savingName, setSavingName] = useState(false);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const validTransitions = getValidTransitions(agent.status as AgentStatus);
+
+  async function handleSaveName() {
+    const trimmed = editName.trim();
+    if (!trimmed || trimmed === agent.name) {
+      setIsEditingName(false);
+      setEditName(agent.name);
+      return;
+    }
+    setSavingName(true);
+    const result = await updateAgentNameAction(agent.id, businessId, trimmed);
+    setSavingName(false);
+    if (result?.error) {
+      toast.error(result.error);
+    } else {
+      toast.success("Agent name updated");
+      setIsEditingName(false);
+    }
+  }
 
   async function handlePause() {
     const result = await pauseAgent(agent.id, businessId);
@@ -95,6 +118,64 @@ export function AgentOverview({ agent, businessId, parentAgent, childAgents }: A
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
+            {/* Editable agent name */}
+            <div className="sm:col-span-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Agent Name
+              </p>
+              {isEditingName ? (
+                <div className="mt-1 flex items-center gap-2">
+                  <input
+                    ref={nameInputRef}
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveName();
+                      if (e.key === "Escape") {
+                        setIsEditingName(false);
+                        setEditName(agent.name);
+                      }
+                    }}
+                    autoFocus
+                    maxLength={50}
+                    className="h-8 w-full max-w-xs rounded-md border bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    disabled={savingName}
+                  />
+                  <button
+                    onClick={handleSaveName}
+                    disabled={savingName}
+                    className="inline-flex size-7 items-center justify-center rounded-md text-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 disabled:opacity-50"
+                  >
+                    <Check className="size-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditingName(false);
+                      setEditName(agent.name);
+                    }}
+                    className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-1 flex items-center gap-2">
+                  <p className="text-sm font-medium">{agent.name}</p>
+                  <button
+                    onClick={() => {
+                      setIsEditingName(true);
+                      setEditName(agent.name);
+                    }}
+                    className="inline-flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+                    title="Edit agent name"
+                  >
+                    <Pencil className="size-3" />
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div>
               <p className="text-xs font-medium text-muted-foreground">
                 Department
@@ -110,6 +191,17 @@ export function AgentOverview({ agent, businessId, parentAgent, childAgents }: A
               </p>
               <p className="text-sm">
                 {agent.agent_templates?.name ?? "No template"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-medium text-muted-foreground">
+                Model
+              </p>
+              <p className="text-sm">
+                {getModelFriendlyName(
+                  (agent.model_profile?.model as string) ?? "claude-sonnet-4-6",
+                )}
               </p>
             </div>
 

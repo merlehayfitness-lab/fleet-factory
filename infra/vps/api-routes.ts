@@ -17,6 +17,7 @@ import type {
   DeploymentState,
   ChatRequest,
   ChatResponse,
+  AsyncChatState,
   TaskRequest,
   TaskResult,
   HealthStatus,
@@ -60,6 +61,23 @@ if (deployments.size > 0) {
 }
 
 const cancellationFlags = new Set<string>();
+
+// ---------------------------------------------------------------------------
+// Pending async chat results (in-memory, auto-cleaned after 10 min)
+// ---------------------------------------------------------------------------
+
+const pendingChats = new Map<string, AsyncChatState>();
+const CHAT_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+// Cleanup expired chat results every 2 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, state] of pendingChats) {
+    if (now - state.createdAt > CHAT_TTL_MS) {
+      pendingChats.delete(id);
+    }
+  }
+}, 2 * 60 * 1000);
 
 function getTenantDataDir(): string {
   return process.env.TENANT_DATA_DIR || "/data/tenants";
@@ -384,10 +402,10 @@ router.get("/api/deploy/:id/status", (req, res) => {
 });
 
 // ---------------------------------------------------------------------------
-// POST /api/agents/:vpsAgentId/chat
+// POST /api/agents/:vpsAgentId/chat (async — returns immediately)
 // ---------------------------------------------------------------------------
 
-router.post("/api/agents/:vpsAgentId/chat", async (req, res) => {
+router.post("/api/agents/:vpsAgentId/chat", (req, res) => {
   try {
     const { vpsAgentId } = req.params;
     const chatReq = req.body as ChatRequest;
@@ -402,23 +420,74 @@ router.post("/api/agents/:vpsAgentId/chat", async (req, res) => {
       return;
     }
 
-    // Route message to OpenClaw gateway
-    const result = await sendMessageToAgent(vpsAgentId, chatReq.message);
+    const requestId = `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-    const response: ChatResponse = {
-      content: result.response,
-      agentId: chatReq.agentId || vpsAgentId,
-      toolCalls: [],
-    };
+    // Store pending state
+    pendingChats.set(requestId, {
+      requestId,
+      status: "processing",
+      createdAt: Date.now(),
+    });
 
-    console.log(`[chat] Message routed to agent ${vpsAgentId}`);
+    // Return immediately
+    res.json({ requestId, status: "processing" });
 
-    res.json(response);
+    // Process in background using non-streaming HTTP (reliable, no SSE parsing issues)
+    console.log(`[chat] Async request ${requestId} submitted for agent ${vpsAgentId}`);
+
+    // Model from web app is for display/tracking only — OpenClaw uses its own model mapping ("openclaw/default")
+    sendMessageToAgent(vpsAgentId, chatReq.message)
+      .then((result) => {
+        const state = pendingChats.get(requestId);
+        if (state) {
+          state.status = "complete";
+          state.result = {
+            content: result.response,
+            agentId: chatReq.agentId || vpsAgentId,
+            toolCalls: [],
+          };
+          console.log(
+            `[chat] Async request ${requestId} complete for agent ${vpsAgentId} (${result.response.length} chars)`,
+          );
+        }
+      })
+      .catch((err: unknown) => {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        const state = pendingChats.get(requestId);
+        if (state) {
+          state.status = "failed";
+          state.error = errMsg;
+          console.error(
+            `[chat] Async request ${requestId} failed for agent ${vpsAgentId}: ${errMsg}`,
+          );
+        }
+      });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error(`[chat] Error: ${message}`);
     res.status(500).json({ error: message });
   }
+});
+
+// ---------------------------------------------------------------------------
+// GET /api/chat-results/:requestId (poll for async chat result)
+// ---------------------------------------------------------------------------
+
+router.get("/api/chat-results/:requestId", (req, res) => {
+  const { requestId } = req.params;
+  const state = pendingChats.get(requestId);
+
+  if (!state) {
+    res.status(404).json({ error: "Chat request not found or expired" });
+    return;
+  }
+
+  res.json({
+    requestId: state.requestId,
+    status: state.status,
+    result: state.result,
+    error: state.error,
+  });
 });
 
 // ---------------------------------------------------------------------------

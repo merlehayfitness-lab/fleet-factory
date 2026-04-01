@@ -11,7 +11,7 @@ export async function selectAgent(
 ) {
   const { data: agents, error } = await supabase
     .from("agents")
-    .select("id, name, status")
+    .select("id, name, status, model_profile")
     .eq("department_id", departmentId)
     .eq("business_id", businessId)
     .eq("status", "active")

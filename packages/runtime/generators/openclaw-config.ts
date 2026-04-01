@@ -21,11 +21,30 @@ function deriveVpsAgentId(
   return `${businessSlug}-${departmentType}-${prefix}`;
 }
 
+interface McpServerEntry {
+  name: string;
+  command?: string;
+  args?: string[];
+  url?: string;
+  env?: Record<string, string>;
+}
+
+interface SkillPackageEntry {
+  name: string;
+  source: string;
+  version?: string;
+}
+
 interface AgentConfigInput {
   id: string;
   departmentType: string;
   name: string;
   modelProfile: Record<string, unknown>;
+  mcpServers?: McpServerEntry[];
+  skillsPackage?: SkillPackageEntry[];
+  tokenBudget?: number;
+  reportingChain?: string;
+  roleLevel?: number;
 }
 
 interface SandboxConfig {
@@ -59,6 +78,18 @@ export function generateOpenClawConfig(
     const model =
       (agent.modelProfile as { model?: string }).model || "claude-sonnet-4-6";
 
+    // Build MCP servers config for this agent
+    const mcpServers: Record<string, unknown> = {};
+    if (agent.mcpServers) {
+      for (const mcp of agent.mcpServers) {
+        mcpServers[mcp.name] = {
+          ...(mcp.command ? { command: mcp.command, args: mcp.args ?? [] } : {}),
+          ...(mcp.url ? { url: mcp.url } : {}),
+          ...(mcp.env ? { env: mcp.env } : {}),
+        };
+      }
+    }
+
     return {
       id: vpsAgentId,
       name: agent.name,
@@ -71,6 +102,11 @@ export function generateOpenClawConfig(
         cpus: sandbox.cpus,
         network_access: sandbox.networkAccess,
       },
+      ...(Object.keys(mcpServers).length > 0 ? { mcpServers } : {}),
+      ...(agent.skillsPackage?.length ? { skills: agent.skillsPackage } : {}),
+      ...(agent.tokenBudget ? { tokenBudget: agent.tokenBudget } : {}),
+      ...(agent.reportingChain ? { reportingChain: agent.reportingChain } : {}),
+      ...(agent.roleLevel !== undefined ? { roleLevel: agent.roleLevel } : {}),
     };
   });
 

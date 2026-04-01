@@ -6,10 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
+export interface FileMetadataItem {
+  name: string;
+  size: number;
+  type: string;
+}
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per file
+const MAX_FILES = 5;
+
 interface ChatMessageInputProps {
   onSendMessage: (
     content: string,
-    fileMetadata?: { name: string; size: number; type: string },
+    files?: File[],
   ) => void;
   disabled: boolean;
   disabledReason?: string;
@@ -18,15 +27,7 @@ interface ChatMessageInputProps {
 }
 
 /**
- * Message input area with textarea, file upload, and send button.
- *
- * Features:
- * - Auto-resize textarea
- * - Shift+Enter for newline, Enter to send
- * - File upload via paperclip button (stores metadata only for MVP)
- * - Disabled state for frozen agents with explanation text
- * - Send button shows spinner when sending
- * - Slack channel name in placeholder when connected
+ * Message input area with textarea, multi-file upload, and send button.
  */
 export function ChatMessageInput({
   onSendMessage,
@@ -36,25 +37,19 @@ export function ChatMessageInput({
   channelName,
 }: ChatMessageInputProps) {
   const [content, setContent] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = useCallback(() => {
     const trimmed = content.trim();
     if (!trimmed || disabled || isSending) return;
 
-    const fileMetadata = selectedFile
-      ? {
-          name: selectedFile.name,
-          size: selectedFile.size,
-          type: selectedFile.type,
-        }
-      : undefined;
-
-    onSendMessage(trimmed, fileMetadata);
+    onSendMessage(trimmed, selectedFiles.length > 0 ? selectedFiles : undefined);
     setContent("");
-    setSelectedFile(null);
-  }, [content, disabled, isSending, onSendMessage, selectedFile]);
+    setSelectedFiles([]);
+    setFileError(null);
+  }, [content, disabled, isSending, onSendMessage, selectedFiles]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -68,18 +63,38 @@ export function ChatMessageInput({
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        setSelectedFile(file);
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
+
+      setFileError(null);
+      const incoming = Array.from(files);
+
+      // Check total file count
+      const totalCount = selectedFiles.length + incoming.length;
+      if (totalCount > MAX_FILES) {
+        setFileError(`Maximum ${MAX_FILES} files allowed`);
+        e.target.value = "";
+        return;
       }
+
+      // Check individual file sizes
+      const oversized = incoming.filter((f) => f.size > MAX_FILE_SIZE);
+      if (oversized.length > 0) {
+        const names = oversized.map((f) => f.name).join(", ");
+        setFileError(`Files exceed 10MB limit: ${names}`);
+        e.target.value = "";
+        return;
+      }
+
+      setSelectedFiles((prev) => [...prev, ...incoming]);
       // Reset input so same file can be selected again
       e.target.value = "";
     },
-    [],
+    [selectedFiles.length],
   );
 
-  const handleRemoveFile = useCallback(() => {
-    setSelectedFile(null);
+  const handleRemoveFile = useCallback((index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   return (
@@ -92,21 +107,42 @@ export function ChatMessageInput({
         </div>
       )}
 
-      {/* File preview */}
-      {selectedFile && (
-        <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-2.5 py-1.5 mb-2 text-xs text-muted-foreground">
-          <Paperclip className="size-3 shrink-0" />
-          <span className="truncate flex-1">{selectedFile.name}</span>
-          <span className="shrink-0">
-            {(selectedFile.size / 1024).toFixed(1)}KB
-          </span>
+      {/* File validation error */}
+      {fileError && (
+        <div className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 mb-2 text-xs text-destructive">
+          {fileError}
           <button
             type="button"
-            onClick={handleRemoveFile}
-            className="shrink-0 rounded-full p-0.5 hover:bg-muted"
+            onClick={() => setFileError(null)}
+            className="ml-auto shrink-0 rounded-full p-0.5 hover:bg-destructive/20"
           >
             <X className="size-3" />
           </button>
+        </div>
+      )}
+
+      {/* File previews */}
+      {selectedFiles.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {selectedFiles.map((file, i) => (
+            <div
+              key={`${file.name}-${i}`}
+              className="flex items-center gap-2 rounded-md border bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground"
+            >
+              <Paperclip className="size-3 shrink-0" />
+              <span className="truncate max-w-[180px]">{file.name}</span>
+              <span className="shrink-0">
+                {(file.size / 1024).toFixed(1)}KB
+              </span>
+              <button
+                type="button"
+                onClick={() => handleRemoveFile(i)}
+                className="shrink-0 rounded-full p-0.5 hover:bg-muted"
+              >
+                <X className="size-3" />
+              </button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -126,6 +162,7 @@ export function ChatMessageInput({
         <input
           ref={fileInputRef}
           type="file"
+          multiple
           className="hidden"
           onChange={handleFileSelect}
         />

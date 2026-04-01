@@ -256,14 +256,14 @@ export async function getSlackFeedMessages(
 
   const conversationIds = conversations.map((c) => c.id as string);
 
-  // Fetch messages with slack_ts (Slack-synced only)
+  // Fetch all messages for the department's conversations
+  // (includes both Slack-synced and admin-panel messages)
   let query = supabase
     .from("messages")
     .select(
       "id, conversation_id, business_id, role, agent_id, content, tool_calls, metadata, created_at, slack_ts, slack_channel_id",
     )
     .in("conversation_id", conversationIds)
-    .not("slack_ts", "is", null)
     .order("created_at", { ascending: true })
     .limit(limit);
 

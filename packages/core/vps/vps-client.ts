@@ -3,15 +3,17 @@ import { getVpsConfig } from "./vps-config";
 /**
  * POST request to VPS with API key auth and timeout.
  * Returns parsed JSON on success, or { success: false, error: message } on failure.
+ * Pass a custom timeoutMs for long-running operations like chat.
  */
 export async function vpsPost<T = Record<string, unknown>>(
   path: string,
   body: unknown,
+  timeoutMs?: number,
 ): Promise<T & { success?: boolean; error?: string }> {
   const config = getVpsConfig();
   const url = `${config.baseUrl}${path}`;
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs ?? config.timeoutMs);
 
   try {
     const response = await fetch(url, {
@@ -34,12 +36,14 @@ export async function vpsPost<T = Record<string, unknown>>(
 
     return data as T & { success?: boolean; error?: string };
   } catch (err) {
+    const isTimeout = err instanceof DOMException && err.name === "AbortError";
     const message =
       err instanceof Error ? err.message : "Unknown error";
     return {
       success: false,
-      error: `VPS unreachable: ${message}`,
-    } as T & { success: boolean; error: string };
+      error: isTimeout ? `VPS timeout after ${timeoutMs ?? config.timeoutMs}ms` : `VPS unreachable: ${message}`,
+      _timeout: isTimeout,
+    } as T & { success: boolean; error: string; _timeout?: boolean };
   } finally {
     clearTimeout(timeout);
   }

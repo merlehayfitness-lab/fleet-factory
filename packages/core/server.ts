@@ -145,6 +145,12 @@ export {
   runPostDeployHealthCheck,
 } from "./vps/vps-deploy";
 
+// SSH client + deploy — NOT barrel-exported (native node-ssh/ssh2 binary breaks webpack).
+// Use dynamic import: const { isSshConfigured } = await import("@agency-factory/core/vps/ssh-client");
+// Types re-exported for convenience (types are erased at runtime, no native dep issue).
+export type { SshConfig, SshCommandResult, SshProgressCallback } from "./vps/ssh-client";
+export type { SshDeployOptions, SshDeployAgent, SshDeployResult } from "./vps/ssh-deploy";
+
 // Health types
 export type { VpsHealthData } from "./health/health-service";
 
@@ -189,8 +195,26 @@ export { parseGitHubUrl, fetchGitHubFile, fetchGitHubDirectory } from "./skill/g
 // Tool profile validation (server-only -- uses fetch)
 export { validateMcpServerUrl } from "./agent/tool-profile-schema";
 
-// Agent profile sync (server-only -- database operations)
-export { syncFromTemplate, reparentAgent } from "./agent/service";
+// MCP auto-assignment service (server-only -- database operations)
+export {
+  resolveMcpServers,
+  getMcpServersForAgent,
+  generateMcpWorkspaceConfig,
+  listKnownMcpServers,
+} from "./agent/mcp-service";
+export type { McpServerDef, McpServerConfig } from "./agent/mcp-service";
+
+// Skill package installer (server-only -- generates install commands)
+export {
+  generateInstallCommands,
+  generateInstallScript,
+  getBuiltinSkill,
+  listBuiltinSkills,
+} from "./skill/package-installer";
+export type { SkillPackageRef, InstallCommand } from "./skill/package-installer";
+
+// Agent profile sync + self-naming (server-only -- database operations)
+export { syncFromTemplate, reparentAgent, updateAgentName } from "./agent/service";
 
 // Integration setup instructions (server-only -- Anthropic streaming API)
 export { streamSetupInstructions } from "./integrations/instructions-service";
@@ -241,6 +265,119 @@ export {
 
 // AITMPL import service (server-only -- database writes)
 export { importFromAitmpl } from "./aitmpl/import-service";
+
+// Rate limit service (server-only -- database-backed queue + usage logging)
+export {
+  acquireSlot,
+  releaseSlot,
+  getActiveSlotCount,
+  enqueueCall,
+  dequeueCall,
+  completeQueuedCall,
+  failQueuedCall,
+  getQueueDepth,
+  logApiUsage,
+  getApiUsageSummary,
+  executeWithRateLimit,
+} from "./rate-limit/rate-limiter";
+export type {
+  RateLimitConfig,
+  ApiCallResult,
+  QueuedCall,
+} from "./rate-limit/rate-limiter";
+
+// Port allocation service (server-only -- database operations)
+export {
+  allocatePortBlock,
+  getBusinessPorts,
+  releasePortBlock,
+  getAgentPort,
+  getAllPortAllocations,
+} from "./deployment/port-allocator";
+export type { PortAllocation } from "./deployment/port-allocator";
+
+// Dashboard services (server-only -- cross-tenant aggregation)
+export {
+  getCSuiteSummary,
+  getRevOpsSummary,
+  getLiveActivityFeed,
+} from "./dashboard/dashboard-service";
+export type {
+  CSuiteSummary,
+  RevOpsSummary,
+  LiveActivityEntry,
+} from "./dashboard/dashboard-service";
+
+// R&D Council (server-only -- autonomous agent sessions)
+export {
+  runCouncilSession,
+  getNextSessionTime,
+  getProposer,
+  getParticipants,
+  shouldRunSession,
+  writeMemo,
+  getMemos,
+  getMemoById,
+  getPreviousMemo,
+  getSessionCount,
+  COUNCIL_AGENTS,
+  DEFAULT_SCHEDULE,
+} from "./rd-council/index";
+export type {
+  CouncilAgent,
+  CouncilSession,
+  CouncilContext,
+  CouncilVote,
+  CouncilMemo,
+  ScheduleConfig,
+} from "./rd-council/council-types";
+
+// CRM integration (server-only -- REST client + database operations)
+export {
+  getContacts,
+  createContact,
+  updateContact,
+  getDeals,
+  createDeal,
+  updateDealStage,
+  getPipelineSummary,
+  getActivities,
+  logActivity,
+} from "./crm/crm-service";
+export { createTwentyCrmClient } from "./crm/crm-client";
+export { syncContactsFromCrm, syncPipelineFromCrm } from "./crm/crm-sync";
+export type {
+  CrmContact,
+  CrmDeal,
+  CrmActivity,
+  CrmPipelineSummary,
+  TwentyCrmConfig,
+} from "./crm/crm-types";
+
+// WhatsApp integration (server-only -- API clients + webhooks)
+export {
+  sendWhatsAppMessage,
+  verifyTwilioSignature,
+  verifyMetaWebhook,
+  parseTwilioInbound,
+  parseMetaInbound,
+  parseCommand as parseWhatsAppCommand,
+  getHelpMessage as getWhatsAppHelpMessage,
+  sendAlert as sendWhatsAppAlert,
+  alertDeploymentComplete,
+  alertApprovalNeeded,
+  alertNewCrmLead,
+  alertFollowUpDue,
+  alertSpendThreshold,
+  sendDailyDigest,
+} from "./whatsapp/index";
+export type {
+  WhatsAppConfig,
+  InboundMessage as WhatsAppInboundMessage,
+  OutboundMessage as WhatsAppOutboundMessage,
+  ParsedCommand as WhatsAppParsedCommand,
+  DailyDigest as WhatsAppDailyDigest,
+} from "./whatsapp/whatsapp-types";
 
 // OpenClaw workspace generator (re-exported for server-only use in web app)
 export { generateOpenClawWorkspace } from "@agency-factory/runtime";

@@ -12,7 +12,7 @@ import type { RetrievedContext } from "../knowledge/knowledge-types";
 import { selectAgent } from "../orchestrator/router";
 import { generateStubResponse } from "./chat-stub";
 import { isVpsConfigured } from "../vps/vps-config";
-import { checkVpsHealth } from "../vps/vps-health";
+
 import { getVpsAgentId, sendChatToVps } from "../vps/vps-chat";
 
 /**
@@ -485,6 +485,76 @@ export async function getDepartmentChannels(
   return channels;
 }
 
+// --- Agent Self-Naming Detection ---
+
+/** Words that commonly start sentences but aren't agent names */
+const FALSE_POSITIVE_NAMES = new Set([
+  "Here", "Sorry", "Happy", "Sure", "Great", "Thank", "Thanks",
+  "Yes", "No", "Hello", "Hi", "Hey", "Well", "OK", "Okay",
+  "Absolutely", "Certainly", "Unfortunately", "However", "Actually",
+  "Please", "Let", "Now", "First", "Just", "Right", "Good",
+]);
+
+/**
+ * Detect an agent self-naming declaration in a message.
+ *
+ * Matches patterns like:
+ * - "I'm **Quota Quinn**"
+ * - "I am Quota Quinn"
+ * - "Call me Sales Bot"
+ * - "My name is Revenue Rex"
+ *
+ * Returns the extracted name or null if no match.
+ */
+export function detectAgentName(content: string): string | null {
+  // Patterns: "I'm [Name]", "I am [Name]", "Call me [Name]", "My name is [Name]"
+  // Names can be wrapped in ** markdown bold **
+  const patterns = [
+    /\bI['']m\s+\*{0,2}([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,2})\*{0,2}/,
+    /\bI am\s+\*{0,2}([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,2})\*{0,2}/,
+    /\bCall me\s+\*{0,2}([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,2})\*{0,2}/i,
+    /\bMy name is\s+\*{0,2}([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,2})\*{0,2}/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = content.match(pattern);
+    if (match?.[1]) {
+      const name = match[1].trim();
+      const firstName = name.split(" ")[0];
+      if (FALSE_POSITIVE_NAMES.has(firstName)) continue;
+      if (name.length < 2 || name.length > 50) continue;
+      return name;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Try to detect and persist an agent self-naming from a response.
+ * Best-effort: errors are logged but never thrown.
+ * Mutates agentMessage.agentName in-place so Slack posts use the new name.
+ */
+async function tryDetectSelfName(
+  supabase: SupabaseClient,
+  agentMessage: ChatMessage,
+  businessId: string,
+): Promise<void> {
+  if (!agentMessage.agentId) return;
+
+  const detectedName = detectAgentName(agentMessage.content);
+  if (!detectedName) return;
+
+  try {
+    const { updateAgentName } = await import("../agent/service");
+    await updateAgentName(supabase, agentMessage.agentId, businessId, detectedName);
+    // Mutate in-place so the current Slack post uses the new name
+    agentMessage.agentName = detectedName;
+  } catch (err) {
+    console.error("Agent self-naming failed (non-fatal):", err);
+  }
+}
+
 /**
  * Route a user message to the appropriate agent and generate a stub response.
  *
@@ -577,14 +647,16 @@ export async function routeAndRespond(
     console.error("Knowledge retrieval failed, proceeding without context:", err);
   }
 
-  // Check if VPS is configured and healthy -- route to real agent if possible
+  // Route to VPS agent if configured (skip health check -- sendChatToVps handles errors)
   if (isVpsConfigured()) {
     try {
-      const vpsHealth = await checkVpsHealth();
-      if (vpsHealth.status === "online" || vpsHealth.status === "degraded") {
-        // Route to real VPS agent
-        const vpsAgentId = await getVpsAgentId(supabase, agent.id);
-        if (vpsAgentId) {
+      const vpsAgentId = await getVpsAgentId(supabase, agent.id);
+      if (vpsAgentId) {
+          // Extract model from agent's model_profile (falls back to sonnet)
+          const agentModel =
+            ((agent as Record<string, unknown>).model_profile as Record<string, unknown>)
+              ?.model as string | undefined;
+
           const vpsResponse = await sendChatToVps(
             businessId,
             agent.id,
@@ -592,6 +664,7 @@ export async function routeAndRespond(
             conversationId,
             userMessage,
             knowledgeContext?.contextString || undefined,
+            agentModel || "claude-sonnet-4-6",
           );
 
           // Build message metadata with knowledge sources if available
@@ -630,6 +703,9 @@ export async function routeAndRespond(
             /* best-effort */
           }
 
+          // Detect agent self-naming (best-effort, mutates agentMessage.agentName)
+          await tryDetectSelfName(supabase, agentMessage, businessId);
+
           // Post agent response to Slack (best-effort, if connected)
           await postResponseToSlackIfConnected(
             supabase,
@@ -641,20 +717,9 @@ export async function routeAndRespond(
 
           return agentMessage;
         }
-      }
 
-      // VPS offline: send system message and fall through to stub
-      if (vpsHealth.status === "offline") {
-        await sendMessage(
-          supabase,
-          businessId,
-          conversationId,
-          "Agent is offline -- your message has been saved and will be delivered when the agent is back online.",
-          "system",
-        );
-      }
     } catch {
-      // VPS check failed, fall through to stub response
+      // VPS call failed, fall through to stub response
     }
   }
 
@@ -696,6 +761,9 @@ export async function routeAndRespond(
   } catch {
     console.error("Failed to create chat routing audit log");
   }
+
+  // Detect agent self-naming (best-effort, mutates agentMessage.agentName)
+  await tryDetectSelfName(supabase, agentMessage, businessId);
 
   // Post agent response to Slack (best-effort, if connected)
   await postResponseToSlackIfConnected(

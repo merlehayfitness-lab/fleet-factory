@@ -18,8 +18,10 @@ import {
   selectAgent,
   getSlackClient,
   getChannelMappings,
+  extractText,
 } from "@agency-factory/core/server";
-import type { ChatMessage, ChatConversation, DepartmentChannel } from "@agency-factory/core";
+import type { ChatMessage, ChatConversation, DepartmentChannel, KnowledgeFileType } from "@agency-factory/core";
+import { randomUUID } from "node:crypto";
 
 /**
  * Send a message to a department channel.
@@ -236,8 +238,8 @@ export async function sendSlackMessageAction(
   businessId: string,
   departmentId: string,
   content: string,
-  fileMetadata?: { name: string; size: number; type: string },
-): Promise<{ userMessage: ChatMessage } | { error: string }> {
+  files?: { name: string; size: number; type: string; url?: string }[],
+): Promise<{ userMessage: ChatMessage; conversationId: string } | { error: string }> {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -279,12 +281,19 @@ export async function sendSlackMessageAction(
       source: "admin_panel",
       slackChannelId: mapping.slackChannelId,
     };
-    if (fileMetadata) {
+    if (files && files.length > 0) {
+      metadata.files = files.map((f) => ({
+        name: f.name,
+        size: f.size,
+        type: f.type,
+        url: f.url ?? "pending",
+      }));
+      // Keep legacy single-file field for backward compat with message bubble
       metadata.file = {
-        name: fileMetadata.name,
-        size: fileMetadata.size,
-        type: fileMetadata.type,
-        url: "pending",
+        name: files[0].name,
+        size: files[0].size,
+        type: files[0].type,
+        url: files[0].url ?? "pending",
       };
     }
 
@@ -300,11 +309,22 @@ export async function sendSlackMessageAction(
       metadata,
     );
 
-    // Post message to Slack channel
+    // Build Slack message text (include file mentions if attached)
+    let slackText = content;
+    if (files && files.length > 0) {
+      const fileLines = files.map(
+        (f) => `:paperclip: _Attached: ${f.name} (${(f.size / 1024).toFixed(1)}KB)_`,
+      );
+      slackText += "\n" + fileLines.join("\n");
+    }
+
+    // Post message to Slack channel as "Admin"
     try {
       const result = await client.chat.postMessage({
         channel: mapping.slackChannelId,
-        text: content,
+        text: slackText,
+        username: "Admin",
+        icon_emoji: ":bust_in_silhouette:",
       });
 
       // Update message record with Slack ts for deduplication
@@ -323,12 +343,186 @@ export async function sendSlackMessageAction(
     }
 
     revalidatePath(`/businesses/${businessId}/chat`);
-    return { userMessage };
+    return { userMessage, conversationId: conversation.id };
   } catch (err) {
     return {
       error: err instanceof Error ? err.message : "Failed to send Slack message",
     };
   }
+}
+
+/**
+ * Trigger agent response for a message.
+ * Called separately from sendSlackMessageAction so it gets its own fresh
+ * Supabase client (the original request-scoped client becomes invalid after
+ * the server action response is sent).
+ *
+ * The agent response gets saved to DB and posted to Slack.
+ * The UI picks it up via polling -- this action is fire-and-forget from the client.
+ */
+export async function triggerAgentResponseAction(
+  businessId: string,
+  departmentId: string,
+  conversationId: string,
+  content: string,
+  fileContext?: string,
+): Promise<{ success: true } | { error: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
+  // Prepend file context to the message so the agent can see file contents
+  const enrichedContent = fileContext
+    ? `${content}\n\n---\n\n**Attached file contents:**\n\n${fileContext}`
+    : content;
+
+  try {
+    await routeAndRespond(
+      supabase,
+      businessId,
+      departmentId,
+      conversationId,
+      enrichedContent,
+    );
+    return { success: true };
+  } catch (err) {
+    console.error("Agent routing failed:", err);
+    return {
+      error: err instanceof Error ? err.message : "Agent routing failed",
+    };
+  }
+}
+
+/** File extension to KnowledgeFileType mapping for text extraction */
+const CHAT_FILE_TYPE_MAP: Record<string, KnowledgeFileType> = {
+  txt: "text",
+  md: "markdown",
+  pdf: "pdf",
+  docx: "docx",
+  xlsx: "xlsx",
+};
+
+const MAX_EXTRACTED_TEXT = 50 * 1024; // 50KB truncation limit
+
+export interface ChatFileUpload {
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+  extractedText: string | null;
+}
+
+/**
+ * Upload chat files to Supabase Storage and extract text for supported types.
+ *
+ * Accepts FormData with:
+ * - businessId: string
+ * - files: File[] (multiple file entries under key "files")
+ *
+ * Returns array of uploaded file info with signed URLs and extracted text.
+ */
+export async function uploadChatFilesAction(
+  formData: FormData,
+): Promise<{ uploads: ChatFileUpload[] } | { error: string }> {
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  const businessId = formData.get("businessId") as string;
+  if (!businessId) {
+    return { error: "Business ID is required" };
+  }
+
+  const guard = await requireActiveBusiness(businessId);
+  if (guard) return guard;
+
+  const files = formData.getAll("files") as File[];
+  if (!files || files.length === 0) {
+    return { error: "No files provided" };
+  }
+
+  if (files.length > 5) {
+    return { error: "Maximum 5 files allowed" };
+  }
+
+  const uploads: ChatFileUpload[] = [];
+
+  for (const file of files) {
+    if (!(file instanceof File)) continue;
+    if (file.size > 10 * 1024 * 1024) {
+      return { error: `File "${file.name}" exceeds 10MB limit` };
+    }
+
+    const fileId = randomUUID();
+    const storagePath = `${businessId}/chat/${fileId}/${file.name}`;
+
+    try {
+      // Upload to Supabase Storage
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      const { error: uploadError } = await supabase.storage
+        .from("knowledge-docs")
+        .upload(storagePath, buffer, {
+          contentType: file.type,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error(`Failed to upload ${file.name}:`, uploadError);
+        return { error: `Failed to upload ${file.name}: ${uploadError.message}` };
+      }
+
+      // Generate signed URL (7 days)
+      const { data: signedData, error: signError } = await supabase.storage
+        .from("knowledge-docs")
+        .createSignedUrl(storagePath, 7 * 24 * 60 * 60);
+
+      const url = signError ? "pending" : signedData.signedUrl;
+
+      // Extract text for supported types
+      let extractedText: string | null = null;
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+      const fileType = CHAT_FILE_TYPE_MAP[ext];
+
+      if (fileType) {
+        try {
+          let text = await extractText(buffer, fileType);
+          if (text.length > MAX_EXTRACTED_TEXT) {
+            text = text.slice(0, MAX_EXTRACTED_TEXT) + "\n\n[... text truncated at 50KB ...]";
+          }
+          extractedText = text;
+        } catch (err) {
+          console.error(`Text extraction failed for ${file.name}:`, err);
+        }
+      }
+
+      uploads.push({
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        url,
+        extractedText,
+      });
+    } catch (err) {
+      console.error(`Error processing ${file.name}:`, err);
+      return {
+        error: `Failed to process ${file.name}: ${err instanceof Error ? err.message : "Unknown error"}`,
+      };
+    }
+  }
+
+  return { uploads };
 }
 
 /**

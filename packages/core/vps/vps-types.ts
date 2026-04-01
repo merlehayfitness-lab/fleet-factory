@@ -87,6 +87,20 @@ export interface VpsChatResponse {
   }>;
 }
 
+/** Async chat submit response from VPS (returned immediately) */
+export interface AsyncChatSubmitResponse {
+  requestId: string;
+  status: "processing";
+}
+
+/** Async chat poll response from VPS */
+export interface AsyncChatPollResponse {
+  requestId: string;
+  status: "processing" | "complete" | "failed";
+  result?: VpsChatResponse;
+  error?: string;
+}
+
 /** Task execution request to VPS */
 export interface VpsTaskRequest {
   businessId: string;
