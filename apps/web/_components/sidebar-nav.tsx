@@ -18,6 +18,8 @@ import {
   BookOpen,
   Settings,
   LogOut,
+  TrendingUp,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -98,6 +100,18 @@ function getBusinessSubNav(businessId: string) {
       href: `/businesses/${businessId}/deployments`,
       label: "Deployments",
       icon: Rocket,
+      enabled: true,
+    },
+    {
+      href: `/businesses/${businessId}/revops`,
+      label: "RevOps",
+      icon: TrendingUp,
+      enabled: true,
+    },
+    {
+      href: `/businesses/${businessId}/usage`,
+      label: "Usage",
+      icon: BarChart3,
       enabled: true,
     },
     {
