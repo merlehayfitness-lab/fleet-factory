@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-03-25)
 ## Current Position
 
 Phase: 19 of 22 (Rate Limiting & API Cost Tracking)
-Plan: 1 of 4 in current phase (1 complete)
+Plan: 2 of 4 in current phase (2 complete)
 Status: In Progress
-Last activity: 2026-04-01 -- Completed 19-01 (rate limiting foundation: DB-backed slots, budget service, model pricing)
+Last activity: 2026-04-01 -- Completed 19-02 (VPS chat rate-limit integration with token usage tracking and queue UI)
 
-Progress: [████████████████████████████████░░░] 93% (57/61 plans)
+Progress: [████████████████████████████████░░░] 95% (58/61 plans)
 
 ## Performance Metrics
 
@@ -108,6 +108,7 @@ Progress: [███████████████████████
 | Phase 18 P01 | 5min | 2 tasks | 4 files |
 | Phase 18 P02 | 5min | 2 tasks | 3 files |
 | Phase 19 P01 | 6min | 4 tasks | 8 files |
+| Phase 19 P02 | 6min | 4 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -343,6 +344,10 @@ Recent decisions affecting current work:
 - [19-01]: Agent token_budget uses COALESCE pattern with template fallback via Supabase JOIN
 - [19-01]: metering.ts deleted; all usage recording consolidated to logApiUsage in rate-limiter.ts
 - [19-01]: usage_records table dropped in favor of api_usage (richer rate-limit-aware fields)
+- [19-02]: Queue status stored as JSON system message with isQueueStatus metadata flag for UI detection
+- [19-02]: Budget-exceeded content detection uses string includes('token budget') in chat bubble
+- [19-02]: Queue polling at 3s interval in chat-layout, stops when non-queue message arrives
+- [19-02]: High demand indicator is informational only, does not disable sending
 
 ### Pending Todos
 
@@ -355,5 +360,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-01
-Stopped at: Completed 19-01-PLAN.md
-Resume file: .planning/phases/19-rate-limiting-api-cost-tracking/19-02-PLAN.md
+Stopped at: Completed 19-02-PLAN.md
+Resume file: .planning/phases/19-rate-limiting-api-cost-tracking/19-03-PLAN.md
