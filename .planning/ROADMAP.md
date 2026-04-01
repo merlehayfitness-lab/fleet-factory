@@ -379,17 +379,28 @@ Plans:
 - [ ] 18-02-PLAN.md -- Wizard UX polish (hover tooltips, dynamic provider list, inline review editing, hierarchy enforcement)
 
 ### Phase 19: Rate Limiting & API Cost Tracking
-**Goal**: API calls are rate-limited with concurrency control (max 3 concurrent), queued when capacity is exceeded with priority ordering, and all usage is logged with per-model cost calculation
-**Depends on**: Phase 17
-**Requirements**: RATE-01, RATE-02, RATE-03, USAGE-01, USAGE-02
+**Goal**: API calls are rate-limited with plan-tier concurrency control, queued when capacity is exceeded, all usage logged with per-model cost calculation, budget enforcement at agent and business level, and a dedicated usage analytics page
+**Depends on**: Phase 17, Phase 18
+**Requirements**: RATE-01, RATE-02, RATE-03, USAGE-01, USAGE-02, TIER-01, BUDGET-01, BUDGET-02, BUDGET-03, DASH-01, DASH-02, VPS-01, CLEAN-01, QUEUE-UX-01
 **Success Criteria** (what must be TRUE):
-  1. Rate limiter enforces max 3 concurrent API calls with 2-second stagger
-  2. Overflow requests are queued in Supabase-backed `api_call_queue` with priority + FIFO ordering and optimistic locking
-  3. All API calls are logged in `api_usage` table with model, provider, prompt/completion tokens, cost (cents), latency, and status
-  4. Cost calculation uses per-model pricing for Claude (Opus/Sonnet/Haiku), GPT-4/mini, Gemini, Mistral, and DeepSeek
-  5. Usage summaries queryable by business, date range, and status (completed/failed/rate_limited/queued)
-**Key files**: `packages/core/rate-limit/`, migration 045
-**Plans**: TBD
+  1. Rate limiter enforces plan-tier concurrency limits (Trial:1, Starter:3, Pro:5, Enterprise:10) with 2-second stagger using DB-backed slot tracking
+  2. Overflow requests queued in api_call_queue with priority + FIFO ordering, self-draining on slot release
+  3. All API calls logged in api_usage with model, provider, prompt/completion tokens, cost, latency, status, and key_source (platform vs business)
+  4. Per-model pricing for Claude/GPT-4/Gemini/Mistral/DeepSeek in extracted constants file
+  5. Per-agent token budget (monthly, COALESCE with template) with soft limit at 80% (banner + Slack DM) and hard stop at 100%
+  6. Business-level plan token cap enforced as hard stop (block all agents + red banner)
+  7. Command Center shows full cost breakdown (today/week/month, by provider, by model)
+  8. Dedicated /businesses/[id]/usage page with Recharts time-series, model/provider/agent breakdowns, time filters (24h/7d/30d/MTD/YTD)
+  9. VPS proxy returns real token counts from OpenClaw response; chat UI shows queue position when rate-limited
+  10. Old usage_records table dropped, metering.ts deleted, tool-runner.ts migrated to logApiUsage()
+**Key files**: `packages/core/rate-limit/`, `packages/core/dashboard/`, `apps/web/app/(dashboard)/businesses/[id]/usage/`, migration 045, 051
+**Plans**: 4 plans
+
+Plans:
+- [ ] 19-01-PLAN.md -- Schema (plan_tier, agent token_budget, key_source), model pricing constants, DB-backed rate limiter, budget service, delete metering.ts
+- [ ] 19-02-PLAN.md -- VPS proxy token passthrough, vps-chat parsing, executeWithRateLimit in chat-service, chat queue UX
+- [ ] 19-03-PLAN.md -- Dashboard cost wiring, RevOps real budgets, Usage Analytics page with Recharts, sidebar nav
+- [ ] 19-04-PLAN.md -- Budget banners (agent detail + business overview), Slack DM at 80%, audit log events
 
 ### Phase 20: SSH Deployment & Automated Provisioning
 **Goal**: VPS deployment uses direct SSH instead of REST API, with idempotent provisioning scripts, port allocation for multi-tenant isolation, and real-time progress reporting
@@ -603,7 +614,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 18. Enhanced Business Wizard & Agent Hierarchy | 2/2 | Complete   | 2026-04-01 |
+| 18. Enhanced Business Wizard & Agent Hierarchy | 2/2 | Complete    | 2026-04-01 |
 | 19. Rate Limiting & API Cost Tracking | — | Complete | 2026-03-31 |
 | 20. SSH Deployment & Automated Provisioning | — | Complete | 2026-03-31 |
 | 21. Command Center & RevOps Dashboard | — | Complete | 2026-03-31 |
