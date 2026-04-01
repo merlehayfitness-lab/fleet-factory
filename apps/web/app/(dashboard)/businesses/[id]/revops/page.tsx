@@ -8,6 +8,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+function formatCost(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}k`;
+  return String(n);
+}
+
+const TIER_LABELS: Record<string, string> = {
+  trial: "Trial",
+  starter: "Starter",
+  pro: "Pro",
+  enterprise: "Enterprise",
+};
+
 export default async function RevOpsPage({
   params,
 }: {
@@ -19,22 +36,50 @@ export default async function RevOpsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Revenue Operations</h1>
-        <p className="text-sm text-muted-foreground">
-          Pipeline, agent performance, and token usage
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Revenue Operations</h1>
+          <p className="text-sm text-muted-foreground">
+            Pipeline, agent performance, cost tracking, and budget utilization
+          </p>
+        </div>
+        <Badge variant="outline" className="text-xs">
+          {TIER_LABELS[summary.planTier] ?? summary.planTier} Plan
+        </Badge>
       </div>
 
-      {/* Token Usage KPIs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Tokens Today" value={`${(summary.tokenUsage.today / 1000).toFixed(0)}k`} />
-        <StatCard label="Tokens This Week" value={`${(summary.tokenUsage.thisWeek / 1000).toFixed(0)}k`} />
-        <StatCard label="Tokens This Month" value={`${(summary.tokenUsage.thisMonth / 1000).toFixed(0)}k`} />
+      {/* KPI Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <StatCard
+          label="Cost Today"
+          value={formatCost(summary.tokenUsage.costToday)}
+        />
+        <StatCard
+          label="Cost This Month"
+          value={formatCost(summary.tokenUsage.costThisMonth)}
+        />
+        <StatCard
+          label="Tokens This Month"
+          value={formatTokens(summary.tokenUsage.thisMonth)}
+          subtitle={
+            summary.monthlyTokenLimit
+              ? `of ${formatTokens(summary.monthlyTokenLimit)}`
+              : "unlimited"
+          }
+        />
         <StatCard
           label="Budget Utilization"
           value={`${summary.tokenUsage.utilizationPercent.toFixed(0)}%`}
           alert={summary.tokenUsage.utilizationPercent > 80}
+        />
+        <StatCard
+          label="Plan Token Limit"
+          value={
+            summary.monthlyTokenLimit
+              ? formatTokens(summary.monthlyTokenLimit)
+              : "Unlimited"
+          }
+          subtitle={TIER_LABELS[summary.planTier] ?? summary.planTier}
         />
       </div>
 
@@ -46,39 +91,70 @@ export default async function RevOpsPage({
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {summary.agentPerformance.map((agent) => (
-                <div
-                  key={agent.agentId}
-                  className="flex items-center justify-between rounded-lg border p-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{agent.agentName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {agent.tasksCompleted} tasks completed
-                    </p>
+              {summary.agentPerformance.length > 0 ? (
+                <div className="space-y-2">
+                  {/* Table header */}
+                  <div className="grid grid-cols-[1fr_80px_80px_60px] gap-2 text-xs text-muted-foreground px-3 pb-1 border-b">
+                    <span>Agent</span>
+                    <span className="text-right">Tokens</span>
+                    <span className="text-right">Cost</span>
+                    <span className="text-right">Budget</span>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-mono">
-                      {(agent.tokensUsed / 1000).toFixed(0)}k / {(agent.tokenBudget / 1000).toFixed(0)}k
-                    </p>
-                    <div className="mt-1 h-1.5 w-20 rounded-full bg-muted">
+                  {summary.agentPerformance.map((agent) => {
+                    const costColor =
+                      agent.budgetUtilization > 80
+                        ? "text-red-500"
+                        : agent.budgetUtilization > 50
+                          ? "text-amber-500"
+                          : "text-green-600";
+                    return (
                       <div
-                        className={`h-1.5 rounded-full ${
-                          agent.budgetUtilization > 80
-                            ? "bg-red-500"
-                            : agent.budgetUtilization > 50
-                              ? "bg-amber-500"
-                              : "bg-green-500"
-                        }`}
-                        style={{
-                          width: `${Math.min(100, agent.budgetUtilization)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
+                        key={agent.agentId}
+                        className="grid grid-cols-[1fr_80px_80px_60px] items-center gap-2 rounded-lg border p-3"
+                      >
+                        <div>
+                          <p className="text-sm font-medium">{agent.agentName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {agent.department} &middot; {agent.tasksCompleted} tasks
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-mono">
+                            {formatTokens(agent.tokensUsed)}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            / {formatTokens(agent.tokenBudget)}
+                          </p>
+                        </div>
+                        <p className={`text-sm font-mono text-right ${costColor}`}>
+                          {formatCost(agent.costCents)}
+                        </p>
+                        <div className="text-right">
+                          <p className={`text-xs font-medium ${costColor}`}>
+                            {agent.budgetUtilization.toFixed(0)}%
+                          </p>
+                          <div className="mt-1 h-1.5 w-full rounded-full bg-muted">
+                            <div
+                              className={`h-1.5 rounded-full ${
+                                agent.budgetUtilization > 100
+                                  ? "bg-red-500"
+                                  : agent.budgetUtilization > 80
+                                    ? "bg-amber-500"
+                                    : agent.budgetUtilization > 50
+                                      ? "bg-amber-400"
+                                      : "bg-green-500"
+                              }`}
+                              style={{
+                                width: `${Math.min(100, agent.budgetUtilization)}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
-              {summary.agentPerformance.length === 0 && (
+              ) : (
                 <p className="py-4 text-center text-sm text-muted-foreground">
                   No agent data yet
                 </p>
@@ -97,10 +173,21 @@ export default async function RevOpsPage({
               {summary.flagged.map((f) => (
                 <div
                   key={f.agentId}
-                  className="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50/50 p-3 dark:border-amber-900 dark:bg-amber-950/20"
+                  className={`flex items-center gap-3 rounded-lg border p-3 ${
+                    f.severity === "red"
+                      ? "border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20"
+                      : "border-amber-200 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20"
+                  }`}
                 >
-                  <Badge variant="outline" className="text-amber-600 text-xs">
-                    Low Usage
+                  <Badge
+                    variant="outline"
+                    className={`text-xs ${
+                      f.severity === "red"
+                        ? "text-red-600"
+                        : "text-amber-600"
+                    }`}
+                  >
+                    {f.severity === "red" ? "Exceeded" : "Warning"}
                   </Badge>
                   <div>
                     <p className="text-sm font-medium">{f.agentName}</p>
@@ -110,7 +197,7 @@ export default async function RevOpsPage({
               ))}
               {summary.flagged.length === 0 && (
                 <p className="py-4 text-center text-sm text-muted-foreground">
-                  No flagged agents
+                  No flagged agents — all agents within budget
                 </p>
               )}
             </div>
@@ -118,7 +205,7 @@ export default async function RevOpsPage({
         </Card>
       </div>
 
-      {/* Pipeline (placeholder — populated when CRM is connected) */}
+      {/* Pipeline (placeholder -- populated when CRM is connected) */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Revenue Pipeline</CardTitle>
@@ -152,10 +239,12 @@ function StatCard({
   label,
   value,
   alert,
+  subtitle,
 }: {
   label: string;
   value: string | number;
   alert?: boolean;
+  subtitle?: string;
 }) {
   return (
     <Card>
@@ -164,6 +253,9 @@ function StatCard({
         <p className={`text-2xl font-bold ${alert ? "text-amber-600" : ""}`}>
           {value}
         </p>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground mt-0.5">{subtitle}</p>
+        )}
       </CardContent>
     </Card>
   );
