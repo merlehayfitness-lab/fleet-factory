@@ -2,17 +2,17 @@
  * Worker tool runner.
  *
  * Executes tools on behalf of agents with sandbox validation,
- * allowlist checks, mock results, and usage metering.
+ * allowlist checks, mock results, and usage logging via logApiUsage.
  *
  * IMPORTANT: Uses only the RLS-scoped Supabase client passed in.
  * Never creates a service_role client.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { TaskPriority } from "../types/index";
 import { assertSandbox, validateToolAccess } from "./sandbox";
 import { getMockResult, getToolRiskLevel, getToolsForDepartment } from "./tool-catalog";
-import { estimateTokens, calculateCost, recordUsage } from "./metering";
+import { logApiUsage } from "../rate-limit/rate-limiter";
+import { calculateCost } from "../rate-limit/model-pricing";
 import { evaluateRisk } from "../approval/policy-engine";
 
 interface ToolResult {
@@ -38,6 +38,31 @@ interface AgentTaskResult {
   };
   costCents?: number;
   error?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Token estimation (local helper, replaces metering.ts)
+// ---------------------------------------------------------------------------
+
+/**
+ * Estimate token usage based on task priority and tool count.
+ * Simple heuristic since actual token counts come from the API response
+ * in production, not from the tool runner.
+ */
+function estimateTokens(
+  priority: string,
+  toolCount: number,
+): { prompt: number; completion: number } {
+  const base =
+    priority === "critical" || priority === "high"
+      ? 1500
+      : priority === "medium"
+        ? 800
+        : 400;
+  return {
+    prompt: base + toolCount * 200,
+    completion: base,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -130,7 +155,7 @@ export function runTool(
  *    - Medium risk + not trusted: return { needsApproval: true }
  *    - Low risk: auto-approve and execute
  * 4. Execute approved tools
- * 5. Record usage via metering
+ * 5. Record usage via logApiUsage
  * 6. Update task with result, token_usage, cost_cents
  * 7. Return execution result
  *
@@ -241,11 +266,21 @@ export async function runAgentTask(
     }
   }
 
-  // 5. Record usage via metering
-  const tokens = estimateTokens(task.priority as TaskPriority, requestedTools.length);
-  const costCents = calculateCost(tokens.prompt_tokens, tokens.completion_tokens);
+  // 5. Record usage via logApiUsage
+  const tokens = estimateTokens(task.priority, requestedTools.length);
+  const model = "claude-sonnet";
+  const costCents = calculateCost(tokens.prompt, tokens.completion, model);
 
-  await recordUsage(supabase, businessId, task.id, agent.id, tokens);
+  await logApiUsage(supabase, {
+    businessId,
+    agentId: agent.id,
+    model,
+    provider: "anthropic",
+    promptTokens: tokens.prompt,
+    completionTokens: tokens.completion,
+    costCents,
+    status: "completed",
+  });
 
   // 6. Update task with result and metering data
   try {
@@ -262,9 +297,9 @@ export async function runAgentTask(
           completed_at: new Date().toISOString(),
         },
         token_usage: {
-          prompt_tokens: tokens.prompt_tokens,
-          completion_tokens: tokens.completion_tokens,
-          model: "claude-sonnet",
+          prompt_tokens: tokens.prompt,
+          completion_tokens: tokens.completion,
+          model,
         },
         cost_cents: costCents,
       })
@@ -282,7 +317,10 @@ export async function runAgentTask(
     agentId: agent.id,
     status: "completed",
     toolResults,
-    tokenUsage: tokens,
+    tokenUsage: {
+      prompt_tokens: tokens.prompt,
+      completion_tokens: tokens.completion,
+    },
     costCents,
   };
 }
