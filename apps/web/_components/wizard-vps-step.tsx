@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,23 +28,102 @@ export const defaultVpsConfig: VpsConfigInput = {
   proxyPort: "3100",
 };
 
+export interface McpConfigEntry {
+  name: string;
+  enabled: boolean;
+  isUniversal: boolean;
+  isCustom?: boolean;
+  npmPackage?: string;
+  description?: string;
+}
+
+/** Default universal MCPs — always enabled, cannot be toggled off */
+const UNIVERSAL_MCPS: McpConfigEntry[] = [
+  { name: "filesystem", enabled: true, isUniversal: true, description: "Local filesystem access" },
+  { name: "memory", enabled: true, isUniversal: true, description: "Persistent memory / knowledge graph" },
+  { name: "brave-search", enabled: true, isUniversal: true, description: "Web search via Brave" },
+  { name: "fetch", enabled: true, isUniversal: true, description: "HTTP fetch for web content" },
+  { name: "slack", enabled: true, isUniversal: true, description: "Slack messaging" },
+];
+
+/** Available optional MCPs from the registry */
+const AVAILABLE_MCPS: McpConfigEntry[] = [
+  { name: "supabase", enabled: false, isUniversal: false, description: "Supabase database access" },
+  { name: "google-analytics", enabled: false, isUniversal: false, description: "Google Analytics data" },
+  { name: "cms", enabled: false, isUniversal: false, description: "Content management system" },
+  { name: "email", enabled: false, isUniversal: false, description: "Email sending and management" },
+  { name: "crm", enabled: false, isUniversal: false, description: "CRM data access" },
+  { name: "social-api", enabled: false, isUniversal: false, description: "Social media platform APIs" },
+  { name: "project-mgmt", enabled: false, isUniversal: false, description: "Project management tools" },
+  { name: "calendar", enabled: false, isUniversal: false, description: "Calendar management" },
+  { name: "helpdesk", enabled: false, isUniversal: false, description: "Helpdesk / ticket system" },
+  { name: "knowledge-base", enabled: false, isUniversal: false, description: "Knowledge base search" },
+  { name: "docs", enabled: false, isUniversal: false, description: "Document generation" },
+];
+
+export function getDefaultMcpConfig(): McpConfigEntry[] {
+  return [...UNIVERSAL_MCPS.map((m) => ({ ...m })), ...AVAILABLE_MCPS.map((m) => ({ ...m }))];
+}
+
 interface WizardVpsStepProps {
   vpsConfig: VpsConfigInput;
   onVpsConfigChange: (v: VpsConfigInput) => void;
+  mcpConfig: McpConfigEntry[];
+  onMcpConfigChange: (entries: McpConfigEntry[]) => void;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function WizardVpsStep({ vpsConfig, onVpsConfigChange }: WizardVpsStepProps) {
+export function WizardVpsStep({
+  vpsConfig,
+  onVpsConfigChange,
+  mcpConfig,
+  onMcpConfigChange,
+}: WizardVpsStepProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [mcpExpanded, setMcpExpanded] = useState(false);
+  const [customName, setCustomName] = useState("");
+  const [customPackage, setCustomPackage] = useState("");
 
   function update(field: keyof VpsConfigInput, value: string) {
     onVpsConfigChange({ ...vpsConfig, [field]: value });
     setTestResult(null);
+  }
+
+  function toggleMcp(name: string) {
+    onMcpConfigChange(
+      mcpConfig.map((m) =>
+        m.name === name && !m.isUniversal ? { ...m, enabled: !m.enabled } : m,
+      ),
+    );
+  }
+
+  function addCustomMcp() {
+    const trimName = customName.trim().toLowerCase().replace(/\s+/g, "-");
+    const trimPkg = customPackage.trim();
+    if (!trimName || !trimPkg) return;
+    if (mcpConfig.some((m) => m.name === trimName)) return;
+    onMcpConfigChange([
+      ...mcpConfig,
+      {
+        name: trimName,
+        enabled: true,
+        isUniversal: false,
+        isCustom: true,
+        npmPackage: trimPkg,
+        description: "Custom MCP server",
+      },
+    ]);
+    setCustomName("");
+    setCustomPackage("");
+  }
+
+  function removeCustomMcp(name: string) {
+    onMcpConfigChange(mcpConfig.filter((m) => m.name !== name));
   }
 
   async function testConnection() {
@@ -70,6 +150,10 @@ export function WizardVpsStep({ vpsConfig, onVpsConfigChange }: WizardVpsStepPro
   }
 
   const isSkipped = !vpsConfig.host;
+  const universalMcps = mcpConfig.filter((m) => m.isUniversal);
+  const availableMcps = mcpConfig.filter((m) => !m.isUniversal && !m.isCustom);
+  const customMcps = mcpConfig.filter((m) => m.isCustom);
+  const enabledCount = mcpConfig.filter((m) => m.enabled).length;
 
   return (
     <div className="space-y-5">
@@ -196,6 +280,122 @@ export function WizardVpsStep({ vpsConfig, onVpsConfigChange }: WizardVpsStepPro
           business settings.
         </div>
       )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* MCP Servers Section                                                */}
+      {/* ----------------------------------------------------------------- */}
+      <div className="border-t pt-4">
+        <button
+          type="button"
+          className="flex w-full items-center justify-between text-left"
+          onClick={() => setMcpExpanded((v) => !v)}
+        >
+          <div>
+            <h3 className="text-sm font-medium">MCP Servers</h3>
+            <p className="text-xs text-muted-foreground">
+              {enabledCount} server{enabledCount !== 1 ? "s" : ""} enabled
+            </p>
+          </div>
+          <span className="text-xs text-muted-foreground">
+            {mcpExpanded ? "▼" : "▶"}
+          </span>
+        </button>
+
+        {mcpExpanded && (
+          <div className="mt-3 space-y-4">
+            {/* Universal MCPs */}
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Universal (always on)
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {universalMcps.map((m) => (
+                  <Badge key={m.name} variant="default" className="text-xs cursor-default">
+                    {m.name}
+                  </Badge>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Inherited by all agents via CEO workspace.
+              </p>
+            </div>
+
+            {/* Available MCPs */}
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Available
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {availableMcps.map((m) => (
+                  <button
+                    key={m.name}
+                    type="button"
+                    onClick={() => toggleMcp(m.name)}
+                    title={m.description}
+                    className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ring-1 ring-inset transition-colors ${
+                      m.enabled
+                        ? "bg-primary/10 text-primary ring-primary/20"
+                        : "bg-muted text-muted-foreground ring-border hover:bg-muted/80"
+                    }`}
+                  >
+                    {m.enabled ? "✓ " : ""}{m.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Custom MCPs */}
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Custom
+              </p>
+              {customMcps.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {customMcps.map((m) => (
+                    <span
+                      key={m.name}
+                      className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary ring-1 ring-inset ring-primary/20"
+                    >
+                      {m.name}
+                      <button
+                        type="button"
+                        onClick={() => removeCustomMcp(m.name)}
+                        className="ml-0.5 text-primary/60 hover:text-destructive"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Server name"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  className="h-8 text-xs"
+                />
+                <Input
+                  placeholder="npm package (e.g. @org/mcp-server-x)"
+                  value={customPackage}
+                  onChange={(e) => setCustomPackage(e.target.value)}
+                  className="h-8 flex-1 text-xs"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={addCustomMcp}
+                  disabled={!customName.trim() || !customPackage.trim()}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

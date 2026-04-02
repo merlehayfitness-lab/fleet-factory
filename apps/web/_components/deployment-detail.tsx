@@ -228,7 +228,7 @@ export function DeploymentDetail({
             <h2 className="text-xl font-semibold">v{deployment.version}</h2>
             <StatusBadge status={deployment.status} />
           </div>
-          <div className="flex gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
             <span>Created {formatRelativeTime(deployment.created_at)}</span>
             {deployment.started_at && (
               <span>Started {formatRelativeTime(deployment.started_at)}</span>

@@ -253,7 +253,6 @@ async function runDeployPipeline(
     for (const agent of payload.agents) {
       const workspacePath = path.join(
         tenantDir,
-        "workspace",
         `workspace-${agent.vpsAgentId}`,
       );
 
@@ -538,9 +537,9 @@ router.get("/api/health", async (_req, res) => {
       if (fs.existsSync(tenantDataDir)) {
         const tenants = fs.readdirSync(tenantDataDir);
         for (const tenant of tenants) {
-          const workspaceDir = path.join(tenantDataDir, tenant, "workspace");
-          if (fs.existsSync(workspaceDir)) {
-            const entries = fs.readdirSync(workspaceDir);
+          const tenantPath = path.join(tenantDataDir, tenant);
+          if (fs.existsSync(tenantPath)) {
+            const entries = fs.readdirSync(tenantPath);
             agentCount += entries.filter((e) => e.startsWith("workspace-")).length;
           }
         }
@@ -593,7 +592,6 @@ router.get("/api/agents/:vpsAgentId/health", async (req, res) => {
       const workspacePath = path.join(
         tenantDataDir,
         businessSlug,
-        "workspace",
         `workspace-${vpsAgentId}`,
       );
       workspaceExists = fs.existsSync(workspacePath);

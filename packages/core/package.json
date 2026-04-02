@@ -7,6 +7,7 @@
   "exports": {
     ".": "./index.ts",
     "./server": "./server.ts",
+    "./agent/mcp-service": "./agent/mcp-service.ts",
     "./vps/ssh-client": "./vps/ssh-client.ts",
     "./vps/ssh-deploy": "./vps/ssh-deploy.ts",
     "./vps/vps-config": "./vps/vps-config.ts"

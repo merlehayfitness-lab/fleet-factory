@@ -75,12 +75,27 @@ export function generateOpenClawConfig(
   businessSlug: string,
   agents: AgentConfigInput[],
   sandboxConfig?: SandboxConfig,
+  businessMcpServers?: McpServerEntry[],
 ): string {
   const sandbox = { ...DEFAULT_SANDBOX, ...sandboxConfig };
   const tenantDir = `${TENANT_DATA_DIR}/${businessSlug}`;
 
   // Build per-agent config and collect MCP servers
   const globalMcpServers: Record<string, Record<string, unknown>> = {};
+
+  // Add business-level shared MCP servers (available to all agents)
+  const sharedMcpServerNames: string[] = [];
+  if (businessMcpServers) {
+    for (const mcp of businessMcpServers) {
+      const key = `shared-${mcp.name}`;
+      globalMcpServers[key] = {
+        ...(mcp.command ? { command: mcp.command, args: mcp.args ?? [] } : {}),
+        ...(mcp.url ? { url: mcp.url } : {}),
+        ...(mcp.env ? { env: mcp.env } : {}),
+      };
+      sharedMcpServerNames.push(key);
+    }
+  }
 
   const agentList = agents.map((agent) => {
     const vpsAgentId = deriveVpsAgentId(
@@ -101,7 +116,10 @@ export function generateOpenClawConfig(
     };
 
     // Build agent-specific MCP servers and add to global pool
-    const agentMcpServerNames: string[] = [`filesystem-${vpsAgentId}`];
+    const agentMcpServerNames: string[] = [
+      `filesystem-${vpsAgentId}`,
+      ...sharedMcpServerNames,
+    ];
     if (agent.mcpServers) {
       for (const mcp of agent.mcpServers) {
         const serverKey = `${mcp.name}-${vpsAgentId}`;

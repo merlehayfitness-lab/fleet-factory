@@ -62,6 +62,8 @@ const DEPARTMENT_ORDER: Record<string, number> = {
   sales: 1,
   support: 2,
   operations: 3,
+  marketing: 4,
+  rd: 5,
 };
 
 const COLLAPSE_KEY = (businessId: string) =>
@@ -180,26 +182,46 @@ function buildOrgChart(
   // Build children of root
   const rootChildren: OrgChartNode[] = [];
 
-  // Owner's sub-agents act as intermediate management level
-  // Department leads nest under the first owner sub-agent (e.g., CEO)
-  if (ownerLead) {
-    const ownerSubs = subsByParent.get(ownerLead.id) ?? [];
+  // Find the CEO / executive lead — acts as intermediate management layer
+  // CEO is in the "executive" department and all other dept leads nest under it
+  const execDept = departments.find((d) => d.type === "executive");
+  const execLeads = execDept ? (leadsByDept.get(execDept.id) ?? []) : [];
+  const ceoLead = execLeads[0]; // Primary CEO
+
+  if (ceoLead) {
+    // CEO exists — nest non-executive dept leads under it
+    const nonExecLeads = deptLeadNodes.filter(
+      (n) => n.departmentType !== "executive",
+    );
+    const ceoNode = toOrgNode(ceoLead, "lead");
+    // Merge existing children (from parent_agent_id) with dept leads not already present
+    const existingChildIds = new Set(ceoNode.children.map((c) => c.id));
+    for (const lead of nonExecLeads) {
+      if (!existingChildIds.has(lead.id)) {
+        ceoNode.children.push(lead);
+      }
+    }
+    rootChildren.push(ceoNode);
+
+    // Additional executive leads as direct root children
+    for (let i = 1; i < execLeads.length; i++) {
+      rootChildren.push(toOrgNode(execLeads[i], "lead"));
+    }
+  } else {
+    // No CEO — check for owner sub-agents as fallback
+    const ownerSubs = ownerLead
+      ? (subsByParent.get(ownerLead.id) ?? [])
+      : [];
     if (ownerSubs.length > 0) {
-      // First owner sub-agent gets dept leads as its children
       const primarySub = toOrgNode(ownerSubs[0], "sub-agent");
       primarySub.children = [...primarySub.children, ...deptLeadNodes];
       rootChildren.push(primarySub);
-
-      // Additional owner sub-agents are direct root children
       for (let i = 1; i < ownerSubs.length; i++) {
         rootChildren.push(toOrgNode(ownerSubs[i], "sub-agent"));
       }
     } else {
-      // No owner sub-agents — dept leads are direct root children
       rootChildren.push(...deptLeadNodes);
     }
-  } else {
-    rootChildren.push(...deptLeadNodes);
   }
 
   // Additional owner leads (beyond the first) as children

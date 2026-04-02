@@ -31,98 +31,170 @@ export interface McpServerConfig {
 // Known MCP server registry
 // ---------------------------------------------------------------------------
 
-const KNOWN_MCP_SERVERS: Record<string, {
+interface KnownMcpServer {
   description: string;
+  npmPackage: string;
   defaultUrl?: string;
   defaultCommand?: string;
   defaultArgs?: string[];
   capabilities: string[];
-}> = {
+}
+
+const KNOWN_MCP_SERVERS: Record<string, KnownMcpServer> = {
+  filesystem: {
+    description: "Local filesystem access scoped to workspace",
+    npmPackage: "@modelcontextprotocol/server-filesystem",
+    defaultCommand: "npx",
+    defaultArgs: ["-y", "@modelcontextprotocol/server-filesystem"],
+    capabilities: ["read_file", "write_file", "list_directory", "search_files"],
+  },
+  memory: {
+    description: "Persistent memory and knowledge graph",
+    npmPackage: "@modelcontextprotocol/server-memory",
+    defaultCommand: "npx",
+    defaultArgs: ["-y", "@modelcontextprotocol/server-memory"],
+    capabilities: ["store", "retrieve", "search", "list_entities"],
+  },
+  "brave-search": {
+    description: "Web search via Brave Search API",
+    npmPackage: "@modelcontextprotocol/server-brave-search",
+    defaultCommand: "npx",
+    defaultArgs: ["-y", "@modelcontextprotocol/server-brave-search"],
+    capabilities: ["web_search", "local_search"],
+  },
+  fetch: {
+    description: "HTTP fetch for retrieving web content",
+    npmPackage: "@modelcontextprotocol/server-fetch",
+    defaultCommand: "npx",
+    defaultArgs: ["-y", "@modelcontextprotocol/server-fetch"],
+    capabilities: ["fetch_url", "fetch_html", "fetch_json"],
+  },
   supabase: {
     description: "Supabase database access",
+    npmPackage: "@modelcontextprotocol/server-supabase",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@modelcontextprotocol/server-supabase"],
     capabilities: ["query", "insert", "update", "rpc"],
   },
   slack: {
     description: "Slack messaging integration",
+    npmPackage: "@anthropic/mcp-server-slack",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-slack"],
     capabilities: ["send_message", "read_channel", "list_channels"],
   },
   "google-analytics": {
     description: "Google Analytics data access",
+    npmPackage: "@anthropic/mcp-server-google-analytics",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-google-analytics"],
     capabilities: ["read_reports", "list_properties"],
   },
   cms: {
     description: "Content management system",
+    npmPackage: "@anthropic/mcp-server-cms",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-cms"],
     capabilities: ["create_post", "update_post", "list_posts"],
   },
   "search-console": {
     description: "Google Search Console data",
+    npmPackage: "@anthropic/mcp-server-search-console",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-search-console"],
     capabilities: ["read_performance", "list_sitemaps"],
   },
   email: {
     description: "Email sending and management",
+    npmPackage: "@anthropic/mcp-server-email",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-email"],
     capabilities: ["send_email", "read_inbox", "create_draft"],
   },
   crm: {
     description: "CRM data access (Twenty CRM)",
+    npmPackage: "@anthropic/mcp-server-crm",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-crm"],
     capabilities: ["read_contacts", "create_contact", "update_deal", "list_pipeline"],
   },
   "social-api": {
     description: "Social media platform APIs",
+    npmPackage: "@anthropic/mcp-server-social",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-social"],
     capabilities: ["create_post", "schedule_post", "read_analytics"],
   },
   "project-mgmt": {
     description: "Project management tools",
+    npmPackage: "@anthropic/mcp-server-project",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-project"],
     capabilities: ["create_task", "list_tasks", "update_status"],
   },
   calendar: {
     description: "Calendar management",
+    npmPackage: "@anthropic/mcp-server-calendar",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-calendar"],
     capabilities: ["create_event", "list_events", "check_availability"],
   },
   analytics: {
     description: "General analytics data",
+    npmPackage: "@anthropic/mcp-server-analytics",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-analytics"],
     capabilities: ["read_metrics", "create_report"],
   },
   helpdesk: {
     description: "Helpdesk / ticket system",
+    npmPackage: "@anthropic/mcp-server-helpdesk",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-helpdesk"],
     capabilities: ["create_ticket", "update_ticket", "list_tickets"],
   },
   "knowledge-base": {
     description: "Knowledge base search and management",
+    npmPackage: "@anthropic/mcp-server-knowledge",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-knowledge"],
     capabilities: ["search", "create_article", "update_article"],
   },
   docs: {
     description: "Document generation and management",
+    npmPackage: "@anthropic/mcp-server-docs",
     defaultCommand: "npx",
     defaultArgs: ["-y", "@anthropic/mcp-server-docs"],
     capabilities: ["create_document", "list_documents", "export_pdf"],
   },
 };
+
+// ---------------------------------------------------------------------------
+// Universal MCP servers (inherited by all agents via CEO copy-based deploy)
+// ---------------------------------------------------------------------------
+
+export const UNIVERSAL_MCP_SERVERS = [
+  "filesystem",
+  "memory",
+  "brave-search",
+  "fetch",
+  "slack",
+] as const;
+
+/**
+ * Extract npm package names from a list of MCP server names.
+ * Unknown servers are silently skipped.
+ */
+export function getMcpNpmPackages(serverNames: string[]): string[] {
+  const packages: string[] = [];
+  for (const name of serverNames) {
+    const known = KNOWN_MCP_SERVERS[name];
+    if (known?.npmPackage) {
+      packages.push(known.npmPackage);
+    }
+  }
+  return [...new Set(packages)];
+}
 
 // ---------------------------------------------------------------------------
 // Core functions

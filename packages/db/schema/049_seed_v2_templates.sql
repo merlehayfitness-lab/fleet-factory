@@ -49,7 +49,7 @@ You have authority over all other agents. When a new department or agent is need
 Current departments under your leadership: Marketing, Sales, Operations, Support, R&D.',
   0, 'ceo', 250000,
   '[{"name": "agent-orchestrator", "source": "builtin"}, {"name": "kpi-tracker", "source": "builtin"}]'::jsonb,
-  '[{"name": "supabase", "type": "database", "config": {"scope": "read"}}, {"name": "slack", "type": "messaging", "config": {"scope": "send"}}]'::jsonb,
+  '[{"name": "filesystem", "type": "filesystem", "config": {}}, {"name": "memory", "type": "knowledge", "config": {}}, {"name": "brave-search", "type": "search", "config": {}}, {"name": "fetch", "type": "http", "config": {}}, {"name": "supabase", "type": "database", "config": {"scope": "read"}}, {"name": "slack", "type": "messaging", "config": {"scope": "send"}}]'::jsonb,
   '{}', '{}'
 )
 ON CONFLICT DO NOTHING;

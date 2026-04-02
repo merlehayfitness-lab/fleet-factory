@@ -32,6 +32,58 @@ import { generateUserMd } from "./openclaw-user-md";
 import { generateSkillMd } from "./openclaw-skill-md";
 import { generateOpenClawConfig } from "./openclaw-config";
 
+// ---------------------------------------------------------------------------
+// MCP resolver (local copy to avoid circular dep: runtime -> core -> runtime)
+// ---------------------------------------------------------------------------
+
+interface McpServerDef {
+  name: string;
+  type: string;
+  config: Record<string, unknown>;
+}
+
+interface ResolvedMcpEntry {
+  name: string;
+  command?: string;
+  args?: string[];
+  url?: string;
+  env?: Record<string, string>;
+}
+
+const KNOWN_MCP_COMMANDS: Record<string, { command: string; args: string[] }> = {
+  filesystem: { command: "npx", args: ["-y", "@modelcontextprotocol/server-filesystem"] },
+  memory: { command: "npx", args: ["-y", "@modelcontextprotocol/server-memory"] },
+  "brave-search": { command: "npx", args: ["-y", "@modelcontextprotocol/server-brave-search"] },
+  fetch: { command: "npx", args: ["-y", "@modelcontextprotocol/server-fetch"] },
+  supabase: { command: "npx", args: ["-y", "@modelcontextprotocol/server-supabase"] },
+  slack: { command: "npx", args: ["-y", "@anthropic/mcp-server-slack"] },
+  "google-analytics": { command: "npx", args: ["-y", "@anthropic/mcp-server-google-analytics"] },
+  cms: { command: "npx", args: ["-y", "@anthropic/mcp-server-cms"] },
+  "search-console": { command: "npx", args: ["-y", "@anthropic/mcp-server-search-console"] },
+  email: { command: "npx", args: ["-y", "@anthropic/mcp-server-email"] },
+  crm: { command: "npx", args: ["-y", "@anthropic/mcp-server-crm"] },
+  "social-api": { command: "npx", args: ["-y", "@anthropic/mcp-server-social"] },
+  "project-mgmt": { command: "npx", args: ["-y", "@anthropic/mcp-server-project"] },
+  calendar: { command: "npx", args: ["-y", "@anthropic/mcp-server-calendar"] },
+  analytics: { command: "npx", args: ["-y", "@anthropic/mcp-server-analytics"] },
+  helpdesk: { command: "npx", args: ["-y", "@anthropic/mcp-server-helpdesk"] },
+  "knowledge-base": { command: "npx", args: ["-y", "@anthropic/mcp-server-knowledge"] },
+  docs: { command: "npx", args: ["-y", "@anthropic/mcp-server-docs"] },
+};
+
+function resolveTemplateMcps(defs: McpServerDef[]): ResolvedMcpEntry[] {
+  return defs.map((def) => {
+    const known = KNOWN_MCP_COMMANDS[def.name];
+    return {
+      name: def.name,
+      command: (def.config?.command as string) ?? known?.command,
+      args: (def.config?.args as string[]) ?? known?.args,
+      url: (def.config?.url as string) ?? undefined,
+      env: (def.config?.env as Record<string, string>) ?? undefined,
+    };
+  });
+}
+
 /** Agent workspace file in a deployment package (local definition to avoid circular dep) */
 export interface WorkspaceFile {
   path: string;
@@ -82,6 +134,7 @@ export function generateOpenClawWorkspace(
   agents: AgentInput[],
   departments: DepartmentInput[],
   integrationsByAgent: Record<string, IntegrationInput[]>,
+  businessMcpServers?: McpServerDef[],
 ): { files: WorkspaceFile[]; config: string } {
   const files: WorkspaceFile[] = [];
 
@@ -160,14 +213,14 @@ export function generateOpenClawWorkspace(
       const dept = deptById.get(agent.department_id);
       if (!dept) return null;
 
-      // Build MCP server entries from template data
-      const mcpServers = (agent.mcp_servers ?? []).map((mcp) => ({
-        name: mcp.name,
-        command: (mcp.config?.command as string) ?? undefined,
-        args: (mcp.config?.args as string[]) ?? undefined,
-        url: (mcp.config?.url as string) ?? undefined,
-        env: (mcp.config?.env as Record<string, string>) ?? undefined,
-      }));
+      // Resolve MCP servers from template defs (fills in command/args from known registry)
+      const templateMcps = resolveTemplateMcps(agent.mcp_servers ?? []);
+      // Merge with business-level MCPs (deduplicate by name, template takes precedence)
+      const templateMcpNames = new Set(templateMcps.map((m) => m.name));
+      const businessMcps = resolveTemplateMcps(businessMcpServers ?? []).filter(
+        (m) => !templateMcpNames.has(m.name),
+      );
+      const mcpServers = [...templateMcps, ...businessMcps];
 
       // Build skills package entries
       const skillsPackage = (agent.skills_package ?? []).map((s) => ({
@@ -204,7 +257,17 @@ export function generateOpenClawWorkspace(
     })
     .filter((a): a is NonNullable<typeof a> => a !== null);
 
-  const config = generateOpenClawConfig(business.slug, configAgents);
+  // Resolve business-level MCPs for the shared pool in openclaw.json
+  const resolvedBusinessMcps = businessMcpServers
+    ? resolveTemplateMcps(businessMcpServers)
+    : undefined;
+
+  const config = generateOpenClawConfig(
+    business.slug,
+    configAgents,
+    undefined,
+    resolvedBusinessMcps,
+  );
 
   return { files, config };
 }

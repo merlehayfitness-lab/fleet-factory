@@ -41,7 +41,9 @@ import { WizardSubdomainStep } from "./wizard-subdomain-step";
 import {
   WizardVpsStep,
   type VpsConfigInput,
+  type McpConfigEntry,
   defaultVpsConfig,
+  getDefaultMcpConfig,
 } from "./wizard-vps-step";
 
 // ---------------------------------------------------------------------------
@@ -192,6 +194,7 @@ export function CreateBusinessWizard() {
   const [selectedTemplates, setSelectedTemplates] = useState<Set<string>>(DEFAULT_SELECTED);
   const [apiKeys, setApiKeys] = useState<ApiKeyEntry[]>([]);
   const [vpsConfig, setVpsConfig] = useState<VpsConfigInput>(defaultVpsConfig);
+  const [mcpConfig, setMcpConfig] = useState<McpConfigEntry[]>(getDefaultMcpConfig);
   const [subdomain, setSubdomain] = useState("");
 
   const {
@@ -273,6 +276,10 @@ export function CreateBusinessWizard() {
     formData.set("apiKeys", JSON.stringify(apiKeys));
     if (vpsConfig.host) {
       formData.set("vpsConfig", JSON.stringify(vpsConfig));
+    }
+    const enabledMcps = mcpConfig.filter((m) => m.enabled);
+    if (enabledMcps.length > 0) {
+      formData.set("mcpConfig", JSON.stringify(enabledMcps));
     }
 
     try {
@@ -451,6 +458,8 @@ export function CreateBusinessWizard() {
             <WizardVpsStep
               vpsConfig={vpsConfig}
               onVpsConfigChange={setVpsConfig}
+              mcpConfig={mcpConfig}
+              onMcpConfigChange={setMcpConfig}
             />
           </CardContent>
           <CardFooter className="justify-between">
@@ -614,6 +623,38 @@ export function CreateBusinessWizard() {
                 ) : (
                   <p className="text-xs text-muted-foreground">Platform default VPS</p>
                 )}
+              </div>
+
+              {/* MCP Servers section */}
+              <div className="rounded-lg border p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-muted-foreground">
+                    MCP Servers ({mcpConfig.filter((m) => m.enabled).length})
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => setStep(3)}
+                  >
+                    Edit
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {mcpConfig
+                    .filter((m) => m.enabled)
+                    .map((m) => (
+                      <Badge
+                        key={m.name}
+                        variant={m.isUniversal ? "default" : "secondary"}
+                        className="text-xs"
+                      >
+                        {m.name}
+                        {m.isCustom && " (custom)"}
+                      </Badge>
+                    ))}
+                </div>
               </div>
 
               {/* Subdomain section */}

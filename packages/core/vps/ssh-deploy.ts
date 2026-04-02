@@ -36,6 +36,8 @@ export interface SshDeployOptions {
   onProgress?: SshProgressCallback;
   /** Override SSH config (for per-business VPS targets). Falls back to global env vars. */
   sshConfig?: SshConfig;
+  /** npm packages to install globally for MCP servers (e.g. @modelcontextprotocol/server-filesystem) */
+  mcpNpmPackages?: string[];
 }
 
 export interface SshDeployAgent {
@@ -110,11 +112,29 @@ export async function sshDeployBusiness(
       await writeRemoteFile(remotePath, file.content, options.sshConfig);
     }
 
-    // 3. Write OpenClaw config
+    // 3. Install MCP npm packages globally (non-fatal — npx -y fallback at runtime)
+    if (options.mcpNpmPackages && options.mcpNpmPackages.length > 0) {
+      const pkgs = options.mcpNpmPackages.join(" ");
+      log(`[ssh] Installing MCP packages: ${pkgs}`);
+      const installResult = await execCommand(
+        `npm install -g ${pkgs}`,
+        {
+          onStdout: (line) => log(`[npm] ${line}`),
+          onStderr: (line) => log(`[npm:err] ${line}`),
+          timeout: 120000,
+          sshConfig: options.sshConfig,
+        },
+      );
+      if (installResult.code !== 0) {
+        log(`[ssh] MCP package install returned code ${installResult.code} (non-fatal, npx will download at runtime)`);
+      }
+    }
+
+    // 4. Write OpenClaw config
     log("[ssh] Writing OpenClaw config");
     await writeRemoteFile(`${tenantDir}/config/openclaw.json`, options.openclawConfig, options.sshConfig);
 
-    // 4. Write provision config (JSON consumed by provision-tenant.sh)
+    // 5. Write provision config (JSON consumed by provision-tenant.sh)
     const provisionConfig = buildProvisionConfig(options);
     await writeRemoteFile(
       `${tenantDir}/config/provision.json`,
@@ -122,7 +142,7 @@ export async function sshDeployBusiness(
       options.sshConfig,
     );
 
-    // 5. Sort agents: CEO first, then the rest
+    // 6. Sort agents: CEO first, then the rest
     const sortedAgents = [...options.agents].sort((a, b) => {
       if (a.isCeo && !b.isCeo) return -1;
       if (!a.isCeo && b.isCeo) return 1;
@@ -131,7 +151,7 @@ export async function sshDeployBusiness(
 
     const ceoAgent = sortedAgents.find((a) => a.isCeo);
 
-    // 6. Execute provision-tenant.sh (registers agents in OpenClaw, no Docker)
+    // 7. Execute provision-tenant.sh (registers agents in OpenClaw, no Docker)
     log("[ssh] Running provision-tenant.sh");
     const provisionResult = await execCommand(
       `bash /opt/agency-factory/provision-tenant.sh "${options.businessSlug}"`,
@@ -164,7 +184,7 @@ export async function sshDeployBusiness(
       return { success: false, agentResults, error: provisionResult.stderr };
     }
 
-    // 7. For sub-agents: copy from CEO workspace then overwrite identity files
+    // 8. For sub-agents: copy from CEO workspace then overwrite identity files
     if (ceoAgent) {
       const ceoWorkspaceDir = `${tenantDir}/workspace/workspace-${ceoAgent.vpsAgentId}`;
       for (const agent of sortedAgents) {
@@ -188,7 +208,7 @@ export async function sshDeployBusiness(
       }
     }
 
-    // 8. Verify each agent workspace exists on disk
+    // 9. Verify each agent workspace exists on disk
     log("[ssh] Verifying agent workspaces");
     for (const agent of sortedAgents) {
       const checkResult = await execCommand(

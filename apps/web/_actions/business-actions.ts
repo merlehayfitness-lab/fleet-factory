@@ -306,6 +306,14 @@ export async function createBusinessV2(formData: FormData) {
     sshPort: string;
     proxyPort: string;
   } | null = vpsConfigRaw ? JSON.parse(vpsConfigRaw) : null;
+  const mcpConfigRaw = formData.get("mcpConfig") as string | null;
+  const mcpConfigEntries: Array<{
+    name: string;
+    enabled: boolean;
+    isUniversal: boolean;
+    isCustom?: boolean;
+    npmPackage?: string;
+  }> = mcpConfigRaw ? JSON.parse(mcpConfigRaw) : [];
 
   // 2. Provision business (atomic RPC — creates business, membership, 4 default departments, default agents, deployment)
   let businessId: string;
@@ -342,28 +350,38 @@ export async function createBusinessV2(formData: FormData) {
     };
   }
 
-  // 5. Save per-business VPS config (if provided)
-  if (vpsConfigInput?.host) {
+  // 5. Save per-business VPS config (if provided) + MCP server config
+  const mcpServerNames = mcpConfigEntries.filter((m) => m.enabled).map((m) => ({
+    name: m.name,
+    isCustom: m.isCustom ?? false,
+    npmPackage: m.npmPackage,
+  }));
+  if (vpsConfigInput?.host || mcpServerNames.length > 0) {
     try {
       // Non-sensitive config stored in businesses.vps_config
+      const vpsConfigData: Record<string, unknown> = {};
+      if (vpsConfigInput?.host) {
+        vpsConfigData.host = vpsConfigInput.host;
+        vpsConfigData.ssh_user = vpsConfigInput.sshUser || "root";
+        vpsConfigData.ssh_port = Number(vpsConfigInput.sshPort) || 22;
+        vpsConfigData.proxy_port = Number(vpsConfigInput.proxyPort) || 3100;
+      }
+      if (mcpServerNames.length > 0) {
+        vpsConfigData.mcp_servers = mcpServerNames;
+      }
       await supabase
         .from("businesses")
-        .update({
-          vps_config: {
-            host: vpsConfigInput.host,
-            ssh_user: vpsConfigInput.sshUser || "root",
-            ssh_port: Number(vpsConfigInput.sshPort) || 22,
-            proxy_port: Number(vpsConfigInput.proxyPort) || 3100,
-          },
-        })
+        .update({ vps_config: vpsConfigData })
         .eq("id", businessId);
 
       // Sensitive credentials stored encrypted in secrets table
-      const vpsSecrets: Record<string, string> = {};
-      if (vpsConfigInput.sshPassword) vpsSecrets.ssh_password = vpsConfigInput.sshPassword;
-      if (vpsConfigInput.proxyApiKey) vpsSecrets.proxy_api_key = vpsConfigInput.proxyApiKey;
-      if (Object.keys(vpsSecrets).length > 0) {
-        await saveProviderCredentials(supabase, businessId, "vps", vpsSecrets);
+      if (vpsConfigInput?.host) {
+        const vpsSecrets: Record<string, string> = {};
+        if (vpsConfigInput.sshPassword) vpsSecrets.ssh_password = vpsConfigInput.sshPassword;
+        if (vpsConfigInput.proxyApiKey) vpsSecrets.proxy_api_key = vpsConfigInput.proxyApiKey;
+        if (Object.keys(vpsSecrets).length > 0) {
+          await saveProviderCredentials(supabase, businessId, "vps", vpsSecrets);
+        }
       }
     } catch {
       // Non-critical: VPS config can be set later in settings
@@ -401,21 +419,94 @@ export async function createBusinessV2(formData: FormData) {
       const { sshDeployBusiness } = await import(
         "@agency-factory/core/vps/ssh-deploy"
       );
+      const { generateOpenClawWorkspace } = await import(
+        "@agency-factory/core/server"
+      );
+      const { getMcpNpmPackages } = await import(
+        "@agency-factory/core/agent/mcp-service"
+      );
 
-      // Fetch real agents for SSH deploy
+      // Fetch real agents for SSH deploy (with template data for MCP resolution)
       const { data: allAgents } = await supabase
         .from("agents")
-        .select("id, name, department_id, parent_agent_id, template_id")
+        .select("id, name, department_id, parent_agent_id, template_id, system_prompt, tool_profile, model_profile, status, skill_definition, token_budget, role_level, reporting_chain")
         .eq("business_id", businessId);
 
       const { data: allDepts } = await supabase
         .from("departments")
-        .select("id, type")
+        .select("id, type, name, department_skill")
         .eq("business_id", businessId);
+
+      // Fetch template MCP servers for each agent
+      const templateIds = [...new Set((allAgents ?? []).map((a: { template_id: string }) => a.template_id).filter(Boolean))];
+      const { data: templates } = templateIds.length > 0
+        ? await supabase
+            .from("agent_templates")
+            .select("id, mcp_servers")
+            .in("id", templateIds)
+        : { data: [] };
+      const templateMcpMap = new Map(
+        (templates ?? []).map((t: { id: string; mcp_servers: unknown }) => [t.id, t.mcp_servers]),
+      );
 
       const deptMap = new Map(
         (allDepts ?? []).map((d: { id: string; type: string }) => [d.id, d.type]),
       );
+
+      // Convert MCP config entries to McpServerDef[] for workspace generation
+      const businessMcpDefs = mcpConfigEntries
+        .filter((m) => m.enabled)
+        .map((m) => ({
+          name: m.name,
+          type: m.isCustom ? "custom" : "standard",
+          config: m.npmPackage ? { npmPackage: m.npmPackage } : {},
+        }));
+
+      // Generate workspace files + OpenClaw config with MCPs
+      const agentsForWorkspace = (allAgents ?? []).map(
+        (a: {
+          id: string;
+          name: string;
+          department_id: string;
+          system_prompt: string;
+          tool_profile: Record<string, unknown>;
+          model_profile: Record<string, unknown>;
+          status: string;
+          skill_definition: string | null;
+          template_id: string;
+          token_budget: number | null;
+          role_level: number | null;
+          reporting_chain: string | null;
+        }) => ({
+          ...a,
+          token_budget: a.token_budget ?? undefined,
+          role_level: a.role_level ?? undefined,
+          mcp_servers: (templateMcpMap.get(a.template_id) ?? []) as Array<{ name: string; type: string; config: Record<string, unknown> }>,
+        }),
+      );
+
+      const { files: workspaceFiles, config: openclawConfig } = generateOpenClawWorkspace(
+        { id: businessId, name: parsed.data.name, slug: parsed.data.slug, industry: parsed.data.industry },
+        agentsForWorkspace,
+        (allDepts ?? []).map((d: { id: string; type: string; name: string; department_skill: string | null }) => ({
+          id: d.id,
+          type: d.type,
+          name: d.name,
+          department_skill: d.department_skill,
+        })),
+        {},
+        businessMcpDefs,
+      );
+
+      // Collect all MCP npm packages to install on VPS
+      const allMcpNames = [
+        ...mcpConfigEntries.filter((m) => m.enabled).map((m) => m.name),
+        ...(allAgents ?? []).flatMap((a: { template_id: string }) => {
+          const mcps = templateMcpMap.get(a.template_id) as Array<{ name: string }> | undefined;
+          return (mcps ?? []).map((m) => m.name);
+        }),
+      ];
+      const mcpNpmPackages = getMcpNpmPackages([...new Set(allMcpNames)]);
 
       await sshDeployBusiness(supabase, {
         businessId,
@@ -431,7 +522,7 @@ export async function createBusinessV2(formData: FormData) {
             parent_agent_id: string | null;
           }) => ({
             agentId: agent.id,
-            vpsAgentId: `${parsed.data.slug}-${agent.id.slice(0, 8)}`,
+            vpsAgentId: `${parsed.data.slug}-${deptMap.get(agent.department_id) ?? "general"}-${agent.id.replace(/-/g, "").slice(0, 8)}`,
             departmentType: deptMap.get(agent.department_id) ?? "general",
             model: "claude-sonnet-4-6",
             isCeo: agent.parent_agent_id === null,
@@ -439,9 +530,10 @@ export async function createBusinessV2(formData: FormData) {
             tokenBudget: 100000,
           }),
         ),
-        workspaceFiles: [],
-        openclawConfig: "{}",
+        workspaceFiles,
+        openclawConfig,
         sshConfig: perBusinessVps?.sshConfig,
+        mcpNpmPackages,
       });
     } catch {
       // Non-critical: SSH deploy can be retried from deployments page
