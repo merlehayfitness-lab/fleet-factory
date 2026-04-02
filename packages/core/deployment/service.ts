@@ -210,15 +210,16 @@ export async function triggerDeployment(
 
     // 9. Generate artifacts
     // Fetch and decrypt secrets (handle missing ENCRYPTION_KEY gracefully)
-    let decryptedSecrets: Array<{ key: string; decryptedValue: string }> = [];
+    let decryptedSecrets: Array<{ provider: string; key: string; decryptedValue: string }> = [];
     try {
       const { data: secrets } = await supabase
         .from("secrets")
-        .select("key, encrypted_value")
+        .select("provider, key, encrypted_value")
         .eq("business_id", businessId);
 
       if (secrets && secrets.length > 0) {
         decryptedSecrets = secrets.map((s) => ({
+          provider: s.provider as string,
           key: s.key as string,
           decryptedValue: decrypt(s.encrypted_value as string),
         }));
@@ -420,7 +421,14 @@ export async function triggerDeployment(
       }
 
       const vpsAgents = (agents ?? [])
-        .filter((a) => (a.status as string) !== "frozen" && (a.status as string) !== "retired")
+        .filter((a) => {
+          if ((a.status as string) === "frozen" || (a.status as string) === "retired") return false;
+          // Filter to heads only: role_level 0 (CEO) and 1 (department heads)
+          // Specialists (role_level 2) added later via hot-add
+          const tmpl = templateMetadata.get(a.template_id as string);
+          const roleLevel = tmpl?.role_level ?? 0;
+          return roleLevel <= 1;
+        })
         .map((a) => {
           const dept = deptById.get(a.department_id as string);
           const deptType = dept?.type ?? "general";
@@ -432,6 +440,12 @@ export async function triggerDeployment(
           };
         });
 
+      // Extract Anthropic API key from decrypted secrets for per-tenant cost isolation
+      const anthropicSecret = decryptedSecrets.find(
+        (s) => s.provider === "anthropic" && s.key === "api_key",
+      );
+      const anthropicApiKey = anthropicSecret?.decryptedValue;
+
       const vpsPayload = {
         businessId,
         businessSlug: business.slug,
@@ -442,6 +456,7 @@ export async function triggerDeployment(
         agents: vpsAgents,
         workspaceFiles: openclawWorkspace.files,
         openclawConfig: openclawWorkspace.config,
+        anthropicApiKey,
       };
 
       // Skip VPS push if no deployable agents (go straight to local-live path below)
@@ -456,6 +471,7 @@ export async function triggerDeployment(
           deploymentId,
           vpsPayload,
           perBusinessVps?.vpsConfig,
+          perBusinessVps?.sshConfig,
         );
 
         if (!vpsResult.success) {

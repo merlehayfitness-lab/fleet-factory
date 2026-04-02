@@ -22,6 +22,8 @@ export interface VpsDeployPayload {
   }>;
   workspaceFiles: WorkspaceFile[];
   openclawConfig: string; // stringified openclaw.json
+  /** Anthropic API key for this business (per-tenant cost isolation) */
+  anthropicApiKey?: string;
 }
 
 /** Result from VPS after deployment */

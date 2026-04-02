@@ -388,11 +388,12 @@ export async function createBusinessV2(formData: FormData) {
     }
   }
 
-  // 6. Allocate port block
+  // 6. Port allocation (now handled dynamically during Docker deploy on VPS)
+  // Legacy DB-side port allocation kept for backward compat
   try {
     await allocatePortBlock(supabase, businessId);
   } catch {
-    // Non-critical: port allocation can be retried
+    // Non-critical: Docker deploy allocates ports on VPS
   }
 
   // 7. Template-aware provisioning: create V2 departments and agents
@@ -415,7 +416,6 @@ export async function createBusinessV2(formData: FormData) {
 
   if (isSshConfigured(perBusinessVps?.sshConfig)) {
     try {
-      const portAllocation = await allocatePortBlock(supabase, businessId);
       const { sshDeployBusiness } = await import(
         "@agency-factory/core/vps/ssh-deploy"
       );
@@ -508,12 +508,14 @@ export async function createBusinessV2(formData: FormData) {
       ];
       const mcpNpmPackages = getMcpNpmPackages([...new Set(allMcpNames)]);
 
+      // Extract Anthropic API key for per-tenant Docker containers
+      const anthropicKey = apiKeys.find((k) => k.provider === "anthropic")?.key;
+
       await sshDeployBusiness(supabase, {
         businessId,
         businessSlug: parsed.data.slug,
         deploymentId: "",
         subdomain,
-        portRangeStart: portAllocation.portRangeStart,
         agents: (allAgents ?? []).map(
           (agent: {
             id: string;
@@ -534,6 +536,7 @@ export async function createBusinessV2(formData: FormData) {
         openclawConfig,
         sshConfig: perBusinessVps?.sshConfig,
         mcpNpmPackages,
+        anthropicApiKey: anthropicKey,
       });
     } catch {
       // Non-critical: SSH deploy can be retried from deployments page

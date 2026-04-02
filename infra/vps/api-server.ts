@@ -17,8 +17,12 @@ import type { IncomingMessage } from "node:http";
 import apiRoutes, { deployEvents } from "./api-routes.js";
 import { streamChatFromAgent } from "./openclaw-client.js";
 import { loadDeploymentState } from "./deploy-state.js";
+import { loadPortRegistry } from "./port-registry.js";
 import { bridgeTerminal } from "./terminal-bridge.js";
 import type { DeployProgressEvent, ChatStreamEvent } from "./api-types.js";
+
+// Load port registry from disk on startup
+loadPortRegistry();
 
 const app = express();
 const PORT = parseInt(process.env.PORT || "3100", 10);

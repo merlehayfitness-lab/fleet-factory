@@ -1,12 +1,12 @@
 /**
  * VPS deployment push service.
  *
- * Sends deployment packages to the VPS via REST API, handles partial failures,
- * stores optimization reports, and runs post-deploy health checks.
+ * Routes deployments through SSH to Docker containers on the VPS.
+ * Each agent gets its own container with OpenClaw gateway.
+ * CEO deploys first, committed as template, then department heads spawn from it.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { vpsPost } from "./vps-client";
 import { checkAgentHealth, updateAgentVpsStatus } from "./vps-health";
 import type { VpsConfig } from "./vps-config";
 import type {
@@ -14,66 +14,87 @@ import type {
   VpsDeployResult,
   VpsAgentHealthStatus,
 } from "./vps-types";
+import {
+  sshDeployBusiness,
+  sshDeployAgent,
+  type SshDeployOptions,
+  type SshDeployAgent,
+  type SshDeployResult,
+} from "./ssh-deploy";
+import { getSshConfig, type SshConfig } from "./ssh-client";
 
 /**
- * Push a full deployment package to the VPS.
+ * Push a full deployment package to the VPS via SSH + Docker.
  *
- * 1. POST payload to /api/deploy
- * 2. If VPS unreachable, return { success: false, error }
- * 3. On success, update agent_vps_status for each agent based on agentResults
- * 4. Return VpsDeployResult
+ * 1. Converts VpsDeployPayload into SshDeployOptions
+ * 2. Calls sshDeployBusiness() for Docker CEO-first deployment
+ * 3. Updates agent_vps_status for each agent
  */
 export async function pushDeploymentToVps(
   supabase: SupabaseClient,
   deploymentId: string,
   payload: VpsDeployPayload,
   vpsConfig?: VpsConfig,
+  overrideSshConfig?: SshConfig,
 ): Promise<VpsDeployResult> {
-  const result = await vpsPost<VpsDeployResult>("/api/deploy", payload, undefined, vpsConfig);
+  try {
+    // Resolve SSH config: explicit override > global env
+    let sshConfig: SshConfig | undefined = overrideSshConfig;
+    if (!sshConfig) {
+      try {
+        sshConfig = getSshConfig();
+      } catch {
+        // getSshConfig() throws if not configured — let sshDeployBusiness handle it
+      }
+    }
 
-  if (!result.success) {
+    // Convert payload agents to SSH deploy agent format
+    const sshAgents: SshDeployAgent[] = payload.agents.map((a) => ({
+      agentId: a.agentId,
+      vpsAgentId: a.vpsAgentId,
+      departmentType: a.departmentType,
+      model: a.model,
+      isCeo: a.departmentType === "executive",
+      templateName: a.vpsAgentId,
+    }));
+
+    const sshOptions: SshDeployOptions = {
+      businessId: payload.businessId,
+      businessSlug: payload.businessSlug,
+      deploymentId,
+      agents: sshAgents,
+      workspaceFiles: payload.workspaceFiles,
+      openclawConfig: payload.openclawConfig,
+      sshConfig,
+      anthropicApiKey: payload.anthropicApiKey,
+    };
+
+    const result = await sshDeployBusiness(supabase, sshOptions);
+
+    return {
+      success: result.success,
+      deployId: deploymentId,
+      agentResults: result.agentResults.map((r) => ({
+        agentId: r.agentId,
+        vpsAgentId: r.vpsAgentId,
+        status: r.status,
+        error: r.error,
+      })),
+      error: result.error,
+    };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : "Unknown error";
     return {
       success: false,
-      deployId: "",
+      deployId: deploymentId,
       agentResults: [],
-      error: result.error ?? "VPS deployment failed",
+      error: errorMsg,
     };
   }
-
-  // Update agent_vps_status for each agent based on results
-  if (result.agentResults && result.agentResults.length > 0) {
-    for (const agentResult of result.agentResults) {
-      const containerStatus = agentResult.status === "deployed" ? "running" : "error";
-      await updateAgentVpsStatus(
-        supabase,
-        payload.businessId,
-        agentResult.agentId,
-        agentResult.vpsAgentId,
-        containerStatus,
-      );
-    }
-  }
-
-  // Store optimization report in deployment record if present
-  if (result.optimizationReport) {
-    await supabase
-      .from("deployments")
-      .update({
-        optimization_report: result.optimizationReport,
-      })
-      .eq("id", deploymentId);
-  }
-
-  return result;
 }
 
 /**
- * Push a single agent to the VPS for per-agent deployment.
- *
- * 1. Build a single-agent VpsDeployPayload
- * 2. POST to /api/deploy
- * 3. Update agent_vps_status for the single agent
- * 4. Return result
+ * Push a single agent to the VPS for per-agent deployment (hot-add).
  */
 export async function pushAgentToVps(
   supabase: SupabaseClient,
@@ -85,47 +106,60 @@ export async function pushAgentToVps(
   model: string,
   workspaceFiles: Array<{ path: string; content: string }>,
   openclawConfig: string,
+  anthropicApiKey?: string,
 ): Promise<VpsDeployResult> {
-  const payload: VpsDeployPayload = {
-    businessId,
-    businessSlug,
-    deploymentId: "", // per-agent deploy has no deployment record
-    version: 0,
-    isRollback: false,
-    skipOptimization: false,
-    agents: [{ agentId, vpsAgentId, departmentType, model }],
-    workspaceFiles,
-    openclawConfig,
-  };
+  try {
+    let sshConfig: SshConfig | undefined;
+    try {
+      sshConfig = getSshConfig();
+    } catch {
+      // not configured
+    }
 
-  const result = await vpsPost<VpsDeployResult>("/api/deploy", payload);
+    const agent: SshDeployAgent = {
+      agentId,
+      vpsAgentId,
+      departmentType,
+      model,
+      isCeo: departmentType === "executive",
+      templateName: vpsAgentId,
+    };
 
-  if (!result.success) {
+    const result = await sshDeployAgent(
+      supabase,
+      businessSlug,
+      businessId,
+      agent,
+      workspaceFiles,
+      undefined,
+      { sshConfig, anthropicApiKey },
+    );
+
+    return {
+      success: result.success,
+      deployId: "",
+      agentResults: result.agentResults.map((r) => ({
+        agentId: r.agentId,
+        vpsAgentId: r.vpsAgentId,
+        status: r.status,
+        error: r.error,
+      })),
+      error: result.error,
+    };
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : "Unknown error";
     return {
       success: false,
       deployId: "",
       agentResults: [],
-      error: result.error ?? "VPS agent deployment failed",
+      error: errorMsg,
     };
   }
-
-  // Update agent_vps_status for this agent
-  const agentResult = result.agentResults?.find((r) => r.agentId === agentId);
-  if (agentResult) {
-    const containerStatus = agentResult.status === "deployed" ? "running" : "error";
-    await updateAgentVpsStatus(supabase, businessId, agentId, vpsAgentId, containerStatus);
-  }
-
-  return result;
 }
 
 /**
  * Push a rollback deployment to the VPS.
- *
- * 1. Build VpsDeployPayload with skipOptimization=true, isRollback=true
- * 2. POST to /api/deploy
- * 3. Since skipOptimization is true, Claude Code deploys files as-is (deterministic rollback)
- * 4. Return result
+ * Same as pushDeploymentToVps but with rollback metadata.
  */
 export async function pushRollbackToVps(
   supabase: SupabaseClient,
@@ -142,6 +176,8 @@ export async function pushRollbackToVps(
   storedWorkspaceFiles: Array<{ path: string; content: string }>,
   openclawConfig: string,
   vpsConfig?: VpsConfig,
+  overrideSshConfig?: SshConfig,
+  anthropicApiKey?: string,
 ): Promise<VpsDeployResult> {
   const payload: VpsDeployPayload = {
     businessId,
@@ -153,42 +189,14 @@ export async function pushRollbackToVps(
     agents,
     workspaceFiles: storedWorkspaceFiles,
     openclawConfig,
+    anthropicApiKey,
   };
 
-  const result = await vpsPost<VpsDeployResult>("/api/deploy", payload, undefined, vpsConfig);
-
-  if (!result.success) {
-    return {
-      success: false,
-      deployId: "",
-      agentResults: [],
-      error: result.error ?? "VPS rollback failed",
-    };
-  }
-
-  // Update agent_vps_status for each agent
-  if (result.agentResults && result.agentResults.length > 0) {
-    for (const agentResult of result.agentResults) {
-      const containerStatus = agentResult.status === "deployed" ? "running" : "error";
-      await updateAgentVpsStatus(
-        supabase,
-        businessId,
-        agentResult.agentId,
-        agentResult.vpsAgentId,
-        containerStatus,
-      );
-    }
-  }
-
-  return result;
+  return pushDeploymentToVps(supabase, deploymentId, payload, vpsConfig, overrideSshConfig);
 }
 
 /**
  * Run post-deploy health checks on all agents via VPS.
- *
- * 1. For each agent, call checkAgentHealth(vpsAgentId)
- * 2. Update agent_vps_status for each agent
- * 3. Return arrays of healthy and unhealthy agent IDs
  */
 export async function runPostDeployHealthCheck(
   supabase: SupabaseClient,

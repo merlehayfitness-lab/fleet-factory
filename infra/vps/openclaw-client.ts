@@ -1,20 +1,21 @@
 /**
- * OpenClaw gateway client using OpenAI-compatible endpoints.
+ * OpenClaw gateway client — per-agent container routing.
  *
- * Routes requests to specific agents via x-openclaw-agent-id header
- * and maintains conversation history via x-openclaw-session-key header.
+ * Each agent runs its own OpenClaw instance in a Docker container on a unique port.
+ * This client resolves the correct gateway URL for each agent via the port registry.
  *
  * Agent identity and behavior are defined by workspace files (IDENTITY.md,
  * SOUL.md, AGENTS.md, TOOLS.md) — NOT by hardcoded system prompts here.
  */
 
-const GATEWAY_URL =
-  process.env.OPENCLAW_HTTP_URL || "http://127.0.0.1:18789";
+import { getPort, loadPortRegistry, getAllPorts } from "./port-registry.js";
+
+// Load port registry on module init
+loadPortRegistry();
+
 const AUTH_TOKEN = process.env.OPENCLAW_AUTH_TOKEN || "";
-const DEFAULT_MODEL =
-  process.env.OPENCLAW_MODEL || "openclaw/default";
-const OPENCLAW_SCOPES =
-  process.env.OPENCLAW_SCOPES || "operator.write";
+const DEFAULT_MODEL = process.env.OPENCLAW_MODEL || "openclaw/default";
+const OPENCLAW_SCOPES = process.env.OPENCLAW_SCOPES || "operator.write";
 
 /** Timeout for chat/task completions (2 minutes) */
 const CHAT_TIMEOUT_MS = 120_000;
@@ -46,6 +47,24 @@ interface SendMessageOptions {
 }
 
 /**
+ * Resolve the gateway URL for a specific agent's container.
+ * Each container exposes OpenClaw on a unique host port.
+ */
+function getAgentGatewayUrl(vpsAgentId: string): string {
+  const port = getPort(vpsAgentId);
+  if (!port) {
+    // Fallback: try reloading registry in case of recent deploy
+    loadPortRegistry();
+    const retryPort = getPort(vpsAgentId);
+    if (!retryPort) {
+      throw new Error(`No container port for agent ${vpsAgentId}. Agent may not be deployed.`);
+    }
+    return `http://127.0.0.1:${retryPort}`;
+  }
+  return `http://127.0.0.1:${port}`;
+}
+
+/**
  * Build common headers for OpenClaw requests.
  * Includes agent targeting and session persistence headers.
  */
@@ -69,8 +88,6 @@ function buildHeaders(
 
 /**
  * Build messages array for a chat request.
- * Applies universal rules as system message, optionally prepends
- * knowledge context (RAG injection). Supports optional task preamble.
  */
 function buildMessages(
   message: string,
@@ -78,7 +95,6 @@ function buildMessages(
 ): Array<{ role: string; content: string }> {
   const messages: Array<{ role: string; content: string }> = [];
 
-  // Universal honesty/anti-hallucination rules + optional task preamble
   let systemContent = UNIVERSAL_RULES;
   if (options?.taskPreamble) {
     systemContent = `${options.taskPreamble}\n\n${systemContent}`;
@@ -87,14 +103,12 @@ function buildMessages(
     systemContent = `## Relevant Context\n\n${options.knowledgeContext}\n\n${systemContent}`;
   }
   messages.push({ role: "system", content: systemContent });
-
   messages.push({ role: "user", content: message });
   return messages;
 }
 
 /**
  * Create an AbortController with a timeout.
- * Returns the controller and a cleanup function.
  */
 function createTimeoutController(timeoutMs: number): {
   controller: AbortController;
@@ -109,12 +123,7 @@ function createTimeoutController(timeoutMs: number): {
 }
 
 /**
- * Send a message to a specific agent via OpenAI-compatible chat completions.
- *
- * - Routes to the correct agent via x-openclaw-agent-id header
- * - Maintains conversation history via x-openclaw-session-key header
- * - Agent identity comes from workspace files, not system prompt
- * - Includes a configurable timeout (default 2 minutes)
+ * Send a message to a specific agent via its container's OpenClaw gateway.
  */
 export async function sendMessageToAgent(
   vpsAgentId: string,
@@ -127,7 +136,8 @@ export async function sendMessageToAgent(
   tokens?: number;
   tokenUsage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
 }> {
-  const url = `${GATEWAY_URL}/v1/chat/completions`;
+  const gatewayUrl = getAgentGatewayUrl(vpsAgentId);
+  const url = `${gatewayUrl}/v1/chat/completions`;
   const headers = buildHeaders(vpsAgentId, conversationId);
   const { controller, cleanup } = createTimeoutController(
     options?.timeoutMs ?? CHAT_TIMEOUT_MS,
@@ -174,8 +184,6 @@ export async function sendMessageToAgent(
 
 /**
  * Submit a task to a specific agent for execution.
- * Routes through chat completions with task-formatted prompt.
- * Uses the same buildMessages() pipeline as chat for consistent behavior.
  */
 export async function submitTaskToAgent(
   vpsAgentId: string,
@@ -194,7 +202,8 @@ export async function submitTaskToAgent(
   error?: string;
 }> {
   try {
-    const url = `${GATEWAY_URL}/v1/chat/completions`;
+    const gatewayUrl = getAgentGatewayUrl(vpsAgentId);
+    const url = `${gatewayUrl}/v1/chat/completions`;
     const headers = buildHeaders(vpsAgentId, conversationId);
     const { controller, cleanup } = createTimeoutController(
       options?.timeoutMs ?? CHAT_TIMEOUT_MS,
@@ -218,10 +227,7 @@ export async function submitTaskToAgent(
 
       if (!res.ok) {
         const text = await res.text();
-        return {
-          success: false,
-          error: `Gateway returned ${res.status}: ${text}`,
-        };
+        return { success: false, error: `Gateway returned ${res.status}: ${text}` };
       }
 
       const data = (await res.json()) as {
@@ -248,43 +254,59 @@ export async function submitTaskToAgent(
 }
 
 /**
- * Check OpenClaw gateway health via /healthz endpoint.
+ * Check health of a specific agent's container via its OpenClaw /healthz endpoint.
+ */
+export async function checkAgentContainerHealth(vpsAgentId: string): Promise<{
+  status: "healthy" | "unhealthy" | "not_deployed";
+  port?: number;
+}> {
+  const port = getPort(vpsAgentId);
+  if (!port) {
+    return { status: "not_deployed" };
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch(`http://127.0.0.1:${port}/healthz`, {
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    return { status: res.ok ? "healthy" : "unhealthy", port };
+  } catch {
+    return { status: "unhealthy", port };
+  }
+}
+
+/**
+ * Check overall gateway health by checking all deployed containers.
+ * Returns aggregate status for backward compatibility.
  */
 export async function checkGatewayHealth(): Promise<{
   status: string;
   sessions: number;
 }> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
+  const ports = getAllPorts();
+  const portEntries = Object.values(ports);
 
-    const res = await fetch(`${GATEWAY_URL}/healthz`, {
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-
-    if (!res.ok) {
-      return { status: "error", sessions: 0 };
-    }
-
-    const data = (await res.json()) as Record<string, unknown>;
-    return {
-      status: (data.status as string) || "connected",
-      sessions: 0,
-    };
-  } catch {
-    return { status: "unreachable", sessions: 0 };
+  if (portEntries.length === 0) {
+    return { status: "no_agents", sessions: 0 };
   }
+
+  // Spot-check the first agent's health
+  const firstAgent = Object.keys(ports)[0];
+  const health = await checkAgentContainerHealth(firstAgent);
+
+  return {
+    status: health.status === "healthy" ? "connected" : "degraded",
+    sessions: portEntries.length,
+  };
 }
 
 /**
  * Stream chat tokens from an agent via SSE (server-sent events).
- *
- * Uses OpenAI-compatible streaming with stream: true.
  * Falls back to non-streaming HTTP POST if streaming fails.
- *
- * Routes to the correct agent via x-openclaw-agent-id header.
- * Maintains conversation history via x-openclaw-session-key header.
  */
 export function streamChatFromAgent(
   vpsAgentId: string,
@@ -297,14 +319,14 @@ export function streamChatFromAgent(
 ): () => void {
   let aborted = false;
   const controller = new AbortController();
-  // Stream timeout: abort if no data flows for 2 minutes
   const streamTimer = setTimeout(() => controller.abort(), CHAT_TIMEOUT_MS);
 
   (async () => {
     try {
+      const gatewayUrl = getAgentGatewayUrl(vpsAgentId);
       const headers = buildHeaders(vpsAgentId, conversationId);
 
-      const res = await fetch(`${GATEWAY_URL}/v1/chat/completions`, {
+      const res = await fetch(`${gatewayUrl}/v1/chat/completions`, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -374,7 +396,6 @@ export function streamChatFromAgent(
           `[openclaw-client] Stream error for ${vpsAgentId}:`,
           err,
         );
-        // Fallback to non-streaming HTTP
         fallbackToHttp(vpsAgentId, message, onComplete, onError, conversationId, options);
       }
     }
