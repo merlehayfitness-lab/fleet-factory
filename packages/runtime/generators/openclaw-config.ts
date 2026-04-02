@@ -107,7 +107,7 @@ export function generateOpenClawConfig(
     const model =
       (agent.modelProfile as { model?: string }).model || "claude-sonnet-4-6";
 
-    const workspacePath = `${tenantDir}/workspace/workspace-${vpsAgentId}`;
+    const workspacePath = `${tenantDir}/workspace-${vpsAgentId}`;
 
     // Add filesystem MCP server scoped to this agent's workspace
     globalMcpServers[`filesystem-${vpsAgentId}`] = {
