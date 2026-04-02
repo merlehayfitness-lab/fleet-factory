@@ -146,12 +146,11 @@ export type {
   BulkActionInput,
 } from "./approval/approval-schema";
 
-// Chat types (client-safe)
+// Chat/conversation types (client-safe -- used by Slack actions)
 export type {
   ChatMessage,
   ChatConversation,
   ToolCallTrace,
-  StubResponse,
   DepartmentChannel,
 } from "./chat/chat-types";
 
@@ -162,8 +161,6 @@ export type {
   VpsHealthStatus,
   VpsAgentHealthStatus,
   VpsDeployProgressEvent,
-  VpsChatRequest,
-  VpsChatResponse,
   VpsTaskRequest,
   VpsTaskResult,
   WorkspaceFile,

@@ -13,7 +13,8 @@ import { selectAgent } from "../orchestrator/router";
 import { generateStubResponse } from "./chat-stub";
 import { isVpsConfigured } from "../vps/vps-config";
 
-import { getVpsAgentId, sendChatToVps } from "../vps/vps-chat";
+import { getVpsAgentId } from "../vps/vps-naming";
+import { sendChatToVps } from "../vps/vps-chat";
 import { executeWithRateLimit } from "../rate-limit/rate-limiter";
 import { checkBudget, shouldSendBudgetWarning } from "../rate-limit/budget-service";
 

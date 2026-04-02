@@ -226,7 +226,7 @@ export function SlackConnectCard({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => router.push(`/businesses/${businessId}/chat`)}
+              onClick={() => router.push(`/businesses/${businessId}/integrations`)}
             >
               <Hash className="mr-1.5 size-3" />
               Manage Channels

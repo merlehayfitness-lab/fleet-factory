@@ -6,7 +6,7 @@ import { runAgentTask } from "../worker/tool-runner";
 import { createAssistanceRequest } from "../task/task-service";
 import { isVpsConfigured } from "../vps/vps-config";
 import { checkVpsHealth } from "../vps/vps-health";
-import { getVpsAgentId } from "../vps/vps-chat";
+import { getVpsAgentId } from "../vps/vps-naming";
 import { sendTaskToVps } from "../vps/vps-task";
 
 interface ExecutionResult {

@@ -101,7 +101,7 @@ export {
   restoreTenant,
 } from "./emergency/emergency-service";
 
-// Chat service (server-only -- database operations)
+// Conversation service (server-only -- database operations, used by Slack handler)
 export {
   getOrCreateConversation,
   sendMessage,
@@ -111,9 +111,6 @@ export {
   getDepartmentChannels,
   routeAndRespond,
 } from "./chat/chat-service";
-
-// Chat stub (server-only -- simulated responses)
-export { generateStubResponse } from "./chat/chat-stub";
 
 // VPS lifecycle (server-only -- container pause/resume)
 export { pauseTenantContainers, resumeTenantContainers } from "./vps/vps-lifecycle";
@@ -129,8 +126,11 @@ export {
 } from "./vps/vps-health";
 export { getVpsConfig, isVpsConfigured } from "./vps/vps-config";
 
-// VPS chat routing (server-only -- sends messages to VPS agents)
-export { sendChatToVps, getVpsAgentId, getVpsChatWsUrl } from "./vps/vps-chat";
+// VPS agent ID lookup (server-only -- database + naming convention)
+export { getVpsAgentId } from "./vps/vps-naming";
+
+// VPS message routing (server-only -- sends messages to VPS agents via proxy)
+export { sendChatToVps } from "./vps/vps-chat";
 
 // VPS task routing (server-only -- sends tasks to VPS agents)
 export { sendTaskToVps } from "./vps/vps-task";
@@ -313,77 +313,6 @@ export type {
   LiveActivityEntry,
   UsageAnalytics,
 } from "./dashboard/dashboard-service";
-
-// R&D Council (server-only -- autonomous agent sessions)
-export {
-  runCouncilSession,
-  getNextSessionTime,
-  getProposer,
-  getParticipants,
-  shouldRunSession,
-  writeMemo,
-  getMemos,
-  getMemoById,
-  getPreviousMemo,
-  getSessionCount,
-  COUNCIL_AGENTS,
-  DEFAULT_SCHEDULE,
-} from "./rd-council/index";
-export type {
-  CouncilAgent,
-  CouncilSession,
-  CouncilContext,
-  CouncilVote,
-  CouncilMemo,
-  ScheduleConfig,
-} from "./rd-council/council-types";
-
-// CRM integration (server-only -- REST client + database operations)
-export {
-  getContacts,
-  createContact,
-  updateContact,
-  getDeals,
-  createDeal,
-  updateDealStage,
-  getPipelineSummary,
-  getActivities,
-  logActivity,
-} from "./crm/crm-service";
-export { createTwentyCrmClient } from "./crm/crm-client";
-export { syncContactsFromCrm, syncPipelineFromCrm } from "./crm/crm-sync";
-export type {
-  CrmContact,
-  CrmDeal,
-  CrmActivity,
-  CrmPipelineSummary,
-  TwentyCrmConfig,
-} from "./crm/crm-types";
-
-// WhatsApp integration (server-only -- API clients + webhooks)
-export {
-  sendWhatsAppMessage,
-  verifyTwilioSignature,
-  verifyMetaWebhook,
-  parseTwilioInbound,
-  parseMetaInbound,
-  parseCommand as parseWhatsAppCommand,
-  getHelpMessage as getWhatsAppHelpMessage,
-  sendAlert as sendWhatsAppAlert,
-  alertDeploymentComplete,
-  alertApprovalNeeded,
-  alertNewCrmLead,
-  alertFollowUpDue,
-  alertSpendThreshold,
-  sendDailyDigest,
-} from "./whatsapp/index";
-export type {
-  WhatsAppConfig,
-  InboundMessage as WhatsAppInboundMessage,
-  OutboundMessage as WhatsAppOutboundMessage,
-  ParsedCommand as WhatsAppParsedCommand,
-  DailyDigest as WhatsAppDailyDigest,
-} from "./whatsapp/whatsapp-types";
 
 // OpenClaw workspace generator (re-exported for server-only use in web app)
 export { generateOpenClawWorkspace } from "@fleet-factory/runtime";

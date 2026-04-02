@@ -11,15 +11,10 @@ import {
   Sparkles,
   Rocket,
   Plug,
-  Shield,
-  CheckSquare,
   ScrollText,
-  MessageSquare,
   BookOpen,
   Settings,
   LogOut,
-  TrendingUp,
-  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -103,39 +98,9 @@ function getBusinessSubNav(businessId: string) {
       enabled: true,
     },
     {
-      href: `/businesses/${businessId}/revops`,
-      label: "RevOps",
-      icon: TrendingUp,
-      enabled: true,
-    },
-    {
-      href: `/businesses/${businessId}/usage`,
-      label: "Usage",
-      icon: BarChart3,
-      enabled: true,
-    },
-    {
       href: `/businesses/${businessId}/integrations`,
       label: "Integrations",
       icon: Plug,
-      enabled: true,
-    },
-    {
-      href: `/businesses/${businessId}/approvals`,
-      label: "Approvals",
-      icon: Shield,
-      enabled: true,
-    },
-    {
-      href: `/businesses/${businessId}/tasks`,
-      label: "Tasks",
-      icon: CheckSquare,
-      enabled: true,
-    },
-    {
-      href: `/businesses/${businessId}/chat`,
-      label: "Chat",
-      icon: MessageSquare,
       enabled: true,
     },
     {

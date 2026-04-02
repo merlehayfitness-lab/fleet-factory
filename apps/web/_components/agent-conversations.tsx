@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import { MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { createBrowserClient } from "@/_lib/supabase/client";
@@ -80,14 +79,7 @@ export function AgentConversations({
           No conversations yet
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Use the{" "}
-          <Link
-            href={`/businesses/${businessId}/chat`}
-            className="text-primary underline underline-offset-2"
-          >
-            Chat page
-          </Link>{" "}
-          to start a conversation with this agent
+          Conversations will appear here once the agent is active on Slack
         </p>
       </div>
     );
@@ -96,10 +88,9 @@ export function AgentConversations({
   return (
     <div className="space-y-1 pt-4">
       {conversations.map((conv) => (
-        <Link
+        <div
           key={conv.id}
-          href={`/businesses/${businessId}/chat`}
-          className="flex items-center justify-between rounded-md border px-4 py-3 transition-colors hover:bg-muted/50"
+          className="flex items-center justify-between rounded-md border px-4 py-3"
         >
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium">
@@ -116,7 +107,7 @@ export function AgentConversations({
           >
             {conv.status}
           </Badge>
-        </Link>
+        </div>
       ))}
     </div>
   );

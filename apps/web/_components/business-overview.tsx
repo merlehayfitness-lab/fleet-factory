@@ -4,9 +4,8 @@ import {
   Plug,
   Bot,
   Users,
-  Shield,
+  BookOpen,
   ScrollText,
-  CheckSquare,
   Activity,
 } from "lucide-react";
 import {
@@ -40,8 +39,6 @@ interface BusinessOverviewProps {
   agentCount: number;
   departmentCount: number;
   latestDeployment: Deployment | null;
-  pendingApprovalCount: number;
-  activeTaskCount: number;
   usageSummary: UsageSummaryData;
 }
 
@@ -57,8 +54,6 @@ export function BusinessOverview({
   agentCount,
   departmentCount,
   latestDeployment,
-  pendingApprovalCount,
-  activeTaskCount,
   usageSummary,
 }: BusinessOverviewProps) {
   return (
@@ -70,7 +65,7 @@ export function BusinessOverview({
       </div>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader>
             <CardDescription className="flex items-center gap-1.5">
@@ -106,26 +101,6 @@ export function BusinessOverview({
               Departments
             </CardDescription>
             <CardTitle>{departmentCount}</CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardDescription className="flex items-center gap-1.5">
-              <CheckSquare className="size-3.5" />
-              Active Tasks
-            </CardDescription>
-            <CardTitle>{activeTaskCount}</CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardDescription className="flex items-center gap-1.5">
-              <Shield className="size-3.5" />
-              Pending Approvals
-            </CardDescription>
-            <CardTitle>{pendingApprovalCount}</CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -169,25 +144,10 @@ export function BusinessOverview({
             enabled
           />
           <QuickLinkCard
-            href={`/businesses/${business.id}/tasks`}
-            label="Tasks"
-            description={
-              activeTaskCount > 0
-                ? `${activeTaskCount} active`
-                : "View task work queue"
-            }
-            icon={CheckSquare}
-            enabled
-          />
-          <QuickLinkCard
-            href={`/businesses/${business.id}/approvals`}
-            label="Approvals"
-            description={
-              pendingApprovalCount > 0
-                ? `${pendingApprovalCount} pending`
-                : "Review agent actions"
-            }
-            icon={Shield}
+            href={`/businesses/${business.id}/knowledge`}
+            label="Knowledge Base"
+            description="Manage agent knowledge"
+            icon={BookOpen}
             enabled
           />
           <QuickLinkCard

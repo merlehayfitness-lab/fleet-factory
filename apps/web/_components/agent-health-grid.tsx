@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bot, AlertTriangle, ChevronDown, ExternalLink, MessageSquare } from "lucide-react";
+import { Bot, AlertTriangle, ChevronDown, ExternalLink } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -238,13 +238,6 @@ function AgentCard({
                 >
                   View details
                   <ExternalLink className="size-3" />
-                </Link>
-                <Link
-                  href={`/businesses/${businessId}/chat?department=${departmentId}`}
-                  className="flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                >
-                  Open Chat
-                  <MessageSquare className="size-3" />
                 </Link>
               </div>
             </div>

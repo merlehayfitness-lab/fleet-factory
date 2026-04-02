@@ -5,12 +5,11 @@ import Link from "next/link";
 import {
   Rocket,
   Bot,
-  Shield,
-  CheckSquare,
+  Plug,
+  BookOpen,
   AlertTriangle,
   Activity,
   ScrollText,
-  MessageSquare,
   Zap,
   Clock,
   Settings,
@@ -199,20 +198,10 @@ export function HealthDashboard({
         <Card>
           <CardHeader>
             <CardDescription className="flex items-center gap-1.5">
-              <CheckSquare className="size-3.5" />
-              Active Tasks
+              <Activity className="size-3.5" />
+              Error Rate
             </CardDescription>
-            <CardTitle>{health.activeTasks}</CardTitle>
-          </CardHeader>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardDescription className="flex items-center gap-1.5">
-              <Shield className="size-3.5" />
-              Pending Approvals
-            </CardDescription>
-            <CardTitle>{health.pendingApprovals}</CardTitle>
+            <CardTitle>{health.errorRate?.rate ?? 0}%</CardTitle>
           </CardHeader>
         </Card>
 
@@ -316,30 +305,16 @@ export function HealthDashboard({
             icon={Rocket}
           />
           <QuickLinkCard
-            href={`/businesses/${business.id}/tasks`}
-            label="Tasks"
-            description={
-              health.activeTasks > 0
-                ? `${health.activeTasks} active`
-                : "View task work queue"
-            }
-            icon={CheckSquare}
+            href={`/businesses/${business.id}/integrations`}
+            label="Integrations"
+            description="Manage connections"
+            icon={Plug}
           />
           <QuickLinkCard
-            href={`/businesses/${business.id}/approvals`}
-            label="Approvals"
-            description={
-              health.pendingApprovals > 0
-                ? `${health.pendingApprovals} pending`
-                : "Review agent actions"
-            }
-            icon={Shield}
-          />
-          <QuickLinkCard
-            href={`/businesses/${business.id}/chat`}
-            label="Chat"
-            description="Chat with department agents"
-            icon={MessageSquare}
+            href={`/businesses/${business.id}/knowledge`}
+            label="Knowledge Base"
+            description="Manage agent knowledge"
+            icon={BookOpen}
           />
           <QuickLinkCard
             href={`/businesses/${business.id}/logs`}

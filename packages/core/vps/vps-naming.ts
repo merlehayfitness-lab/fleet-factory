@@ -1,3 +1,5 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 /**
  * Derive a deterministic vpsAgentId from business/agent metadata.
  * Format: {businessSlug}-{departmentType}-{agentIdPrefix}
@@ -6,7 +8,7 @@
  * IMPORTANT: This is the single source of truth for the naming convention.
  * Used by:
  *   - packages/runtime/generators/openclaw-config.ts (workspace generation)
- *   - packages/core/vps/vps-chat.ts (fallback agent ID lookup)
+ *   - packages/core/orchestrator/executor.ts (VPS task routing)
  *   - infra/vps/api-routes.ts (filesystem paths -- documents same convention)
  */
 export function deriveVpsAgentId(
@@ -46,4 +48,57 @@ export function parseVpsAgentId(vpsAgentId: string): {
   if (!businessSlug || !departmentType) return null;
 
   return { businessSlug, departmentType, agentIdPrefix };
+}
+
+/**
+ * Look up the vps_agent_id for an agent from the agent_vps_status table.
+ * Falls back to deriving the ID from business slug + department type + agent ID prefix.
+ *
+ * Returns null if the agent has no VPS mapping and derivation data is unavailable.
+ */
+export async function getVpsAgentId(
+  supabase: SupabaseClient,
+  agentId: string,
+): Promise<string | null> {
+  const { data: vpsStatus } = await supabase
+    .from("agent_vps_status")
+    .select("vps_agent_id")
+    .eq("agent_id", agentId)
+    .limit(1)
+    .single();
+
+  if (vpsStatus?.vps_agent_id) {
+    return vpsStatus.vps_agent_id as string;
+  }
+
+  // Fallback: derive from business slug + department type + agent ID prefix
+  const { data: agent } = await supabase
+    .from("agents")
+    .select("id, department_id, business_id")
+    .eq("id", agentId)
+    .single();
+
+  if (!agent) return null;
+
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("slug")
+    .eq("id", agent.business_id as string)
+    .single();
+
+  if (!business?.slug) return null;
+
+  const { data: dept } = await supabase
+    .from("departments")
+    .select("type")
+    .eq("id", agent.department_id as string)
+    .single();
+
+  if (!dept?.type) return null;
+
+  return deriveVpsAgentId(
+    business.slug as string,
+    dept.type as string,
+    agentId,
+  );
 }
