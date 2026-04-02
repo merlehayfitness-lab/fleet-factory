@@ -175,7 +175,7 @@ export function SidebarNav({ user }: SidebarNavProps) {
       {/* Brand */}
       <div className="flex h-14 items-center border-b px-4">
         <Link href="/businesses" className="text-sm font-semibold tracking-tight">
-          Agency Factory
+          Fleet Factory
         </Link>
       </div>
 

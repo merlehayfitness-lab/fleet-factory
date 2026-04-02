@@ -431,7 +431,7 @@ const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
 async function countRunningAgents(): Promise<number> {
   const containers = await docker.listContainers({
-    filters: { status: ['running'], label: ['agency-factory=true'] },
+    filters: { status: ['running'], label: ['fleet-factory=true'] },
   });
   return containers.length;
 }

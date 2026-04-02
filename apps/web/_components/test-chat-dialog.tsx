@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { testChatAction } from "@/_actions/prompt-generator-actions";
-import type { TestChatMessage } from "@agency-factory/core";
+import type { TestChatMessage } from "@fleet-factory/core";
 
 interface TestChatDialogProps {
   systemPrompt: string;

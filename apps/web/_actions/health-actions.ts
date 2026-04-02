@@ -1,8 +1,8 @@
 "use server";
 
 import { createServerClient } from "@/_lib/supabase/server";
-import { getSystemHealth } from "@agency-factory/core/server";
-import type { SystemHealth } from "@agency-factory/core/server";
+import { getSystemHealth } from "@fleet-factory/core/server";
+import type { SystemHealth } from "@fleet-factory/core/server";
 
 /**
  * Fetch the combined health dashboard data for a business.

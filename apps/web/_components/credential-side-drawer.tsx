@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import {
   INTEGRATION_CATALOG,
   type CatalogEntry,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 import {
   getProviderFieldsAction,
   getSecretsByProviderAction,

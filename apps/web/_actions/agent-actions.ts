@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import {
   transitionAgentStatus,
   updateAgentConfig,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 
 /**
  * Freeze an agent (emergency stop). Transitions to 'frozen' status.
@@ -244,7 +244,7 @@ export async function syncFromTemplateAction(
   if (guard) return guard;
 
   try {
-    const { syncFromTemplate } = await import("@agency-factory/core/server");
+    const { syncFromTemplate } = await import("@fleet-factory/core/server");
     const { before, after } = await syncFromTemplate(
       supabase,
       agentId,
@@ -285,7 +285,7 @@ export async function reparentAgentAction(
   if (guard) return guard;
 
   try {
-    const { reparentAgent } = await import("@agency-factory/core/server");
+    const { reparentAgent } = await import("@fleet-factory/core/server");
     await reparentAgent(
       supabase,
       agentId,
@@ -320,7 +320,7 @@ export async function testMcpConnectionAction(
   }
 
   const { validateMcpServerUrl } = await import(
-    "@agency-factory/core/server"
+    "@fleet-factory/core/server"
   );
   return validateMcpServerUrl(url, transport);
 }

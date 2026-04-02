@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/_lib/supabase/server";
 import { SettingsPage } from "@/_components/settings-page";
-import { getSecretsByProvider } from "@agency-factory/core/server";
+import { getSecretsByProvider } from "@fleet-factory/core/server";
 
 /**
  * Settings page (Server Component).

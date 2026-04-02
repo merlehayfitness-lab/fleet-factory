@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { getSkillUsageAction } from "@/_actions/skill-actions";
-import type { SkillUsage } from "@agency-factory/core";
+import type { SkillUsage } from "@fleet-factory/core";
 
 interface SkillUsageCardProps {
   skillId: string;

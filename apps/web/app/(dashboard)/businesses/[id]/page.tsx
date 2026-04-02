@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { XCircle } from "lucide-react";
 import { createServerClient } from "@/_lib/supabase/server";
 import { HealthDashboard } from "@/_components/health-dashboard";
-import { getSystemHealth, checkBudget } from "@agency-factory/core/server";
+import { getSystemHealth, checkBudget } from "@fleet-factory/core/server";
 import type { UsageSummaryData } from "@/_components/usage-summary";
 
 /**

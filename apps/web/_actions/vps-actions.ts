@@ -6,7 +6,7 @@ import {
   checkVpsHealth,
   updateVpsStatus,
   getVpsStatus,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 
 /**
  * Check VPS health by pinging the VPS API and persisting the result.

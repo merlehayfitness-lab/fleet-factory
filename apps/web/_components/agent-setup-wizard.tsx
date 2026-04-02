@@ -15,7 +15,7 @@ import { WizardKnowledgeStep } from "@/_components/wizard-knowledge-step";
 import { WizardRoleDefinitionStep } from "@/_components/wizard-role-definition-step";
 import { WizardPromptGenerationStep } from "@/_components/wizard-prompt-generation-step";
 import { WizardReviewStep } from "@/_components/wizard-review-step";
-import type { RoleDefinition, PromptSections } from "@agency-factory/core";
+import type { RoleDefinition, PromptSections } from "@fleet-factory/core";
 
 const STEPS = [
   { label: "Basic Info", key: "basic" },

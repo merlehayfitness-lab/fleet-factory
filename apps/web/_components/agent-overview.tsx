@@ -11,8 +11,8 @@ import { StatusBadge } from "@/_components/status-badge";
 import { FreezeDialog } from "@/_components/freeze-dialog";
 import { RetireDialog } from "@/_components/retire-dialog";
 import { pauseAgent, resumeAgent, updateAgentNameAction } from "@/_actions/agent-actions";
-import type { AgentStatus } from "@agency-factory/core";
-import { getValidTransitions, getModelFriendlyName } from "@agency-factory/core";
+import type { AgentStatus } from "@fleet-factory/core";
+import { getValidTransitions, getModelFriendlyName } from "@fleet-factory/core";
 
 interface Agent {
   id: string;

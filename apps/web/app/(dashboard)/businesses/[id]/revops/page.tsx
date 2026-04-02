@@ -1,5 +1,5 @@
 import { createServerClient } from "@/_lib/supabase/server";
-import { getRevOpsSummary } from "@agency-factory/core/server";
+import { getRevOpsSummary } from "@fleet-factory/core/server";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,

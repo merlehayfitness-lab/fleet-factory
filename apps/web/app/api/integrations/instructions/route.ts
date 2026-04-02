@@ -1,5 +1,5 @@
 import { createServerClient } from "@/_lib/supabase/server";
-import { streamSetupInstructions } from "@agency-factory/core/server";
+import { streamSetupInstructions } from "@fleet-factory/core/server";
 
 /**
  * POST /api/integrations/instructions

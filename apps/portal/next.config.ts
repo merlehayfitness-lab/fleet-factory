@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  transpilePackages: ["@agency-factory/core"],
+  transpilePackages: ["@fleet-factory/core"],
 };
 
 export default nextConfig;

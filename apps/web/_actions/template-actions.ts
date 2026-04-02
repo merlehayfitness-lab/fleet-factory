@@ -7,7 +7,7 @@ import {
   createTemplate,
   updateTemplate,
   deleteTemplate,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 
 /**
  * Create a new agent template from form data.

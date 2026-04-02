@@ -1,7 +1,7 @@
 "use client";
 
 import { Wrench, FileText, Bot, User, Loader2, AlertCircle } from "lucide-react";
-import type { ChatMessage } from "@agency-factory/core";
+import type { ChatMessage } from "@fleet-factory/core";
 import { KnowledgeSourceFootnotes } from "./knowledge-source-footnotes";
 
 interface ChatMessageBubbleProps {

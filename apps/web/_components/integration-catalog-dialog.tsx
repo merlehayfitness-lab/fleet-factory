@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import {
   getCatalogByCategory,
   type CatalogEntry,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 import { CatalogTargetPicker } from "@/_components/catalog-target-picker";
 import { CatalogInstructionsPanel } from "@/_components/catalog-instructions-panel";
 import { addCatalogIntegrationAction } from "@/_actions/integration-actions";

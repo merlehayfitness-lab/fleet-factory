@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@agency-factory/core": "workspace:^",
+    "@fleet-factory/core": "workspace:^",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.100.0",
     "class-variance-authority": "^0.7.1",

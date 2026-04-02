@@ -10,7 +10,7 @@ import { PromptRefinementPanel } from "@/_components/prompt-refinement-panel";
 import { TestChatDialog } from "@/_components/test-chat-dialog";
 import { ContextSuggestionUI } from "@/_components/context-suggestion-ui";
 import { generatePromptAction } from "@/_actions/prompt-generator-actions";
-import type { RoleDefinition, PromptSections } from "@agency-factory/core";
+import type { RoleDefinition, PromptSections } from "@fleet-factory/core";
 
 const SECTION_LABELS: Record<keyof PromptSections, string> = {
   identity: "Identity",

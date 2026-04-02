@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/_lib/supabase/server";
-import { listDocuments } from "@agency-factory/core/server";
+import { listDocuments } from "@fleet-factory/core/server";
 import { KnowledgeUploadZone } from "@/_components/knowledge-upload-zone";
 import { KnowledgeDocumentList } from "@/_components/knowledge-document-list";
 

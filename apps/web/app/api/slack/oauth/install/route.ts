@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/_lib/supabase/server";
-import { getSlackInstallUrl } from "@agency-factory/core/server";
+import { getSlackInstallUrl } from "@fleet-factory/core/server";
 
 /**
  * GET handler to initiate Slack OAuth install flow.

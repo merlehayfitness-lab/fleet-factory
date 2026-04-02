@@ -22,7 +22,7 @@ expected: Run `pnpm turbo build` — all packages build with zero errors. Run `p
 result: [pending]
 
 ### 2. Sign-in page renders
-expected: Navigate to http://localhost:3000/sign-in. See a centered card with "Sign in to Agency Factory" title, email input, password input, "Sign in" button, and a link to sign-up page.
+expected: Navigate to http://localhost:3000/sign-in. See a centered card with "Sign in to Fleet Factory" title, email input, password input, "Sign in" button, and a link to sign-up page.
 result: [pending]
 
 ### 3. Sign-up page renders
@@ -66,7 +66,7 @@ expected: The business overview page shows: business name with status badge, 4 s
 result: [pending]
 
 ### 13. Sidebar navigation shows business sub-nav
-expected: While on a business page, the left sidebar shows: "Agency Factory" brand at top, "Businesses" main link, and sub-navigation links for Overview, Departments (active), Deployments/Approvals/Tasks/Logs (grayed out as future placeholders). User dropdown at bottom with sign-out option.
+expected: While on a business page, the left sidebar shows: "Fleet Factory" brand at top, "Businesses" main link, and sub-navigation links for Overview, Departments (active), Deployments/Approvals/Tasks/Logs (grayed out as future placeholders). User dropdown at bottom with sign-out option.
 result: [pending]
 
 ### 14. Departments page shows 4 seeded departments

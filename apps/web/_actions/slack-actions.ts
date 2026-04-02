@@ -10,8 +10,8 @@ import {
   getChannelMappings,
   getSlackFeedMessages,
   saveProviderCredentials,
-} from "@agency-factory/core/server";
-import type { SlackConnectionStatus, SlackChannelMapping, ChatMessage } from "@agency-factory/core";
+} from "@fleet-factory/core/server";
+import type { SlackConnectionStatus, SlackChannelMapping, ChatMessage } from "@fleet-factory/core";
 
 /**
  * Check if Slack is connected for a business.

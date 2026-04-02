@@ -167,6 +167,34 @@ const KNOWN_MCP_SERVERS: Record<string, KnownMcpServer> = {
     defaultArgs: ["-y", "@anthropic/mcp-server-docs"],
     capabilities: ["create_document", "list_documents", "export_pdf"],
   },
+  "sequential-thinking": {
+    description: "Structured reasoning and problem solving",
+    npmPackage: "@modelcontextprotocol/server-sequential-thinking",
+    defaultCommand: "npx",
+    defaultArgs: ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+    capabilities: ["reason", "plan", "decompose", "evaluate"],
+  },
+  github: {
+    description: "GitHub repos, issues, PRs, and file operations",
+    npmPackage: "@modelcontextprotocol/server-github",
+    defaultCommand: "npx",
+    defaultArgs: ["-y", "@modelcontextprotocol/server-github"],
+    capabilities: ["read_repo", "create_issue", "create_pr", "read_file", "search_code"],
+  },
+  puppeteer: {
+    description: "Browser automation, screenshots, and JS execution",
+    npmPackage: "@modelcontextprotocol/server-puppeteer",
+    defaultCommand: "npx",
+    defaultArgs: ["-y", "@modelcontextprotocol/server-puppeteer"],
+    capabilities: ["navigate", "screenshot", "click", "evaluate_js", "fill_form"],
+  },
+  postgres: {
+    description: "PostgreSQL queries and schema inspection",
+    npmPackage: "@modelcontextprotocol/server-postgres",
+    defaultCommand: "npx",
+    defaultArgs: ["-y", "@modelcontextprotocol/server-postgres"],
+    capabilities: ["query", "describe_table", "list_tables"],
+  },
 };
 
 // ---------------------------------------------------------------------------

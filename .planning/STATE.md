@@ -4,15 +4,15 @@
 
 See: .planning/PROJECT.md (updated 2026-03-25)
 
-**Core value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.
-**Current focus:** Phase 19 — Rate Limiting & API Cost Tracking
+**Core value:** Single-operator control panel for deploying AI agent swarms across dedicated VPS instances for client businesses.
+**Current focus:** Phase 22 — Rebrand to Fleet Factory (Complete)
 
 ## Current Position
 
-Phase: 19 of 22 (Rate Limiting & API Cost Tracking)
-Plan: 4 of 4 in current phase (4 complete)
+Phase: 22 of 27 (Rebrand to Fleet Factory)
+Plan: Complete
 Status: Phase Complete
-Last activity: 2026-04-01 -- Completed 19-04 (budget enforcement UX, Slack DM warnings, agent/business banners)
+Last activity: 2026-04-02 -- Rebrand complete: all source files renamed, CLAUDE.md rewritten, ROADMAP.md updated with new phases 22-27
 
 Progress: [█████████████████████████████████░░] 98% (60/61 plans)
 
@@ -151,8 +151,8 @@ Recent decisions affecting current work:
 - [03-01]: Pure function generators with string output for maximum testability and portability
 - [03-01]: Docker compose YAML built via template literals (no yaml library) for zero dependencies
 - [03-01]: Frozen and retired agents excluded from docker-compose generation
-- [03-02]: Split @agency-factory/core barrel into index.ts (client-safe) and server.ts (Node.js-dependent) to fix node:crypto build failure
-- [03-02]: Removed unused @agency-factory/core dependency from runtime to eliminate circular workspace dependency
+- [03-02]: Split @fleet-factory/core barrel into index.ts (client-safe) and server.ts (Node.js-dependent) to fix node:crypto build failure
+- [03-02]: Removed unused @fleet-factory/core dependency from runtime to eliminate circular workspace dependency
 - [03-02]: Deployment service returns full record on both success and failure for consistent API
 - [03-02]: Secrets decryption errors handled gracefully with empty array fallback for dev without ENCRYPTION_KEY
 - [03-03]: CollapsibleTrigger used directly without asChild -- base-ui Collapsible does not support asChild
@@ -370,6 +370,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-01
-Stopped at: Completed 19-04-PLAN.md (Phase 19 complete)
-Resume file: Next phase
+Last session: 2026-04-02
+Stopped at: Completed Phase 22 (Rebrand to Fleet Factory)
+Resume file: Phase 23 (Wizard Overhaul + VPS Auto-Provisioning)

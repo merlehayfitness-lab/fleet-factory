@@ -110,24 +110,30 @@ else
   cat > "${OPENCLAW_CONFIG}" << CFGEOF
 {
   "gateway": {
+    "port": ${PORT:-18789},
+    "mode": "local",
+    "bind": "custom",
+    "customBindHost": "0.0.0.0",
+    "auth": { "mode": "password" },
     "http": {
-      "port": ${PORT:-18789},
       "endpoints": {
         "chatCompletions": { "enabled": true }
       }
     }
   },
-  "auth": { "mode": "none" },
-  "model": {
-    "default": "${MODEL:-anthropic/claude-sonnet-4-6}"
-  },
-  "agents": { "list": [] }
+  "agents": {
+    "defaults": {
+      "model": "${MODEL:-anthropic/claude-sonnet-4-6}"
+    },
+    "list": []
+  }
 }
 CFGEOF
 fi
 
 # Ensure the gateway port matches the container PORT env var
-jq --argjson port "${PORT:-18789}" '.gateway.http.port = $port' "${OPENCLAW_CONFIG}" > "${OPENCLAW_CONFIG}.tmp" && \
+# OpenClaw expects gateway.port (NOT gateway.http.port)
+jq --argjson port "${PORT:-18789}" '.gateway.port = $port' "${OPENCLAW_CONFIG}" > "${OPENCLAW_CONFIG}.tmp" && \
   mv "${OPENCLAW_CONFIG}.tmp" "${OPENCLAW_CONFIG}" 2>/dev/null || true
 
 # Set Anthropic API key for OpenClaw to use

@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { KnowledgeUploadZone } from "@/_components/knowledge-upload-zone";
 import { KnowledgeDocumentList } from "@/_components/knowledge-document-list";
 import { listDocumentsAction } from "@/_actions/knowledge-actions";
-import type { KnowledgeDocument } from "@agency-factory/core";
+import type { KnowledgeDocument } from "@fleet-factory/core";
 
 interface AgentKnowledgeTabProps {
   businessId: string;

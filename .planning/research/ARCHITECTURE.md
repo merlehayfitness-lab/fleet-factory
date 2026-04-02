@@ -7,7 +7,7 @@
 ## System Overview
 
 ```
-                          Agency Factory — 5-Layer Architecture
+                          Fleet Factory — 5-Layer Architecture
  ============================================================================
 
  LAYER 1: PRESENTATION (Next.js App Router)
@@ -91,7 +91,7 @@
 ## Recommended Project Structure
 
 ```
-agency-factory/
+fleet-factory/
 ├── apps/
 │   └── web/                        # Next.js admin panel
 │       ├── app/                    # App Router pages

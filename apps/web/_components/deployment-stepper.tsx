@@ -2,7 +2,7 @@
 
 import { Check, X, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { DeploymentStatus } from "@agency-factory/core";
+import type { DeploymentStatus } from "@fleet-factory/core";
 
 const STEPS = ["Queued", "Building", "Deploying", "Live"] as const;
 

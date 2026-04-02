@@ -109,7 +109,7 @@ None.
 ## User Setup Required
 None for development. For VPS deployment:
 1. Run `setup.sh` on the target VPS
-2. Edit `/opt/agency-factory/vps-proxy/.env` with API_KEY and OPENCLAW_AUTH_TOKEN
+2. Edit `/opt/fleet-factory/vps-proxy/.env` with API_KEY and OPENCLAW_AUTH_TOKEN
 3. Configure OpenClaw gateway settings
 4. Start the systemd service
 

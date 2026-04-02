@@ -17,7 +17,7 @@ import {
   getTemplateDiffAction,
   syncFromTemplateAction,
 } from "@/_actions/agent-actions";
-import { getModelFriendlyName } from "@agency-factory/core";
+import { getModelFriendlyName } from "@fleet-factory/core";
 
 interface SyncFromTemplateDialogProps {
   agentId: string;

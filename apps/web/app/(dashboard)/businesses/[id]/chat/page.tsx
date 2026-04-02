@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/_lib/supabase/server";
-import { getDepartmentChannels, getVpsStatus } from "@agency-factory/core/server";
+import { getDepartmentChannels, getVpsStatus } from "@fleet-factory/core/server";
 import { ChatLayout } from "@/_components/chat-layout";
 import { getSlackStatusAction, getSlackChannelsAction } from "@/_actions/slack-actions";
-import type { SlackConnectionStatus } from "@agency-factory/core";
+import type { SlackConnectionStatus } from "@fleet-factory/core";
 
 /**
  * Chat page Server Component.

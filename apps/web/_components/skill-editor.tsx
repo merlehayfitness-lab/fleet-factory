@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { createSkillAction, updateSkillAction } from "@/_actions/skill-actions";
-import type { Skill } from "@agency-factory/core";
+import type { Skill } from "@fleet-factory/core";
 
 interface SkillEditorProps {
   businessId: string;

@@ -91,7 +91,7 @@ pnpm dlx shadcn@latest init --monorepo -c ./apps/web
 
 ### Recommended Project Structure (Phase 1 scope)
 ```
-agency-factory/
+fleet-factory/
 ├── apps/
 │   └── web/                        # Next.js admin panel
 │       ├── app/

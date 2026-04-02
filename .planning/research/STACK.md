@@ -84,7 +84,7 @@
 
 ```bash
 # Initialize monorepo
-pnpm dlx create-turbo@latest agency-factory
+pnpm dlx create-turbo@latest fleet-factory
 
 # Core framework (apps/web)
 pnpm add next@15 react@19 react-dom@19

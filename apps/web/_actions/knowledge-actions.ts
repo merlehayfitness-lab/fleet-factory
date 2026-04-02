@@ -11,12 +11,12 @@ import {
   getDocumentChunks,
   processDocument,
   reIndexDocument,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 import type {
   KnowledgeDocument,
   KnowledgeChunk,
   KnowledgeFileType,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 import { randomUUID } from "node:crypto";
 
 /** Allowed file extensions and their corresponding KnowledgeFileType */

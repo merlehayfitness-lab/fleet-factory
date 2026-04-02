@@ -18,7 +18,7 @@ import {
   uploadChatFilesAction,
 } from "@/_actions/chat-actions";
 import { getSlackFeedMessagesAction } from "@/_actions/slack-actions";
-import type { ChatMessage, DepartmentChannel, SlackConnectionStatus, SlackChannelMapping } from "@agency-factory/core";
+import type { ChatMessage, DepartmentChannel, SlackConnectionStatus, SlackChannelMapping } from "@fleet-factory/core";
 
 interface SlackChannelWithDept extends SlackChannelMapping {
   departmentName: string;

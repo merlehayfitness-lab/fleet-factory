@@ -1,30 +1,43 @@
-# Agency Factory
+# Fleet Factory
 
 ## Project
-Multi-tenant SaaS platform for deploying and managing AI agent stacks for client businesses.
+Single-operator control panel for deploying AI agent swarms across dedicated VPS instances for client businesses.
 
-Each business gets its own command center, department-specific agents, deployment records, approvals, tasks, and logs.
+This is NOT multi-tenant SaaS -- it's TJ's personal tool for spinning up and managing per-business AI agent fleets.
 
-Current MVP goal:
-- Create a business workspace
-- Seed default departments and starter agents
-- Queue and run a deployment job
-- Generate tenant runtime config files
-- Show deployment status, agents, approvals, tasks, and logs in the admin panel
+Each business gets:
+- Its own VPS with Docker containers (one per agent)
+- Claude Code OAuth for AI access (shared across agents on the VPS)
+- OpenClaw per container for agent runtime
+- Slack-only agent interaction (no web chat)
+- Live config sync from admin panel to VPS containers
 
-## Product Context
-This is not a generic chatbot app.
+## Architecture
+```
+TJ's Browser
+    |
+    v
+[Fleet Factory Admin Panel]  (Vercel / Next.js)
+    |
+    +-- Supabase (DB, Auth, RLS)
+    |
+    +-- SSH per-business VPS
+         |
+         v
+    [VPS: business-a]
+    +-- Docker containers (one per agent)
+    +-- Claude Code (OAuth token, shared via volume mount)
+    +-- OpenClaw per container (uses Claude Code auth)
+    +-- VPS Proxy (:3100) -- routes Slack msgs to containers
+    +-- Slack integration (events webhook -> Vercel -> VPS)
+```
 
-This product is a business command center for managing per-client AI agent systems.
-
-Default department pack for MVP:
-- Owner
-- Sales
-- Support
-- Operations
-
-Each business is a tenant.
-Each tenant must stay isolated in data, deployment, secrets, logs, and agent runtime config.
+Agent lifecycle:
+1. Wizard deploys CEO only
+2. Other agents seeded as "ready_to_configure"
+3. TJ configures each via agent wizard in admin
+4. TJ clicks Deploy per agent -> SSH hot-adds container
+5. Config changes live-sync via SSH (no redeploy)
 
 ## Tech Stack
 - Next.js 14+ App Router
@@ -33,20 +46,18 @@ Each tenant must stay isolated in data, deployment, secrets, logs, and agent run
 - shadcn/ui
 - Supabase (Auth, Postgres, RLS)
 - Server Actions where useful
-- Docker for VPS deployment artifacts
-- OpenClaw-oriented runtime config generation
-- Claude-powered builder/deployment workflows later
+- Docker for VPS deployment
+- OpenClaw agent runtime per container
+- Claude Code OAuth for AI access
+- Slack-only agent interaction
 
-## Architecture
-Preferred repo shape:
+## Repo Structure
 - apps/web = admin panel
 - packages/db = schema, SQL, types, helpers
 - packages/core = shared domain logic
 - packages/ui = shared UI components
 - packages/runtime = runtime builders, OpenClaw config generation, deployment helpers
-- apps/worker or packages/worker = async deployment jobs
-- infra = docker, scripts, deployment helpers
-- templates = department agent templates
+- infra = docker, scripts, VPS deployment helpers
 
 ## Core Entities
 Main entities:
@@ -90,41 +101,29 @@ Rules:
   1. create the business
   2. create owner membership
   3. seed default departments
-  4. create starter agents from templates
+  4. create starter agents from templates (status: ready_to_configure)
   5. create a deployment record
-  6. queue deployment
+  6. deploy CEO container only
 - Use idempotent-safe patterns where possible for provisioning and deployment jobs
 
-## Runtime Rules
-Deployment runner should generate:
-- `tenant-config.json`
-- `docker-compose.generated.yml`
-- `.env.generated`
-- one runtime config file per agent
-
-For now:
-- prefer safe stubs or mock adapters over pretending real integrations exist
-- keep external integrations modular
-- design for OpenClaw-based worker runtime on a VPS
-- do not block MVP progress on full orchestration or perfect infra
-
 ## UI Rules
-Required MVP routes:
-- `/businesses`
-- `/businesses/new`
-- `/businesses/[businessId]`
-- `/businesses/[businessId]/deployments`
-- `/businesses/[businessId]/approvals`
-- `/businesses/[businessId]/tasks`
-- `/businesses/[businessId]/logs`
+Admin panel nav (10 items):
+- Overview
+- Departments
+- Agents
+- Templates
+- Skills
+- Deployments
+- Integrations
+- Knowledge Base
+- Settings
+- Logs
 
-Dashboard should show:
-- business name
-- deployment status
-- number of agents
-- pending approvals
-- recent activity
-- quick links to key pages
+Dashboard (business overview) shows:
+- business name + deployment status
+- active containers + Slack status
+- RevOps metrics (cost today/month/budget)
+- activity feed (recent tasks + approvals from Slack)
 
 UI style:
 - clean B2B SaaS
@@ -148,20 +147,20 @@ Choose the simplest solid implementation and keep momentum.
 Do not ask unnecessary questions when a reasonable default exists.
 
 ## Commands
-- `npm run dev` = development
-- `npm run build` = production build
-- `npm test` = tests
-- `npm run lint` = linting, if available
-- `npm run typecheck` = type checking, if available
+- `pnpm dev` = development
+- `pnpm build` = production build
+- `pnpm test` = tests
+- `pnpm lint` = linting, if available
+- `pnpm typecheck` = type checking, if available
 
 ## Safe Command Policy
 Usually safe:
-- `npm install`
-- `npm run dev`
-- `npm run build`
-- `npm run lint`
-- `npm run typecheck`
-- `npm test`
+- `pnpm install`
+- `pnpm dev`
+- `pnpm build`
+- `pnpm lint`
+- `pnpm typecheck`
+- `pnpm test`
 - `git diff`
 - `git status`
 - `git add`
@@ -186,9 +185,10 @@ When making changes:
 
 ## Definition of Good
 A good change for this project:
-- improves the multi-tenant command center
-- supports per-business agent deployment
-- keeps tenant isolation clear
+- supports per-business agent deployment on dedicated VPS
+- keeps business isolation clear (one VPS per business)
+- enables Slack-only agent interaction
+- supports live config sync from admin to VPS
 - is easy to extend later
-- is understandable by a small team
-- helps us reach a demoable MVP faster
+- is understandable by a single operator
+- helps us reach a working fleet faster

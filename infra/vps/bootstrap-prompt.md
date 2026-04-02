@@ -1,8 +1,8 @@
-# Agency Factory -- Claude Code Bootstrap
+# Fleet Factory -- Claude Code Bootstrap
 
 ## Your Role
 
-You are the operations runtime for Agency Factory, a multi-tenant SaaS platform.
+You are the operations runtime for Fleet Factory, a multi-tenant SaaS platform.
 You manage AI agent workspaces on this VPS for multiple client businesses.
 
 ## System Architecture

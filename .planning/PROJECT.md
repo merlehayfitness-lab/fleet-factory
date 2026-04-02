@@ -1,12 +1,12 @@
-# Agency Factory
+# Fleet Factory
 
 ## What This Is
 
-A multi-tenant SaaS platform for deploying and managing AI agent stacks for client businesses. Each business gets its own command center with department-specific agents, deployment records, approvals, tasks, and logs. The platform provisions isolated tenant workspaces where AI agents handle department work — sales, support, operations — with human approval gates for risky actions.
+A single-operator control panel for deploying and managing AI agent swarms across dedicated VPS instances. This is TJ's personal tool — not a multi-tenant SaaS product, not a customer-facing platform. Each business client gets their own VPS with Docker-containerized agents, Claude Code OAuth authentication, and Slack as the sole interaction channel.
 
 ## Core Value
 
-One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all — so any client business can have their own AI operations team without mixing data, credentials, or agent configurations.
+One admin panel (Vercel/Next.js) that lets a single operator spin up a full AI agent team for any client business — each on its own isolated VPS — and manage it all from one place. The operator configures agents, triggers deployments, and monitors activity. Clients interact with their agents exclusively through Slack.
 
 ## Requirements
 
@@ -14,155 +14,170 @@ One-click tenant provisioning that creates an isolated business workspace with d
 
 <!-- Shipped and confirmed valuable. -->
 
-(None yet — ship to validate)
+- [x] Auth and user management via Supabase
+- [x] Create business with name, slug, industry, owner
+- [x] Seed default departments per business
+- [x] Create agents from templates per department
+- [x] Business creation wizard (6-step: Details → Departments → API Keys → Deployment Target → Subdomain → Review & Deploy)
+- [x] RLS isolation on all operational tables via `is_business_member()` helper
+- [x] Business overview dashboard with deployment status, agents, approvals, activity
+- [x] Deployment lifecycle: queued → building → deploying → verifying → live
+- [x] CEO-first Docker container deployment with cascading department head flow
+- [x] SSH-based VPS deployment pipeline
+- [x] Per-container OpenClaw instance on unique ports (19001+)
+- [x] VPS proxy on :3100 routing chat/tasks to per-agent containers
+- [x] Slack-first chat with department channels and per-channel conversations
 
 ### Active
 
 <!-- Current scope. Building toward these. -->
 
-- [ ] Auth and user management via Supabase
-- [ ] Create business tenant with name, slug, industry, owner
-- [ ] Seed 4 default departments per business (Owner, Sales, Support, Operations)
-- [ ] Create starter agents from templates per department
-- [ ] Provision business tenant in one atomic flow (business → membership → departments → agents → deployment job)
-- [ ] RLS tenant isolation on all operational tables via `is_business_member()` helper
-- [ ] Business overview dashboard showing health, active agents, pending approvals, latest conversations, deployment status
-- [ ] Create business wizard (name, industry, departments, integrations, deployment target)
-- [ ] Departments setup page
-- [ ] Agents list and agent detail pages
-- [ ] Deployment center with deploy/redeploy capability
-- [ ] Tasks page showing work queue across departments
-- [ ] Approvals page with approve/reject for gated agent actions
-- [ ] Command center chat plus conversation logs
-- [ ] Audit log viewer for full action history
-- [ ] Orchestrator service (Paperclip-style): company structure, task routing, roles, tickets, budget/governance
-- [ ] Worker service (OpenClaw-style): execute department work through tools and plugins
-- [ ] Builder service (Claude-powered): generate agent configs, prompts, and deployment artifacts
-- [ ] Deployment runner generates tenant-config.json, docker-compose.generated.yml, .env.generated, and per-agent runtime configs
-- [ ] Template-only agent creation (no dynamic spawning by end users in MVP)
-- [ ] Builder agent can update prompts/tools/configs from templates and roll out across tenants
+- [ ] Claude Code OAuth per VPS — replace per-business Anthropic API key with OAuth tokens
+- [ ] Single-agent hot-add deployment (add one agent to a live VPS without full redeploy)
+- [ ] Live config sync — push updated agent configs to running containers without restart
+- [ ] Agent configure wizard — step-by-step UI to configure an individual agent before deploying it
+- [ ] Deploy progress UI — polling or live-stream feedback during VPS deployment
+- [ ] Password-based SSH auth support (`VPS_SSH_PASSWORD` fallback alongside key auth)
+- [ ] Port registry sync — keep `port-registry.json` on VPS consistent with DB agent records
+- [ ] Agent status dashboard — per-container health, uptime, last activity per business
+- [ ] Deployment history view with per-step logs
 
 ### Out of Scope
 
 <!-- Explicit boundaries. Includes reasoning to prevent re-adding. -->
 
-- Dynamic agent spawning by end users — wait until logs, permissions, and rollback are solid
-- Real-time chat/WebSockets — polling or server actions sufficient for MVP
-- OAuth/social login — email/password via Supabase Auth is enough for MVP
-- Mobile app — web-first command center
-- Multi-region deployment — single VPS target for MVP
-- Per-agent billing/metering — defer until post-MVP monetization
-- Custom department creation by end users — admin-only via templates
+- Multi-tenant SaaS — this is a single-operator personal tool, not a product sold to customers
+- Customer portal — clients never log in; they use Slack only
+- Per-business Anthropic API keys — replaced by Claude Code OAuth per VPS
+- WhatsApp or web chat — Slack is the only interaction channel
+- R&D Council department — not part of default department pack
+- CRM integration (Twenty or otherwise) — defer indefinitely
+- Billing and metering — no monetization layer needed
+- Dynamic agent spawning by clients — operator controls all agent creation
+- Mobile app — web-first admin panel only
+- Multi-region VPS — single VPS per business, one region at a time
 
 ## Context
 
-### Architecture (5 Layers)
+### Architecture
 
-| Layer | What It Does | MVP Choice |
-|-------|-------------|------------|
-| Admin App | Business onboarding, department setup, approvals, logs, command center | Custom Next.js web app |
-| Orchestrator | Company structure, task routing, roles, tickets, budget/governance | Paperclip (built from scratch) |
-| Worker Agents | Execute department work through tools and plugins | OpenClaw (built from scratch) |
-| Builder Agent | Creates agent configs, prompts, repos, and deployment files | Claude-powered service |
-| Infrastructure | Runs tenant workspaces and services on VPS | Docker on VPS |
+```
+Admin Panel (Vercel/Next.js)
+        |
+        v
+Supabase (Postgres + Auth + RLS)
+        |
+        v (SSH per business)
+VPS per Business
+  ├── VPS Proxy (:3100)  — chat routing, task routing, Slack integration, health, rate limiting
+  ├── Agent Container: CEO (:19001)  — OpenClaw + Claude Code OAuth
+  ├── Agent Container: Sales Head (:19002)  — OpenClaw + Claude Code OAuth
+  ├── Agent Container: Support Head (:19003)  — OpenClaw + Claude Code OAuth
+  ├── Agent Container: Ops Head (:19004)  — OpenClaw + Claude Code OAuth
+  └── port-registry.json  — tracks container-to-port mapping
+```
 
-Paperclip and OpenClaw are being **built from scratch** as internal services, not integrated from external products.
+The admin panel never routes requests through a shared API gateway. Each business has its own VPS reachable only via SSH from the admin backend.
 
-### Tenant Model
+### Business Model
 
-One business = one Paperclip company = one isolated workspace = one secret scope = one set of department agents. Each client gets their own command center. Never mix prompts, logs, channels, or credentials across businesses.
+One business = one VPS = one isolated agent workspace. The operator manages all businesses from a single admin panel. Businesses never share infrastructure, containers, secrets, or agent configurations.
+
+### Agent Lifecycle
+
+1. **Wizard deploys CEO only** — full container setup, OpenClaw running, Claude Code OAuth authenticated
+2. **Department heads seeded as `ready_to_configure`** — records exist in DB, no containers yet
+3. **Operator configures each agent** — admin wizard sets system prompt, tools, Slack channel mapping
+4. **Operator deploys individually** — single-agent SSH deploy spins up container on next available port
+5. **Live config sync** — operator pushes config changes to running containers without restart
+6. **Hot-add at any time** — new agents can be added to a live VPS as the business grows
 
 ### Core Database Tables
 
 | Table | Key Fields | Purpose |
 |-------|-----------|---------|
-| businesses | id, name, slug, industry, status, owner_user_id | One client company per tenant |
-| business_users | id, business_id, user_id, role | Users assigned to a business command center |
-| departments | id, business_id, name, type, status | Sales, Support, Ops, Owner |
+| businesses | id, name, slug, industry, status, owner_user_id, vps_config | One client business per deployment target |
+| business_users | id, business_id, user_id, role | Operator access control (operator-only in practice) |
+| departments | id, business_id, name, type, status | CEO, Sales, Support, Operations |
 | agent_templates | id, name, department_type, system_prompt, tool_profile, model_profile | Reusable role blueprints |
-| agents | id, business_id, department_id, template_id, name, runtime_type, status | Live agent instances per tenant |
+| agents | id, business_id, department_id, template_id, name, runtime_type, status, container_port | Live agent instances per business |
 | tool_profiles | id, name, config_json, permission_level | Bundles of allowed tools per role |
-| integrations | id, business_id, provider, credentials_ref, status | CRM, email, Slack, calendar, helpdesk |
-| deployments | id, business_id, version, environment, status, started_at, finished_at | Tracks provisioning and releases |
+| integrations | id, business_id, provider, credentials_ref, status | Slack, calendar, helpdesk per business |
+| deployments | id, business_id, version, environment, status, started_at, finished_at | VPS deployment history |
 | tasks | id, business_id, assigned_agent_id, title, payload_json, priority, status | Work queue for agents |
-| approvals | id, business_id, task_id, requested_by_agent_id, action_type, status | Human approval gate for risky actions |
-| conversations | id, business_id, agent_id, channel, transcript_ref, started_at | Message history and agent context |
+| approvals | id, business_id, task_id, requested_by_agent_id, action_type, status | Human gate for risky agent actions |
+| conversations | id, business_id, agent_id, channel, transcript_ref, started_at | Slack message threads and agent context |
 | audit_logs | id, business_id, actor_type, actor_id, event_type, metadata_json, created_at | Full action history |
 
 ### API Routes (v1)
 
 | Method | Route | Purpose |
 |--------|-------|---------|
-| POST | /api/auth/sign-in | User login |
-| POST | /api/businesses | Create a new business tenant |
+| POST | /api/auth/sign-in | Operator login |
+| POST | /api/businesses | Create a new business and queue deployment |
 | GET | /api/businesses/:id | Load business overview |
-| POST | /api/businesses/:id/departments | Add default or custom departments |
-| GET | /api/businesses/:id/agents | List agents for a tenant |
-| POST | /api/businesses/:id/deploy | Trigger initial deployment job |
-| GET | /api/deployments/:id | Check deployment progress |
+| POST | /api/businesses/:id/deploy | Trigger full VPS deployment |
+| POST | /api/businesses/:id/agents/:agentId/deploy | Deploy a single agent container |
+| POST | /api/businesses/:id/agents/:agentId/sync | Push config changes to running container |
+| GET | /api/deployments/:id | Check deployment progress and logs |
 | POST | /api/agents/:id/tasks | Send work to a specific agent |
 | GET | /api/businesses/:id/tasks | List all tasks across departments |
 | POST | /api/approvals/:id/approve | Approve a gated action |
 | POST | /api/approvals/:id/reject | Reject a gated action |
-| GET | /api/businesses/:id/conversations | Load command-center transcripts |
+| GET | /api/businesses/:id/conversations | Load Slack conversation logs |
 | GET | /api/businesses/:id/audit-logs | Load activity history |
-| POST | /api/builder/generate-agent | Generate prompt/config/package for a new role |
-| POST | /api/integrations/:provider/connect | Save integration config and kickoff validation |
 
-Three internal services behind routes: orchestrator-service, worker-service, builder-service.
-
-### MVP Screens (in build order)
+### Admin Screens (in priority order)
 
 1. Sign in
 2. Businesses list
-3. Create business wizard
+3. Create business wizard (6 steps)
 4. Business overview dashboard
-5. Departments setup
-6. Agents list
-7. Agent detail page
-8. Deployment center
-9. Tasks and approvals
-10. Command center chat plus logs
+5. Agents list with per-agent status and deploy/configure actions
+6. Agent configure wizard (set prompt, tools, Slack channel)
+7. Deployment center with progress and history
+8. Tasks and approvals queue
+9. Slack conversation logs
 
 ### Three Core Flows
 
-**Flow 1 — Tenant Provisioning:** Admin creates business → chooses template → selects departments → clicks deploy. Creates tenant records, Paperclip company, clones role templates, generates OpenClaw configs, attaches tool permissions, creates deployment job for VPS.
+**Flow 1 — Business Provisioning:** Operator runs wizard → chooses departments and VPS target → submits. Creates DB records, generates OpenClaw configs, SSH-deploys CEO container, seeds remaining agents as `ready_to_configure`.
 
-**Flow 2 — Live Operation:** Tasks enter through admin panel or connected channel → orchestrator assigns work → department agent executes with allowed tools → risky actions pause for approval.
+**Flow 2 — Agent Activation:** Operator opens agent configure wizard → sets system prompt and tools → clicks deploy. SSH-deploys single container on next available port, registers in port-registry, updates agent status to `live`.
 
-**Flow 3 — Iteration:** Claude-powered builder agent updates prompts, tools, or agent definitions from templates → improvements roll out across future tenants.
+**Flow 3 — Live Operation:** Slack message arrives in department channel → VPS proxy routes to correct container port → agent executes with tools → risky actions request approval via admin panel → operator approves/rejects → agent continues.
 
 ### Default Department Pack
 
-| Department | Agent | Tools | Model |
-|-----------|-------|-------|-------|
-| Owner | Owner Agent | dashboard_read, approvals, reporting | claude-sonnet |
-| Sales | Sales Agent | crm, email, calendar, messaging | claude-sonnet |
-| Support | Support Agent | helpdesk, kb_search, email, messaging | claude-sonnet |
-| Operations | Operations Agent | task_queue, calendar, messaging, reporting | claude-sonnet |
+| Department | Agent | Role Level | Tools |
+|-----------|-------|-----------|-------|
+| CEO | CEO Agent | 0 | dashboard_read, approvals, reporting, task_delegation |
+| Sales | Sales Head | 1 | email, calendar, messaging |
+| Support | Support Head | 1 | helpdesk, kb_search, email, messaging |
+| Operations | Ops Head | 1 | task_queue, calendar, messaging, reporting |
+
+Deploy order: CEO first (role_level 0), then department heads (role_level 1). CEO container is committed as base image template before heads spin up.
 
 ### RLS Strategy
 
-Every operational table uses `is_business_member(business_id)` to scope access. Roles (owner, admin, manager) gate write operations. The `business_users` table is the membership check for all tenant-scoped queries.
+Every operational table uses `is_business_member(business_id)` to scope access. In practice the operator is the sole user, but the RLS layer keeps data isolated per business and provides a clean foundation if the tool ever grows a team. The `business_users` table is the membership check for all business-scoped queries.
 
 ### Provisioning Flow
 
-`provisionBusinessTenant()` does five things atomically:
-1. Create business record
-2. Create owner membership in business_users
+`provisionBusinessTenant()` does five things:
+1. Create business record with VPS config
+2. Create operator membership in business_users
 3. Seed 4 default departments
-4. Create agents from matching templates (status: 'provisioning', runtime: 'openclaw')
-5. Create deployment job (status: 'queued')
+4. Create agents from templates (CEO: `queued`, rest: `ready_to_configure`)
+5. Create deployment job (status: `queued`)
 
 ### Delivery Phases
 
-- **Phase 1:** Auth, business creation, tenant scoping, default templates, first 6 screens
-- **Phase 2:** Deployment jobs, Paperclip company creation, OpenClaw worker registration, approvals
-- **Phase 3:** Builder-agent automation, reusable role templates, integration connectors
-
-### Demo Target
-
-Full loop: provision a business → send a task to an agent → see it execute with approval flow → builder agent updates configs and rolls changes out.
+- **Phase 20:** SSH deployment + Docker container-per-agent + CEO-first flow (in progress)
+- **Phase 21:** Claude Code OAuth per VPS — remove per-business API keys
+- **Phase 22:** Single-agent hot-add + live config sync
+- **Phase 23:** Deploy progress UI + deployment log streaming
+- **Phase 24:** Agent configure wizard in admin panel
 
 ### Tech Stack
 
@@ -170,8 +185,11 @@ Full loop: provision a business → send a task to an agent → see it execute w
 - TypeScript (strict)
 - Tailwind CSS + shadcn/ui
 - Supabase (Auth, Postgres, RLS)
-- Server Actions where useful
-- Docker for VPS deployment artifacts
+- Server Actions for mutations
+- Docker for per-agent VPS containers
+- OpenClaw per container for Claude access
+- Claude Code OAuth for VPS-level authentication
+- SSH for all VPS operations (password or key auth)
 
 ### Repo Structure
 
@@ -179,18 +197,18 @@ Full loop: provision a business → send a task to an agent → see it execute w
 - packages/db = schema, SQL, types, helpers
 - packages/core = shared domain logic
 - packages/ui = shared UI components
-- packages/runtime = runtime builders, config generation, deployment helpers
-- apps/worker or packages/worker = async deployment jobs
-- infra = docker, scripts, deployment helpers
+- packages/runtime = runtime builders, OpenClaw config generation, deployment helpers
+- infra = docker, scripts, VPS entrypoints
 - templates = department agent templates
 
 ## Constraints
 
 - **Tech stack**: Next.js 14+ App Router, TypeScript strict, Supabase, shadcn/ui — already decided
-- **Tenant isolation**: All operational data must be scoped by business_id with RLS enforced
-- **Agent creation**: Template-only in MVP — no dynamic spawning by end users
-- **Infrastructure**: Single VPS with Docker for MVP deployment target
-- **External integrations**: Use safe stubs or mock adapters — don't block MVP on real integrations
+- **Business isolation**: All operational data scoped by business_id with RLS enforced; each business on its own VPS
+- **Interaction channel**: Slack only — no web chat, no WhatsApp, no customer portal
+- **Authentication**: Claude Code OAuth per VPS — no per-business Anthropic API keys
+- **Agent creation**: Operator-controlled only — no dynamic spawning by clients
+- **Infrastructure**: One VPS per business with Docker containers for each agent
 - **File size**: Keep files under 200 lines, prefer composable functions over deep abstractions
 
 ## Key Decisions
@@ -199,12 +217,17 @@ Full loop: provision a business → send a task to an agent → see it execute w
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Build Paperclip/OpenClaw from scratch | Full control over orchestration and runtime layers | — Pending |
-| Supabase for auth + database + RLS | Fastest path to tenant-isolated Postgres with auth | — Pending |
-| Template-only agents for MVP | Need logs, permissions, rollback before dynamic spawning | — Pending |
-| Claude-powered builder service (not Claude Code) | Builder uses programmable agent stack, not CLI | — Pending |
-| Server Actions for mutations | Simpler than API routes for admin panel operations | — Pending |
-| 4 default departments | Owner, Sales, Support, Operations covers most small businesses | — Pending |
+| Single-operator tool, not SaaS | TJ's personal operations tool; no customer auth, portals, or billing needed | Confirmed |
+| One VPS per business | Full isolation of infra, secrets, containers, and Slack routing per client | Confirmed |
+| Slack-only interaction | Simplest reliable channel; avoids web chat complexity; clients already use Slack | Confirmed |
+| Claude Code OAuth per VPS | Replaces per-business API keys; cleaner auth model; no key management per tenant | Decided |
+| CEO-first deployment | CEO container is base image; heads inherit from it; reduces image build time | Confirmed |
+| OpenClaw per container | Each agent container runs its own OpenClaw instance on a unique port | Confirmed |
+| VPS proxy routes via port registry | Proxy maps Slack channels to container ports via port-registry.json on each VPS | Confirmed |
+| SSH for all VPS ops | No REST API on VPS for deployment; SSH gives full control, simpler security model | Confirmed |
+| Supabase for auth + DB + RLS | Fastest path to isolated Postgres with auth; RLS enforces business boundaries | Confirmed |
+| Server Actions for mutations | Simpler than separate API routes for admin panel operations | Confirmed |
+| 4 default departments | CEO, Sales, Support, Operations covers core ops for most small businesses | Confirmed |
 
 ---
-*Last updated: 2026-03-25 after initialization*
+*Last updated: 2026-04-02 — Fleet Factory rebrand and architecture pivot*

@@ -1,4 +1,4 @@
-// @agency-factory/runtime
+// @fleet-factory/runtime
 // Runtime config generators for tenant deployment artifacts.
 
 export { generateTenantConfig } from "./generators/tenant-config";

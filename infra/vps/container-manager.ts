@@ -18,8 +18,8 @@ const MEMORY_LIMIT = 512 * 1024 * 1024;
 /** CPU limit: 0.5 CPUs in NanoCpus */
 const CPU_LIMIT = 0.5 * 1e9;
 
-/** Label used to identify Agency Factory managed containers */
-const LABEL_KEY = "agency-factory";
+/** Label used to identify Fleet Factory managed containers */
+const LABEL_KEY = "fleet-factory";
 
 /**
  * Create and start an agent container.
@@ -114,7 +114,7 @@ export async function stopAgentContainer(
 }
 
 /**
- * List all Agency Factory containers for a given business slug.
+ * List all Fleet Factory containers for a given business slug.
  */
 export async function listTenantContainers(
   businessSlug: string,
@@ -199,7 +199,7 @@ export async function resumeTenantContainers(
 }
 
 /**
- * Count all running Agency Factory agent containers.
+ * Count all running Fleet Factory agent containers.
  */
 export async function countRunningAgents(): Promise<number> {
   const containers = await docker.listContainers({

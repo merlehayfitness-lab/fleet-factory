@@ -106,7 +106,7 @@ Each task was committed atomically:
 - `apps/web/app/layout.tsx` - Root layout with metadata
 - `apps/web/app/page.tsx` - Minimal homepage
 - `apps/web/app/globals.css` - Tailwind v4 CSS-only import
-- `packages/db/package.json` - @agency-factory/db package
+- `packages/db/package.json` - @fleet-factory/db package
 - `packages/db/tsconfig.json` - TypeScript strict mode
 - `packages/db/index.ts` - Placeholder re-export
 - `packages/db/schema/001_businesses.sql` - Businesses table with status field and updated_at trigger
@@ -119,7 +119,7 @@ Each task was committed atomically:
 - `packages/db/schema/008_audit_logs.sql` - Immutable audit trail
 - `packages/db/schema/009_rls_helpers.sql` - is_business_member() and has_role_on_business() security definer functions
 - `packages/db/schema/010_rls_policies.sql` - RLS policies for all 8 tables
-- `packages/core/package.json` - @agency-factory/core package
+- `packages/core/package.json` - @fleet-factory/core package
 - `packages/core/tsconfig.json` - TypeScript strict mode
 - `packages/core/index.ts` - Placeholder export
 - `templates/default-departments.json` - 4 default department templates

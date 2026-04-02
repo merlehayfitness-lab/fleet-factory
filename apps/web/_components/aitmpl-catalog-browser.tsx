@@ -26,8 +26,8 @@ import {
   importAitmplAction,
 } from "@/_actions/aitmpl-actions";
 import { AitmplTargetPicker } from "@/_components/aitmpl-target-picker";
-import type { AitmplComponentType, CatalogSearchResult } from "@agency-factory/core";
-import { isDepartmentRecommended } from "@agency-factory/core";
+import type { AitmplComponentType, CatalogSearchResult } from "@fleet-factory/core";
+import { isDepartmentRecommended } from "@fleet-factory/core";
 
 // ---------------------------------------------------------------------------
 // Tab config

@@ -5,11 +5,11 @@ import { redirect } from "next/navigation";
 import {
   createBusinessSchema,
   provisionBusinessTenant,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 import {
   saveProviderCredentials,
   allocatePortBlock,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 
 // ---------------------------------------------------------------------------
 // VPS SSH connection test
@@ -36,7 +36,7 @@ export async function testVpsSshConnection(params: {
 
   try {
     const { getConnection, disconnect } = await import(
-      "@agency-factory/core/vps/ssh-client"
+      "@fleet-factory/core/vps/ssh-client"
     );
     const ssh = await getConnection({
       host: params.host,
@@ -406,24 +406,24 @@ export async function createBusinessV2(formData: FormData) {
 
   // 8. SSH Deploy (if configured) — dynamic import to avoid native node-ssh/ssh2 in webpack bundle
   const { isSshConfigured } = await import(
-    "@agency-factory/core/vps/ssh-client"
+    "@fleet-factory/core/vps/ssh-client"
   );
   // Resolve per-business SSH config for this deploy
   const { getVpsConfigForBusiness } = await import(
-    "@agency-factory/core/vps/vps-config"
+    "@fleet-factory/core/vps/vps-config"
   );
   const perBusinessVps = await getVpsConfigForBusiness(supabase, businessId).catch(() => null);
 
   if (isSshConfigured(perBusinessVps?.sshConfig)) {
     try {
       const { sshDeployBusiness } = await import(
-        "@agency-factory/core/vps/ssh-deploy"
+        "@fleet-factory/core/vps/ssh-deploy"
       );
       const { generateOpenClawWorkspace } = await import(
-        "@agency-factory/core/server"
+        "@fleet-factory/core/server"
       );
       const { getMcpNpmPackages } = await import(
-        "@agency-factory/core/agent/mcp-service"
+        "@fleet-factory/core/agent/mcp-service"
       );
 
       // Fetch real agents for SSH deploy (with template data for MCP resolution)

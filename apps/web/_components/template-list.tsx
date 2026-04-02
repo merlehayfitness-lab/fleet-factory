@@ -25,7 +25,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { deleteTemplateAction } from "@/_actions/template-actions";
-import { getModelFriendlyName } from "@agency-factory/core";
+import { getModelFriendlyName } from "@fleet-factory/core";
 
 interface Template {
   id: string;

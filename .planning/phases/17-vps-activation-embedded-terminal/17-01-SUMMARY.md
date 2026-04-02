@@ -45,7 +45,7 @@ key-decisions:
 patterns-established:
   - "EventEmitter deploy progress: deployEvents.emit(deployId, event) for WebSocket streaming"
   - "File-based deploy state: JSON files in /data/state/ for persistence across proxy restarts"
-  - "Container labels: agency-factory=true + tenant={slug} for dockerode filtering"
+  - "Container labels: fleet-factory=true + tenant={slug} for dockerode filtering"
 
 requirements-completed: [VPS-TERM-01, VPS-TERM-02, VPS-TERM-03, VPS-TERM-04, VPS-TERM-05]
 

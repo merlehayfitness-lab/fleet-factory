@@ -30,7 +30,7 @@ import {
 import { retryDeploymentAction, getDeploymentStatusAction } from "@/_actions/deployment-actions";
 import { DeploymentProgressStream } from "@/_components/deployment-progress-stream";
 import { DeploymentDiffViewer } from "@/_components/deployment-diff-viewer";
-import type { DeploymentStatus } from "@agency-factory/core";
+import type { DeploymentStatus } from "@fleet-factory/core";
 
 interface Deployment {
   id: string;

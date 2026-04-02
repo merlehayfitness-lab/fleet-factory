@@ -1,4 +1,4 @@
-# Requirements: Agency Factory
+# Requirements: Fleet Factory
 
 **Defined:** 2026-03-25
 **Core Value:** One-click tenant provisioning that creates an isolated business workspace with department agents, deployment pipeline, and a command center to manage it all.

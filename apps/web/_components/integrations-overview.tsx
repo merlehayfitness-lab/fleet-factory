@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { IntegrationConfigCard } from "@/_components/integration-config-card";
 import { CredentialSideDrawer } from "@/_components/credential-side-drawer";
-import type { IntegrationType } from "@agency-factory/core";
+import type { IntegrationType } from "@fleet-factory/core";
 
 interface Integration {
   id: string;

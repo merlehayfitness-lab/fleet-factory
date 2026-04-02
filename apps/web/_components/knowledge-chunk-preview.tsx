@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { getDocumentChunksAction } from "@/_actions/knowledge-actions";
-import type { KnowledgeChunk } from "@agency-factory/core";
+import type { KnowledgeChunk } from "@fleet-factory/core";
 
 interface KnowledgeChunkPreviewProps {
   documentId: string;

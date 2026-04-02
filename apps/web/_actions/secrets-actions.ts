@@ -14,7 +14,7 @@ import {
   deleteProviderSecrets,
   testConnection,
   decrypt,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 
 // ---------------------------------------------------------------------------
 // Legacy actions (backward compatible)

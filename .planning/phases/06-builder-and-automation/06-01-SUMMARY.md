@@ -130,7 +130,7 @@ Each task was committed atomically:
 
 **1. [Rule 3 - Blocking] Fixed circular dependency for deriveVpsAgentId import**
 - **Found during:** Task 2b (OpenClaw workspace generators)
-- **Issue:** Plan specified importing deriveVpsAgentId from @agency-factory/core, but core depends on runtime (circular). Direct relative path import also failed due to TypeScript rootDir constraint.
+- **Issue:** Plan specified importing deriveVpsAgentId from @fleet-factory/core, but core depends on runtime (circular). Direct relative path import also failed due to TypeScript rootDir constraint.
 - **Fix:** Duplicated the 3-line deriveVpsAgentId function locally in both openclaw-config.ts and openclaw-workspace.ts with comments pointing to the canonical implementation in packages/core/vps/vps-naming.ts.
 - **Files modified:** packages/runtime/generators/openclaw-config.ts, packages/runtime/generators/openclaw-workspace.ts
 - **Verification:** `pnpm turbo typecheck` passes with no errors

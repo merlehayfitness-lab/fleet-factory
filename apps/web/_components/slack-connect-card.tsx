@@ -12,7 +12,7 @@ import {
   disconnectSlackAction,
   saveSlackAppCredentialsAction,
 } from "@/_actions/slack-actions";
-import type { SlackConnectionStatus } from "@agency-factory/core";
+import type { SlackConnectionStatus } from "@fleet-factory/core";
 
 interface SlackConnectCardProps {
   businessId: string;

@@ -20,8 +20,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { getAdapter } from "@agency-factory/core";
-import type { IntegrationType } from "@agency-factory/core";
+import { getAdapter } from "@fleet-factory/core";
+import type { IntegrationType } from "@fleet-factory/core";
 import {
   saveIntegrationAction,
   deleteIntegrationAction,

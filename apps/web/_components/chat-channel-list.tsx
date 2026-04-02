@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { DepartmentChannel, SlackChannelMapping } from "@agency-factory/core";
+import type { DepartmentChannel, SlackChannelMapping } from "@fleet-factory/core";
 import type { LucideIcon } from "lucide-react";
 
 interface SlackChannelWithDept extends SlackChannelMapping {

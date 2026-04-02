@@ -16,7 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { generatePromptAction } from "@/_actions/prompt-generator-actions";
-import type { RoleDefinition, GenerationResult } from "@agency-factory/core";
+import type { RoleDefinition, GenerationResult } from "@fleet-factory/core";
 
 interface RoleDefinitionCardProps {
   agentId: string;

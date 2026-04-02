@@ -8,12 +8,12 @@ import {
   getComponentDetail,
   importFromAitmpl,
   getCatalogStats,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 import type {
   CatalogSearchResult,
   AitmplComponentType,
   AitmplImportResult,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 
 /**
  * Search the AITMPL catalog server-side and return lightweight results.
@@ -104,7 +104,7 @@ export async function getAitmplDetailAction(
 }
 
 /**
- * Import an AITMPL component into Agency Factory.
+ * Import an AITMPL component into Fleet Factory.
  * Routes by type: skill/command/setting/hook -> skill, agent -> system_prompt, mcp -> tool_profile merge.
  */
 export async function importAitmplAction(options: {

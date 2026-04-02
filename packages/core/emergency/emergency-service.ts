@@ -1,5 +1,5 @@
 /**
- * Emergency action service for Agency Factory.
+ * Emergency action service for Fleet Factory.
  *
  * Provides emergency operations (freeze, revoke tools, disable, restore)
  * with mandatory reason tracking and audit logging.

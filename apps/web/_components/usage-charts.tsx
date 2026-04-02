@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { UsageAnalytics } from "@agency-factory/core";
+import type { UsageAnalytics } from "@fleet-factory/core";
 
 // ---------------------------------------------------------------------------
 // Formatting helpers

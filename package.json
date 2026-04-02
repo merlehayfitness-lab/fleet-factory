@@ -1,5 +1,5 @@
 {
-  "name": "agency-factory",
+  "name": "fleet-factory",
   "private": true,
   "scripts": {
     "dev": "turbo dev",

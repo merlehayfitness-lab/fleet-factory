@@ -13,7 +13,7 @@ import {
   DEPARTMENT_DEFAULT_TOOL_PROFILES,
   EMPTY_TOOL_PROFILE,
   getDefaultModelForDepartment,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

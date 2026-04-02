@@ -7,7 +7,7 @@ import {
   isBotMessage,
   getSigningSecret,
   handleInboundSlackMessage,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 
 /**
  * POST handler for Slack Events API webhooks.

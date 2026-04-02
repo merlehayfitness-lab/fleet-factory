@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PromptDiffViewer } from "@/_components/prompt-diff-viewer";
 import { refinePromptAction } from "@/_actions/prompt-generator-actions";
-import type { PromptSections } from "@agency-factory/core";
+import type { PromptSections } from "@fleet-factory/core";
 
 interface RefinementMessage {
   role: "user" | "assistant";

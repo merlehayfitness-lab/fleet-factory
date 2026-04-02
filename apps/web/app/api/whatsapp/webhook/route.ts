@@ -8,7 +8,7 @@ import {
   parseWhatsAppCommand,
   getWhatsAppHelpMessage,
   sendWhatsAppMessage,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 
 /**
  * WhatsApp webhook handler.

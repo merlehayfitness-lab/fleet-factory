@@ -69,7 +69,7 @@ re_verification: false
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| `apps/web/_actions/secrets-actions.ts` | `packages/core/secrets/service.ts` | `import from "@agency-factory/core/server"` | WIRED | Line 16: `import { ..., getSecretsByProvider, revealSecret, saveProviderCredentials, deleteProviderSecrets, testConnection, decrypt } from "@agency-factory/core/server"` |
+| `apps/web/_actions/secrets-actions.ts` | `packages/core/secrets/service.ts` | `import from "@fleet-factory/core/server"` | WIRED | Line 16: `import { ..., getSecretsByProvider, revealSecret, saveProviderCredentials, deleteProviderSecrets, testConnection, decrypt } from "@fleet-factory/core/server"` |
 | `packages/core/secrets/service.ts` | `packages/core/crypto/encryption.ts` | `import { encrypt, decrypt }` | WIRED | Line 5: `import { encrypt, decrypt } from "../crypto/encryption"` — used in `saveSecret`, `saveProviderCredentials`, `decryptSecretsForDeployment`, `revealSecret` |
 | `apps/web/_components/settings-page.tsx` | `apps/web/_components/secrets-manager.tsx` | `<SecretsManager` | WIRED | Imported at line 16; rendered in section#secrets with `groupedSecrets`, `providerFields`, `businessId` props |
 | `apps/web/_components/provider-secrets-card.tsx` | `apps/web/_actions/secrets-actions.ts` | `revealSecretAction`, `testConnectionAction`, `deleteProviderSecretsAction`, `saveProviderCredentialsAction` | WIRED | All four imported at lines 37–42 and called in respective handlers |

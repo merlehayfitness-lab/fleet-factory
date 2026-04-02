@@ -8,15 +8,15 @@ import {
   generatePromptAndSkill,
   refinePrompt,
   sendTestMessage,
-} from "@agency-factory/core/server";
-import { updateAgentConfig } from "@agency-factory/core";
+} from "@fleet-factory/core/server";
+import { updateAgentConfig } from "@fleet-factory/core";
 import type {
   RoleDefinition,
   GenerationResult,
   PromptSections,
   RefinementResult,
   TestChatMessage,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 
 /**
  * Generate a system prompt and SKILL.md from a role definition.

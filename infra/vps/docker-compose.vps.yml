@@ -1,4 +1,4 @@
-# Agency Factory VPS Docker Compose
+# Fleet Factory VPS Docker Compose
 #
 # This is a REFERENCE SCAFFOLD for the VPS service architecture.
 # The actual OpenClaw gateway may run natively (not in Docker) depending
@@ -34,7 +34,7 @@ services:
     depends_on:
       - openclaw-gateway
     networks:
-      - agency-factory
+      - fleet-factory
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3100/healthz"]
       interval: 30s
@@ -63,7 +63,7 @@ services:
       - /data/tenants:/data/tenants
     restart: always
     networks:
-      - agency-factory
+      - fleet-factory
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:18790/healthz"]
       interval: 30s
@@ -76,5 +76,5 @@ volumes:
     driver: local
 
 networks:
-  agency-factory:
+  fleet-factory:
     driver: bridge

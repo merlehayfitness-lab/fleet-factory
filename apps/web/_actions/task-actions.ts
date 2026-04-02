@@ -4,10 +4,10 @@ import { createServerClient } from "@/_lib/supabase/server";
 import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { createTaskSchema } from "@agency-factory/core";
-import type { CreateTaskInput } from "@agency-factory/core";
-import type { TaskStatus } from "@agency-factory/core";
-import type { RiskLevel } from "@agency-factory/core";
+import { createTaskSchema } from "@fleet-factory/core";
+import type { CreateTaskInput } from "@fleet-factory/core";
+import type { TaskStatus } from "@fleet-factory/core";
+import type { RiskLevel } from "@fleet-factory/core";
 import {
   createTask,
   getTasksForBusiness,
@@ -16,7 +16,7 @@ import {
   respondToAssistanceRequest,
   executeTask,
   createApproval,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 
 /**
  * Create a new task and route it through the orchestrator.

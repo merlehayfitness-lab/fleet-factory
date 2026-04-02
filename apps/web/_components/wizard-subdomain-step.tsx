@@ -74,8 +74,8 @@ export function WizardSubdomainStep({
   }, [subdomain]);
 
   const fullDomain = subdomain
-    ? `${subdomain}.agencyfactory.ai`
-    : "your-business.agencyfactory.ai";
+    ? `${subdomain}.fleetfactory.ai`
+    : "your-business.fleetfactory.ai";
 
   return (
     <div className="space-y-4">
@@ -103,7 +103,7 @@ export function WizardSubdomainStep({
             className="rounded-r-none font-mono text-sm"
           />
           <span className="flex h-10 items-center rounded-r-md border border-l-0 bg-muted px-3 text-sm text-muted-foreground">
-            .agencyfactory.ai
+            .fleetfactory.ai
           </span>
         </div>
       </div>

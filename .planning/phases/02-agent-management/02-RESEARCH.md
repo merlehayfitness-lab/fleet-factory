@@ -238,7 +238,7 @@ function groupAgentsByDepartment(
 
 import { createServerClient } from "@/_lib/supabase/server";
 import { redirect } from "next/navigation";
-import { transitionAgentStatus } from "@agency-factory/core";
+import { transitionAgentStatus } from "@fleet-factory/core";
 import { revalidatePath } from "next/cache";
 
 export async function freezeAgent(agentId: string, businessId: string) {

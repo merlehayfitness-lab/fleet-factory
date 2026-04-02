@@ -78,7 +78,7 @@ human_verification:
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| `model-selector.tsx` | `packages/core/agent/model-constants.ts` | imports CLAUDE_MODELS, getModelById | WIRED | model-selector.tsx line 5-7: `import { CLAUDE_MODELS, getModelById } from "@agency-factory/core"` |
+| `model-selector.tsx` | `packages/core/agent/model-constants.ts` | imports CLAUDE_MODELS, getModelById | WIRED | model-selector.tsx line 5-7: `import { CLAUDE_MODELS, getModelById } from "@fleet-factory/core"` |
 | `tool-profile-form.tsx` | `packages/core/agent/tool-profile-schema.ts` | imports ToolProfileShape, KNOWN_MCP_SERVERS | WIRED | tool-profile-form.tsx lines 4-12: types and constants imported and used throughout |
 | `profile-editor-drawer.tsx` | `tool-profile-form.tsx` | drawer renders ToolProfileForm in form mode | WIRED | profile-editor-drawer.tsx lines 8, 155-159: ToolProfileForm imported and rendered |
 | `agent-config.tsx` | `agent-actions.ts` | model dropdown calls updateAgentConfigAction | WIRED | agent-config.tsx lines 12, 213, 275, 301: updateAgentConfigAction imported and called on model/tool changes |

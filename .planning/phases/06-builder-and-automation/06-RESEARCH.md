@@ -248,7 +248,7 @@ One-time manual setup on Hostinger VPS:
 4. Enable `/v1/chat/completions` endpoint
 5. Configure sandbox with `openclaw-sandbox-common` image
 6. Set up the thin API proxy server (Express app)
-7. Run a bootstrap prompt to teach Claude Code the Agency Factory system
+7. Run a bootstrap prompt to teach Claude Code the Fleet Factory system
 
 **Bootstrap prompt** teaches Claude Code:
 - The tenant workspace structure it will manage

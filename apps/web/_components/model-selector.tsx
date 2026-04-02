@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   CLAUDE_MODELS,
   getModelById,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 import {
   Select,
   SelectContent,

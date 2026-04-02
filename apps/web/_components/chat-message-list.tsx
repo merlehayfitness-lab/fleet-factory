@@ -5,7 +5,7 @@ import { MessageSquare, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ChatMessageBubble } from "./chat-message-bubble";
-import type { ChatMessage } from "@agency-factory/core";
+import type { ChatMessage } from "@fleet-factory/core";
 
 interface ChatMessageListProps {
   messages: ChatMessage[];

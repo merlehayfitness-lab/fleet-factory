@@ -160,7 +160,7 @@ Schema migrations 011 and 012 need to be applied to the Supabase database. Run t
 ## Next Phase Readiness
 - Agent lifecycle state machine and template CRUD are complete, ready for 02-02 (agents list and detail pages)
 - Sidebar nav has Agents link ready (route not yet created, will be built in 02-02)
-- All core service functions are exported from `@agency-factory/core` for use in upcoming pages
+- All core service functions are exported from `@fleet-factory/core` for use in upcoming pages
 
 ---
 *Phase: 02-agent-management*

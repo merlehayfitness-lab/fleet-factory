@@ -58,7 +58,7 @@ re_verification: false
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| `packages/core/integrations/catalog.ts` | `apps/web/_components/integration-catalog-dialog.tsx` | Dialog imports `INTEGRATION_CATALOG` via `getCatalogByCategory` | WIRED | `integration-catalog-dialog.tsx` line 22: `import { getCatalogByCategory, type CatalogEntry } from "@agency-factory/core"` |
+| `packages/core/integrations/catalog.ts` | `apps/web/_components/integration-catalog-dialog.tsx` | Dialog imports `INTEGRATION_CATALOG` via `getCatalogByCategory` | WIRED | `integration-catalog-dialog.tsx` line 22: `import { getCatalogByCategory, type CatalogEntry } from "@fleet-factory/core"` |
 | `apps/web/_components/integration-catalog-dialog.tsx` | `apps/web/_actions/integration-actions.ts` | Dialog calls `addCatalogIntegrationAction` on Step 2 submit | WIRED | Line 119: `await addCatalogIntegrationAction(businessId, selectedEntry.id, selectedDepartments, selectedAgents)` with result handling |
 | `packages/db/schema/038_integrations_department_scope.sql` | `packages/core/integrations/service.ts` | Service uses `department_id` column in queries | WIRED | `service.ts` lines 83, 142, 239: `department_id` used in select, filter, and insert operations |
 
@@ -67,7 +67,7 @@ re_verification: false
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
 | `packages/core/integrations/instructions-service.ts` | `packages/core/server.ts` | Exported as server-only streaming service | WIRED | `server.ts` line 186: `export { streamSetupInstructions } from "./integrations/instructions-service"` |
-| `apps/web/app/api/integrations/instructions/route.ts` | `packages/core/integrations/instructions-service.ts` | Route calls `streamSetupInstructions` and pipes into `ReadableStream` | WIRED | Route line 2: `import { streamSetupInstructions } from "@agency-factory/core/server"`; line 66: generator called inside `ReadableStream.start()` |
+| `apps/web/app/api/integrations/instructions/route.ts` | `packages/core/integrations/instructions-service.ts` | Route calls `streamSetupInstructions` and pipes into `ReadableStream` | WIRED | Route line 2: `import { streamSetupInstructions } from "@fleet-factory/core/server"`; line 66: generator called inside `ReadableStream.start()` |
 | `apps/web/_components/catalog-instructions-panel.tsx` | `apps/web/app/api/integrations/instructions/route.ts` | Panel fetches streaming endpoint via `fetch()` | WIRED | `catalog-instructions-panel.tsx` line 45: `fetch("/api/integrations/instructions", { method: "POST", ... })` |
 | `apps/web/_components/integration-catalog-dialog.tsx` | `apps/web/_components/catalog-instructions-panel.tsx` | Dialog Step 3 renders `CatalogInstructionsPanel` | WIRED | Line 24: `import { CatalogInstructionsPanel }` used at line 350 in Step 3 block |
 

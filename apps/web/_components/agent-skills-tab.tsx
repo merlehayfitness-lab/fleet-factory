@@ -13,7 +13,7 @@ import {
   getSkillsForAgentAction,
   listSkillsForBusinessAction,
 } from "@/_actions/skill-actions";
-import type { Skill, SkillWithAssignment } from "@agency-factory/core";
+import type { Skill, SkillWithAssignment } from "@fleet-factory/core";
 
 interface AgentSkillsTabProps {
   businessId: string;

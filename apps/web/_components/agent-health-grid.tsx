@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import { EmergencyControls } from "@/_components/emergency-controls";
-import type { DepartmentHealth, AgentHealthItem } from "@agency-factory/core/server";
+import type { DepartmentHealth, AgentHealthItem } from "@fleet-factory/core/server";
 
 interface AgentHealthGridProps {
   departments: DepartmentHealth[];

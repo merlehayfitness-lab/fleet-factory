@@ -1,11 +1,11 @@
 /**
  * Generates openclaw.json configuration for a multi-agent OpenClaw workspace.
  *
- * Produces a gateway-compatible config with:
- * - agents.list[] — all registered agents with workspace paths
+ * Produces a gateway-compatible config strictly matching OpenClaw's schema:
+ * - agents.list[] — registered agents (only valid fields: id, name, workspace, model, skills, tools)
  * - mcp.servers — MCP tool configs (filesystem per workspace, plus agent-specific)
- * - gateway.tools.allow — session tools for inter-agent comms + MCP
- * - gateway.http.endpoints — chat completions enabled
+ * - tools — global tool allow lists
+ * - gateway — port, auth, http endpoints
  *
  * Returns stringified JSON.
  */
@@ -54,32 +54,12 @@ interface AgentConfigInput {
   roleLevel?: number;
 }
 
-interface SandboxConfig {
-  image?: string;
-  memory?: string;
-  cpus?: string;
-  networkAccess?: boolean;
-}
-
-const DEFAULT_SANDBOX: SandboxConfig = {
-  image: "openclaw-sandbox-common:latest",
-  memory: "512m",
-  cpus: "0.5",
-  networkAccess: true,
-};
-
-/** Tenant data directory on VPS */
-const TENANT_DATA_DIR = "/data/tenants";
-
 export function generateOpenClawConfig(
   businessSlug: string,
   agents: AgentConfigInput[],
-  sandboxConfig?: SandboxConfig,
+  _sandboxConfig?: unknown,
   businessMcpServers?: McpServerEntry[],
 ): string {
-  const sandbox = { ...DEFAULT_SANDBOX, ...sandboxConfig };
-  const tenantDir = `${TENANT_DATA_DIR}/${businessSlug}`;
-
   // Build per-agent config and collect MCP servers
   const globalMcpServers: Record<string, Record<string, unknown>> = {};
 
@@ -107,7 +87,8 @@ export function generateOpenClawConfig(
     const model =
       (agent.modelProfile as { model?: string }).model || "claude-sonnet-4-6";
 
-    const workspacePath = `${tenantDir}/workspace-${vpsAgentId}`;
+    // Inside the container, workspace is mounted at /workspace
+    const workspacePath = "/workspace";
 
     // Add filesystem MCP server scoped to this agent's workspace
     globalMcpServers[`filesystem-${vpsAgentId}`] = {
@@ -132,82 +113,53 @@ export function generateOpenClawConfig(
       }
     }
 
-    return {
+    // Only emit fields that OpenClaw's schema accepts for agents.list items:
+    // id, name, workspace, model, skills (string[]), tools
+    const entry: Record<string, unknown> = {
       id: vpsAgentId,
       name: agent.name,
-      department: agent.departmentType,
       workspace: workspacePath,
       model: `anthropic/${model}`,
-      sandbox: {
-        image: sandbox.image,
-        memory: sandbox.memory,
-        cpus: sandbox.cpus,
-        network_access: sandbox.networkAccess,
-      },
-      mcpServers: agentMcpServerNames,
-      ...(agent.skillsPackage?.length ? { skills: agent.skillsPackage } : {}),
-      ...(agent.tokenBudget ? { tokenBudget: agent.tokenBudget } : {}),
-      ...(agent.reportingChain ? { reportingChain: agent.reportingChain } : {}),
-      ...(agent.roleLevel !== undefined ? { roleLevel: agent.roleLevel } : {}),
     };
+
+    // Skills must be string[], not object[]
+    if (agent.skillsPackage?.length) {
+      entry.skills = agent.skillsPackage.map((s) => s.name);
+    }
+
+    // Per-agent tool config: allow MCP tools
+    entry.tools = {
+      profile: "full" as const,
+      alsoAllow: agentMcpServerNames.map((n) => `mcp:${n}`),
+    };
+
+    return entry;
   });
 
-  // Build allow list for inter-agent messaging (all agents within this business)
-  const allAgentIds = agentList.map((a) => a.id);
-
   const config = {
-    version: "1.0",
-    business: {
-      slug: businessSlug,
-    },
     agents: {
-      list: agentList,
-      communication: {
-        enabled: true,
-        scope: "business",
-        protocol: "internal-message",
+      defaults: {
+        model: "anthropic/claude-sonnet-4-6",
       },
+      list: agentList,
     },
-    // MCP servers available to agents (gateway-level config)
     mcp: {
       servers: globalMcpServers,
     },
-    // Gateway configuration
+    tools: {
+      profile: "full" as const,
+      alsoAllow: ["mcp_*"],
+    },
     gateway: {
+      port: 18789,
+      mode: "local" as const,
+      bind: "custom" as const,
+      customBindHost: "0.0.0.0",
+      auth: { mode: "password" as const },
       http: {
         endpoints: {
           chatCompletions: { enabled: true },
         },
-      },
-      tools: {
-        allow: [
-          "sessions_send",
-          "sessions_list",
-          "sessions_history",
-          "sessions_spawn",
-          "mcp_*",
-        ],
-      },
-    },
-    tools: {
-      agentToAgent: {
-        enabled: true,
-        allow: allAgentIds,
-        capabilities: [
-          "sessions_send",
-          "sessions_list",
-          "sessions_history",
-          "sessions_spawn",
-        ],
-      },
-    },
-    runtime: {
-      engine: "openclaw",
-      sandbox: {
-        default_image: sandbox.image,
-        default_memory: sandbox.memory,
-        default_cpus: sandbox.cpus,
-        network_access: sandbox.networkAccess,
       },
     },
   };

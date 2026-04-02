@@ -99,7 +99,7 @@ human_verification:
 | `(dashboard)/layout.tsx` | `_lib/supabase/server.ts` | `getUser()` auth check | WIRED | `createServerClient()` + `supabase.auth.getUser()` present |
 | `sign-in/page.tsx` | `@supabase/ssr` (via client.ts) | `signInWithPassword` | WIRED | `createBrowserClient()` called; `supabase.auth.signInWithPassword({email, password})` executed |
 | `business-actions.ts` | `010_provision_rpc.sql` | `supabase.rpc('provision_business_tenant')` | WIRED | `provision.ts` calls `supabase.rpc("provision_business_tenant", {...})` |
-| `business-actions.ts` | `packages/core/tenant/schema.ts` | imports `createBusinessSchema` | WIRED | Line 6: `import { createBusinessSchema, provisionBusinessTenant } from "@agency-factory/core"` |
+| `business-actions.ts` | `packages/core/tenant/schema.ts` | imports `createBusinessSchema` | WIRED | Line 6: `import { createBusinessSchema, provisionBusinessTenant } from "@fleet-factory/core"` |
 | `create-business-wizard.tsx` | `business-actions.ts` | calls `createBusiness` on submit | WIRED | Line 10: `import { createBusiness } from "@/_actions/business-actions"`; line 131: `await createBusiness(formData)` |
 | `businesses/page.tsx` | `_lib/supabase/server.ts` | Server Component fetches via RLS-scoped query | WIRED | `supabase.from("businesses").select("*, business_users!inner(role)")` |
 | `businesses/[id]/page.tsx` | `_lib/supabase/server.ts` | Fetches business details, agent/department counts, latest deployment | WIRED | 4 separate Supabase queries covering `businesses`, `agents`, `departments`, `deployments` |

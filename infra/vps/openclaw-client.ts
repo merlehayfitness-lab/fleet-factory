@@ -13,7 +13,7 @@ import { getPort, loadPortRegistry, getAllPorts } from "./port-registry.js";
 // Load port registry on module init
 loadPortRegistry();
 
-const AUTH_TOKEN = process.env.OPENCLAW_AUTH_TOKEN || "";
+const AUTH_TOKEN = process.env.OPENCLAW_AUTH_TOKEN || process.env.OPENCLAW_GATEWAY_PASSWORD || "fleetfactory2026";
 const DEFAULT_MODEL = process.env.OPENCLAW_MODEL || "openclaw/default";
 const OPENCLAW_SCOPES = process.env.OPENCLAW_SCOPES || "operator.write";
 
@@ -270,6 +270,7 @@ export async function checkAgentContainerHealth(vpsAgentId: string): Promise<{
     const timeout = setTimeout(() => controller.abort(), 3000);
     const res = await fetch(`http://127.0.0.1:${port}/healthz`, {
       signal: controller.signal,
+      headers: AUTH_TOKEN ? { "Authorization": `Bearer ${AUTH_TOKEN}` } : {},
     });
     clearTimeout(timeout);
 

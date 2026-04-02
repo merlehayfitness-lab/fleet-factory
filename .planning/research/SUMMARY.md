@@ -1,13 +1,13 @@
 # Project Research Summary
 
-**Project:** Agency Factory
+**Project:** Fleet Factory
 **Domain:** Multi-tenant AI agent deployment and management platform (SaaS)
 **Researched:** 2026-03-25
 **Confidence:** HIGH
 
 ## Executive Summary
 
-Agency Factory is a multi-tenant SaaS platform that provisions and manages AI agent teams for small and medium businesses. Research across stack, features, architecture, and pitfalls confirms the product operates at the intersection of three hard technical domains simultaneously: multi-tenant SaaS isolation, AI agent orchestration, and container-based deployment pipelines. Building any one of these correctly requires care; building all three in a coherent, integrated system is the primary engineering challenge. The good news is that the planned technology choices (Supabase for RLS-enforced isolation, AI SDK 6 for orchestration, Docker Compose for deployment) are well-matched to the problem and benefit from documented patterns with high source confidence.
+Fleet Factory is a multi-tenant SaaS platform that provisions and manages AI agent teams for small and medium businesses. Research across stack, features, architecture, and pitfalls confirms the product operates at the intersection of three hard technical domains simultaneously: multi-tenant SaaS isolation, AI agent orchestration, and container-based deployment pipelines. Building any one of these correctly requires care; building all three in a coherent, integrated system is the primary engineering challenge. The good news is that the planned technology choices (Supabase for RLS-enforced isolation, AI SDK 6 for orchestration, Docker Compose for deployment) are well-matched to the problem and benefit from documented patterns with high source confidence.
 
 The recommended approach is a layered build order driven by strict data dependencies: database schema and RLS policies first, then admin UI and tenant provisioning, then agent management, then deployment pipeline, then live agent operations (orchestrator and worker runtime), and finally the intelligence layer (builder agent and command center). This sequence is not arbitrary -- each layer is a prerequisite for the next and the research confirms that violating this order creates rework that is expensive to undo. The atomic tenant provisioning flow (a single Postgres RPC that creates business, membership, departments, agents, and queues a deployment job) is both the core user value proposition and the single most critical piece of infrastructure to get right.
 
@@ -33,7 +33,7 @@ The key version constraints are: Next.js 15.5.x (NOT 16 -- breaking changes not 
 
 ### Expected Features
 
-Research confirms the market expectation and the competitive gap: no competitor delivers one-click full-stack tenant provisioning (business + departments + agents + deployment artifacts) as a core product feature. This is Agency Factory's genuine whitespace. Competitors like Kore.ai and Composio require significant manual configuration; Mission Control (closest architectural comparison) is developer-facing, not business-owner-facing.
+Research confirms the market expectation and the competitive gap: no competitor delivers one-click full-stack tenant provisioning (business + departments + agents + deployment artifacts) as a core product feature. This is Fleet Factory's genuine whitespace. Competitors like Kore.ai and Composio require significant manual configuration; Mission Control (closest architectural comparison) is developer-facing, not business-owner-facing.
 
 **Must have (table stakes) -- v1:**
 - **Tenant isolation via RLS** -- non-negotiable; data leakage destroys trust and the platform immediately

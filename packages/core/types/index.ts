@@ -1,4 +1,4 @@
-// Domain types for Agency Factory
+// Domain types for Fleet Factory
 // These represent the core status and role enumerations used across the platform.
 
 /** Business lifecycle status */

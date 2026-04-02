@@ -73,7 +73,7 @@ All 5 commits from 11-03 are present in git: `9db0b94`, `de3d2d8`, `2ccbc88`, `d
 | `apps/web/_components/agent-tree-sidebar.tsx` | Updated to accept OrgChartNode; shows agent details and lifecycle controls | VERIFIED | 251 lines; accepts `OrgChartNode`; status/role/model/skills for lead+sub-agent; Freeze/Pause/Resume based on status; Edit button; Escape key close |
 | `apps/web/app/(dashboard)/businesses/[id]/agents/page.tsx` | Fetches business name, passes businessName to AgentTreeView | VERIFIED | Lines 30-34: business name query; line 135: `businessName={(business?.name as string) ?? "Organization"}` |
 | `packages/core/agent/service.ts` | `reparentAgent` with circular ref validation, same-business, atomic update | VERIFIED | Lines 331-424: full implementation with `wouldCreateCycle`, self-reference check, same-business constraint, atomic update, child migration, audit log |
-| `apps/web/_actions/agent-actions.ts` | `reparentAgentAction` server action calling reparentAgent | VERIFIED | Lines 250-281: auth check, dynamic import from `@agency-factory/core/server`, calls `reparentAgent`, revalidates path |
+| `apps/web/_actions/agent-actions.ts` | `reparentAgentAction` server action calling reparentAgent | VERIFIED | Lines 250-281: auth check, dynamic import from `@fleet-factory/core/server`, calls `reparentAgent`, revalidates path |
 | `apps/web/app/(dashboard)/businesses/[id]/agents/new/page.tsx` | Reads `departmentId` and `parentAgentId` from search params | VERIFIED | Lines 19-22: `searchParams` prop with both params; destructured and passed to wizard |
 | `apps/web/_components/agent-setup-wizard.tsx` | Accepts `initialDepartmentId` and `initialParentAgentId` props | VERIFIED | Lines 54-55 (props), 70-71 (destructure), 80-82 (useState initialized from props) |
 | `apps/web/package.json` | `@dnd-kit/core` installed | VERIFIED | Line 14: `"@dnd-kit/core": "^6.3.1"` |
@@ -94,7 +94,7 @@ All 5 commits from 11-03 are present in git: `9db0b94`, `de3d2d8`, `2ccbc88`, `d
 | `agent-tree-view.tsx` | `agent-tree-lines.tsx` | `AgentTreeLines` receives `connectionGroups` computed from tree | WIRED | Line 18 import; lines 636-640: `<AgentTreeLines ... connectionGroups={connectionGroups} ...>` |
 | `agents/page.tsx` | `agent-tree-view.tsx` | `AgentTreeView` renders with businessName, departments, agents | WIRED | Line 3 import; lines 112-136: renders with all four required props |
 | `agents/new/page.tsx` | `agent-setup-wizard.tsx` | `initialDepartmentId`/`initialParentAgentId` passed from search params | WIRED | Lines 85-86: both props passed from destructured `searchParams` |
-| `agent-actions.ts` | `packages/core/agent/service.ts` | `reparentAgentAction` calls `reparentAgent` via dynamic import | WIRED | Lines 266-273: dynamic import from `@agency-factory/core/server` then `reparentAgent(supabase, ...)` |
+| `agent-actions.ts` | `packages/core/agent/service.ts` | `reparentAgentAction` calls `reparentAgent` via dynamic import | WIRED | Lines 266-273: dynamic import from `@fleet-factory/core/server` then `reparentAgent(supabase, ...)` |
 
 ---
 

@@ -36,7 +36,7 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import type { KnowledgeDocument } from "@agency-factory/core";
+import type { KnowledgeDocument } from "@fleet-factory/core";
 import {
   listDocumentsAction,
   deleteDocumentAction,

@@ -4,7 +4,7 @@ import { createServerClient } from "@/_lib/supabase/server";
 import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { getCatalogEntry, bulkCreateIntegrations } from "@agency-factory/core";
+import { getCatalogEntry, bulkCreateIntegrations } from "@fleet-factory/core";
 
 /**
  * Save (persist) AI-generated setup instructions for an integration.

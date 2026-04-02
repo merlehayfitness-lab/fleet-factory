@@ -1,12 +1,12 @@
-// @agency-factory/core/server
+// @fleet-factory/core/server
 // Server-only exports that depend on Node.js APIs (crypto, runtime generators).
-// Import from "@agency-factory/core/server" in Server Components and Server Actions.
+// Import from "@fleet-factory/core/server" in Server Components and Server Actions.
 // Do NOT import from this file in Client Components.
 
 // Crypto (uses node:crypto)
 export { encrypt, decrypt } from "./crypto/encryption";
 
-// Deployment service (imports from @agency-factory/runtime, uses crypto indirectly)
+// Deployment service (imports from @fleet-factory/runtime, uses crypto indirectly)
 export {
   triggerDeployment,
   retryDeployment,
@@ -144,7 +144,7 @@ export {
 } from "./vps/vps-deploy";
 
 // SSH client + deploy — NOT barrel-exported (native node-ssh/ssh2 binary breaks webpack).
-// Use dynamic import: const { isSshConfigured } = await import("@agency-factory/core/vps/ssh-client");
+// Use dynamic import: const { isSshConfigured } = await import("@fleet-factory/core/vps/ssh-client");
 // Types re-exported for convenience (types are erased at runtime, no native dep issue).
 export type { SshConfig, SshCommandResult, SshProgressCallback } from "./vps/ssh-client";
 export type { SshDeployOptions, SshDeployAgent, SshDeployResult } from "./vps/ssh-deploy";
@@ -386,4 +386,4 @@ export type {
 } from "./whatsapp/whatsapp-types";
 
 // OpenClaw workspace generator (re-exported for server-only use in web app)
-export { generateOpenClawWorkspace } from "@agency-factory/runtime";
+export { generateOpenClawWorkspace } from "@fleet-factory/runtime";

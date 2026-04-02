@@ -1,5 +1,5 @@
 /**
- * Import service: converts AITMPL components into Agency Factory entities.
+ * Import service: converts AITMPL components into Fleet Factory entities.
  *
  * - skill/command/setting/hook -> skills table
  * - agent -> agent system_prompt (or fallback to skill)
@@ -18,7 +18,7 @@ import type { ToolProfileShape } from "../agent/tool-profile-schema";
 import { createSkill, assignSkill } from "../skill/skill-service";
 
 /**
- * Import an AITMPL component into Agency Factory.
+ * Import an AITMPL component into Fleet Factory.
  *
  * Routes by component type:
  * - skill/command/setting/hook -> create a skill

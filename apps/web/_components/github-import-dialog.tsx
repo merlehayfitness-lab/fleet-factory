@@ -17,7 +17,7 @@ import {
   previewGitHubUrlAction,
   importFromGitHubAction,
 } from "@/_actions/skill-actions";
-import type { GitHubImportResult } from "@agency-factory/core";
+import type { GitHubImportResult } from "@fleet-factory/core";
 
 interface GitHubImportDialogProps {
   businessId: string;

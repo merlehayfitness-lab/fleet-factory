@@ -40,7 +40,7 @@ import {
   deleteProviderSecretsAction,
   saveProviderCredentialsAction,
 } from "@/_actions/secrets-actions";
-import { INTEGRATION_CATALOG } from "@agency-factory/core";
+import { INTEGRATION_CATALOG } from "@fleet-factory/core";
 import { toast } from "sonner";
 
 interface CredentialField {

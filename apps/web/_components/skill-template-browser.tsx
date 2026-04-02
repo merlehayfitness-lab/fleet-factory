@@ -25,7 +25,7 @@ import {
   assignSkillAction,
 } from "@/_actions/skill-actions";
 import { AitmplCatalogBrowser } from "@/_components/aitmpl-catalog-browser";
-import type { SkillTemplate } from "@agency-factory/core";
+import type { SkillTemplate } from "@fleet-factory/core";
 
 interface SkillTemplateBrowserProps {
   businessId: string;

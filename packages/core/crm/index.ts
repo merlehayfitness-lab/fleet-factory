@@ -1,5 +1,5 @@
 // CRM module re-exports.
-// Import from "@agency-factory/core/server" in Server Components and Server Actions.
+// Import from "@fleet-factory/core/server" in Server Components and Server Actions.
 
 export type {
   CrmContact,

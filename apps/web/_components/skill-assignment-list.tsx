@@ -13,7 +13,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { assignSkillAction, unassignSkillAction } from "@/_actions/skill-actions";
-import type { Skill, SkillWithAssignment } from "@agency-factory/core";
+import type { Skill, SkillWithAssignment } from "@fleet-factory/core";
 
 interface SkillAssignmentListProps {
   businessId: string;

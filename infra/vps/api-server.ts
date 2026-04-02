@@ -1,5 +1,5 @@
 /**
- * Agency Factory VPS API Proxy Server.
+ * Fleet Factory VPS API Proxy Server.
  *
  * Express server that receives deployment packages, chat messages,
  * task requests, and health checks from the admin app (Vercel).
@@ -365,7 +365,7 @@ function handleTerminalWebSocket(ws: WebSocket, businessSlug: string): void {
 // ---------------------------------------------------------------------------
 
 server.listen(PORT, () => {
-  console.log(`Agency Factory VPS Proxy listening on port ${PORT}`);
+  console.log(`Fleet Factory VPS Proxy listening on port ${PORT}`);
   console.log(`  API routes: http://0.0.0.0:${PORT}/api/*`);
   console.log(`  WebSocket:  ws://0.0.0.0:${PORT}/ws/*`);
   console.log(`  Health:     http://0.0.0.0:${PORT}/healthz`);

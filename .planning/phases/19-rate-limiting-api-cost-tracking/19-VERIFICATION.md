@@ -88,7 +88,7 @@ human_verification:
 | `usage/page.tsx` | `dashboard-service.ts` | `getUsageAnalytics` | WIRED | Line 2: import; line 30: called with businessId and period |
 | `sidebar-nav.tsx` | `/businesses/[id]/usage` | nav link | WIRED | Lines 112-115: href set to `/businesses/${businessId}/usage` |
 | `chat-service.ts` | `slack-messages.ts` | `sendBudgetWarningDM` | WIRED | Line 783: dynamic import, line 784: called with utilization data |
-| `agents/[agentId]/page.tsx` | `budget-service.ts` | `checkBudget` | WIRED | Line 5: import from `@agency-factory/core/server`; line 142: called |
+| `agents/[agentId]/page.tsx` | `budget-service.ts` | `checkBudget` | WIRED | Line 5: import from `@fleet-factory/core/server`; line 142: called |
 | `businesses/[id]/page.tsx` | `budget-service.ts` | `checkBudget` | WIRED | Line 5: import; line 145: called for business-level check |
 | `tool-runner.ts` | `rate-limit/rate-limiter.ts` | `logApiUsage` | WIRED | Line 14: import; line 274: called after task execution |
 

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   createBusinessSchema,
   type CreateBusinessInput,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 import { createBusinessV2, validateApiKey } from "@/_actions/business-actions";
 
 import { Button } from "@/components/ui/button";
@@ -674,7 +674,7 @@ export function CreateBusinessWizard() {
                   </Button>
                 </div>
                 <p className="text-sm font-mono">
-                  {subdomain ? `${subdomain}.agencyfactory.ai` : "-"}
+                  {subdomain ? `${subdomain}.fleetfactory.ai` : "-"}
                 </p>
               </div>
 

@@ -85,7 +85,7 @@ re_verification: false
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
-| `apps/web/app/api/slack/events/route.ts` | `packages/core/slack/slack-events.ts` | import verifySlackSignature from @agency-factory/core | WIRED | Imports verifySlackSignature, parseSlackEvent, isMessageEvent, isBotMessage, getSigningSecret |
+| `apps/web/app/api/slack/events/route.ts` | `packages/core/slack/slack-events.ts` | import verifySlackSignature from @fleet-factory/core | WIRED | Imports verifySlackSignature, parseSlackEvent, isMessageEvent, isBotMessage, getSigningSecret |
 | `packages/core/slack/slack-messages.ts` | `packages/core/chat/chat-service.ts` | import routeAndRespond for agent routing | WIRED | Line 10: import { getOrCreateConversation, routeAndRespond } from "../chat/chat-service" |
 | `packages/core/slack/slack-client.ts` | `packages/core/crypto/encryption.ts` | import decrypt for bot token retrieval | WIRED | Line 6: import { decrypt } from "../crypto/encryption" |
 | `packages/core/slack/slack-oauth.ts` | `packages/core/secrets/service.ts` | import saveProviderCredentials for storing bot token | WIRED | Line 7: import { saveProviderCredentials, deleteProviderSecrets } from "../secrets/service" |

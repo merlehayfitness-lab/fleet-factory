@@ -11,8 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { RoleDefinition, RoleTemplate } from "@agency-factory/core";
-import { getRoleTemplatesForDepartment } from "@agency-factory/core";
+import type { RoleDefinition, RoleTemplate } from "@fleet-factory/core";
+import { getRoleTemplatesForDepartment } from "@fleet-factory/core";
 
 const TONE_OPTIONS = [
   { value: "professional", label: "Professional" },

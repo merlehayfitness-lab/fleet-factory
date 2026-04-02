@@ -25,8 +25,8 @@ import type {
   GenerationResult,
   PromptSections,
   ToolProfileShape,
-} from "@agency-factory/core";
-import { getModelFriendlyName, EMPTY_TOOL_PROFILE } from "@agency-factory/core";
+} from "@fleet-factory/core";
+import { getModelFriendlyName, EMPTY_TOOL_PROFILE } from "@fleet-factory/core";
 
 interface Template {
   id: string;

@@ -1,6 +1,6 @@
 # Pitfalls Research
 
-**Domain:** Multi-tenant AI agent deployment platform (Agency Factory)
+**Domain:** Multi-tenant AI agent deployment platform (Fleet Factory)
 **Researched:** 2026-03-25
 **Confidence:** HIGH (corroborated across OWASP, AWS, Microsoft, multiple post-mortems, and Supabase official docs)
 
@@ -334,5 +334,5 @@ How roadmap phases should address these pitfalls.
 - [FusionAuth: Multi-Tenant Auth Pitfalls](https://fusionauth.io/blog/multi-tenant-hijack-2) -- MEDIUM confidence
 
 ---
-*Pitfalls research for: Multi-tenant AI agent deployment platform (Agency Factory)*
+*Pitfalls research for: Multi-tenant AI agent deployment platform (Fleet Factory)*
 *Researched: 2026-03-25*

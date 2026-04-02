@@ -8,7 +8,7 @@ import {
   generateEnvFile,
   generateAllAgentConfigs,
   generateOpenClawWorkspace,
-} from "@agency-factory/runtime";
+} from "@fleet-factory/runtime";
 import { isVpsConfigured, getVpsConfigForBusiness } from "../vps/vps-config";
 import { deriveVpsAgentId } from "../vps/vps-naming";
 import { pushDeploymentToVps, pushRollbackToVps, runPostDeployHealthCheck } from "../vps/vps-deploy";

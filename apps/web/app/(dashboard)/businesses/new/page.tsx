@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CreateBusinessWizard } from "@/_components/create-business-wizard";
 
 export const metadata = {
-  title: "Create a New Business | Agency Factory",
+  title: "Create a New Business | Fleet Factory",
 };
 
 /**

@@ -12,8 +12,8 @@ import {
   pushAgentToVps,
   isVpsConfigured,
   generateOpenClawWorkspace,
-} from "@agency-factory/core/server";
-import { deriveVpsAgentId } from "@agency-factory/core";
+} from "@fleet-factory/core/server";
+import { deriveVpsAgentId } from "@fleet-factory/core";
 
 /**
  * Trigger a new deployment for a business.

@@ -365,7 +365,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CLAUDE_MODELS, getModelById } from "@agency-factory/core";
+import { CLAUDE_MODELS, getModelById } from "@fleet-factory/core";
 
 interface ModelSelectorProps {
   value: string;          // Current model ID

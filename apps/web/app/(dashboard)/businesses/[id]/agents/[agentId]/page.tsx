@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, XCircle } from "lucide-react";
 import { createServerClient } from "@/_lib/supabase/server";
-import { checkBudget } from "@agency-factory/core/server";
+import { checkBudget } from "@fleet-factory/core/server";
 import { StatusBadge } from "@/_components/status-badge";
 import { AgentDetailTabs } from "@/_components/agent-detail-tabs";
 

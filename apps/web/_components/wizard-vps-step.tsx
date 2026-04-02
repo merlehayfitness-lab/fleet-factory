@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import type { CatalogSearchResult } from "@fleet-factory/core";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -59,6 +61,10 @@ const AVAILABLE_MCPS: McpConfigEntry[] = [
   { name: "helpdesk", enabled: false, isUniversal: false, description: "Helpdesk / ticket system" },
   { name: "knowledge-base", enabled: false, isUniversal: false, description: "Knowledge base search" },
   { name: "docs", enabled: false, isUniversal: false, description: "Document generation" },
+  { name: "sequential-thinking", enabled: false, isUniversal: false, description: "Structured reasoning" },
+  { name: "github", enabled: false, isUniversal: false, description: "GitHub repos, issues, PRs" },
+  { name: "puppeteer", enabled: false, isUniversal: false, description: "Browser automation" },
+  { name: "postgres", enabled: false, isUniversal: false, description: "PostgreSQL queries" },
 ];
 
 export function getDefaultMcpConfig(): McpConfigEntry[] {
@@ -88,6 +94,9 @@ export function WizardVpsStep({
   const [mcpExpanded, setMcpExpanded] = useState(false);
   const [customName, setCustomName] = useState("");
   const [customPackage, setCustomPackage] = useState("");
+  const [catalogOpen, setCatalogOpen] = useState(false);
+  const [catalogResults, setCatalogResults] = useState<CatalogSearchResult[] | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
 
   function update(field: keyof VpsConfigInput, value: string) {
     onVpsConfigChange({ ...vpsConfig, [field]: value });
@@ -124,6 +133,42 @@ export function WizardVpsStep({
 
   function removeCustomMcp(name: string) {
     onMcpConfigChange(mcpConfig.filter((m) => m.name !== name));
+  }
+
+  async function browseCatalog() {
+    if (catalogResults) {
+      setCatalogOpen((v) => !v);
+      return;
+    }
+    setCatalogOpen(true);
+    setCatalogLoading(true);
+    try {
+      const { searchAitmplAction } = await import("@/_actions/aitmpl-actions");
+      const res = await searchAitmplAction("", { type: "mcp", limit: 30, sort: "downloads" });
+      if ("error" in res) {
+        setCatalogResults([]);
+      } else {
+        setCatalogResults(res.results);
+      }
+    } catch {
+      setCatalogResults([]);
+    } finally {
+      setCatalogLoading(false);
+    }
+  }
+
+  function addFromCatalog(item: CatalogSearchResult) {
+    if (mcpConfig.some((m) => m.name === item.name)) return;
+    onMcpConfigChange([
+      ...mcpConfig,
+      {
+        name: item.name,
+        enabled: true,
+        isUniversal: false,
+        isCustom: false,
+        description: item.description,
+      },
+    ]);
   }
 
   async function testConnection() {
@@ -392,6 +437,75 @@ export function WizardVpsStep({
                   Add
                 </Button>
               </div>
+            </div>
+
+            {/* AITMPL Catalog Browser */}
+            <div>
+              <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                AITMPL Catalog
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={browseCatalog}
+                disabled={catalogLoading}
+              >
+                {catalogLoading && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+                {catalogOpen && catalogResults ? "Hide" : "Browse"} AITMPL MCPs
+              </Button>
+
+              {catalogOpen && (
+                <div className="mt-2 max-h-56 overflow-y-auto rounded-md border p-2">
+                  {catalogLoading && (
+                    <p className="py-4 text-center text-xs text-muted-foreground">Loading catalog...</p>
+                  )}
+                  {!catalogLoading && catalogResults && catalogResults.length === 0 && (
+                    <p className="py-4 text-center text-xs text-muted-foreground">No MCP servers found in catalog.</p>
+                  )}
+                  {!catalogLoading && catalogResults && catalogResults.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {catalogResults.map((item) => {
+                        const isAdded = mcpConfig.some((m) => m.name === item.name);
+                        return (
+                          <div
+                            key={item.path}
+                            className="flex items-start justify-between rounded-md border p-2"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-xs font-medium">{item.name}</p>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {item.description}
+                              </p>
+                              {item.downloads > 0 && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  {item.downloads.toLocaleString()} downloads
+                                </span>
+                              )}
+                            </div>
+                            {isAdded ? (
+                              <Badge variant="secondary" className="ml-2 shrink-0 text-[10px]">
+                                Added
+                              </Badge>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="ml-2 h-6 shrink-0 px-2 text-[10px]"
+                                onClick={() => addFromCatalog(item)}
+                              >
+                                + Add
+                              </Button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}

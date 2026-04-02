@@ -91,7 +91,7 @@ re_verification: false
 | `packages/core/agent/template-service.ts` | `packages/core/agent/template-schema.ts` | validates input with Zod schemas | WIRED | Line 2-3: imports both schemas; `createTemplateSchema.safeParse()` and `updateTemplateSchema.safeParse()` called before insert/update |
 | `apps/web/app/(dashboard)/businesses/[id]/agents/page.tsx` | `apps/web/_lib/supabase/server.ts` | Server Component fetches agents with departments+templates via RLS | WIRED | Line 18: `await createServerClient()`; line 27-31: `.from('agents').select('*, departments(...), agent_templates(...)')` |
 | `apps/web/_components/agent-overview.tsx` | `apps/web/_actions/agent-actions.ts` | lifecycle buttons call Server Actions | WIRED | Lines 11: imports pauseAgent, resumeAgent; FreezeDialog/RetireDialog import freezeAgent/retireAgent |
-| `apps/web/_components/agent-card.tsx` | `packages/core/agent/lifecycle.ts` | imports getValidTransitions to filter kebab menu actions | WIRED | Line 28: `import { getValidTransitions } from "@agency-factory/core"`; line 55: called with agent.status |
+| `apps/web/_components/agent-card.tsx` | `packages/core/agent/lifecycle.ts` | imports getValidTransitions to filter kebab menu actions | WIRED | Line 28: `import { getValidTransitions } from "@fleet-factory/core"`; line 55: called with agent.status |
 | `apps/web/_components/agent-config.tsx` | `apps/web/_actions/agent-actions.ts` | inline config edit saves via updateAgentConfigAction | WIRED | Line 10: imports updateAgentConfigAction; line 65: called in handleSave |
 
 ---

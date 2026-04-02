@@ -26,7 +26,7 @@ import {
   assignSkillAction,
   unassignSkillAction,
 } from "@/_actions/skill-actions";
-import type { Skill } from "@agency-factory/core";
+import type { Skill } from "@fleet-factory/core";
 
 interface DepartmentSkillsPanelProps {
   businessId: string;

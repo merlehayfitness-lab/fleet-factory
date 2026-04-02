@@ -21,7 +21,7 @@ expected: CEO checkbox is always checked and disabled (cannot deselect). Uncheck
 result: pass
 
 ### 3. Subdomain step validation and availability check
-expected: On subdomain step, type an invalid slug like "-bad-" and see a format error. Type a valid slug and after ~500ms debounce, see a green checkmark (available) or red X (taken). Preview shows "yourslug.agencyfactory.ai".
+expected: On subdomain step, type an invalid slug like "-bad-" and see a format error. Type a valid slug and after ~500ms debounce, see a green checkmark (available) or red X (taken). Preview shows "yourslug.fleetfactory.ai".
 result: pass
 
 ### 4. API key validation blocks on invalid key

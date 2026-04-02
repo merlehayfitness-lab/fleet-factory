@@ -20,12 +20,12 @@ provides:
   - "Config snapshot versioning capturing full agent/dept/integration state plus generated artifacts"
   - "Four thin Server Actions for deploy, retry, rollback, history"
   - "getEncryptionKey env helper with graceful development fallback"
-  - "Split barrel exports: @agency-factory/core/server for Node.js-dependent modules"
+  - "Split barrel exports: @fleet-factory/core/server for Node.js-dependent modules"
 affects: [03-deployment-pipeline, 04-agent-execution, 05-observability]
 
 # Tech tracking
 tech-stack:
-  added: ["@agency-factory/runtime as core dependency"]
+  added: ["@fleet-factory/runtime as core dependency"]
   patterns: ["server barrel split for node: protocol isolation", "deployment state machine with assertDeploymentTransition pattern", "config snapshot versioning for deployment rollback"]
 
 key-files:
@@ -43,13 +43,13 @@ key-files:
     - pnpm-lock.yaml
 
 key-decisions:
-  - "Split @agency-factory/core barrel into index.ts (client-safe) and server.ts (Node.js-dependent) to prevent node:crypto from being bundled in client components"
-  - "Removed unused @agency-factory/core dependency from @agency-factory/runtime to eliminate circular workspace dependency"
+  - "Split @fleet-factory/core barrel into index.ts (client-safe) and server.ts (Node.js-dependent) to prevent node:crypto from being bundled in client components"
+  - "Removed unused @fleet-factory/core dependency from @fleet-factory/runtime to eliminate circular workspace dependency"
   - "Deployment service returns full deployment record on both success and failure paths"
   - "Secrets decryption errors handled gracefully in triggerDeployment (empty secrets array with warning) for development without ENCRYPTION_KEY"
 
 patterns-established:
-  - "Server barrel split: import Node.js-dependent modules from @agency-factory/core/server, client-safe modules from @agency-factory/core"
+  - "Server barrel split: import Node.js-dependent modules from @fleet-factory/core/server, client-safe modules from @fleet-factory/core"
   - "Deployment state machine: assertDeploymentTransition validates all status changes"
   - "Config snapshot versioning: full tenant state captured at deploy time with generated artifacts"
 
@@ -74,7 +74,7 @@ completed: 2026-03-25
 
 ## Accomplishments
 - Built deployment lifecycle state machine validating queued->building->deploying->live|failed transitions
-- Created triggerDeployment service orchestrating full pipeline: fetch data, generate artifacts via @agency-factory/runtime, store versioned config snapshot, transition through states to live
+- Created triggerDeployment service orchestrating full pipeline: fetch data, generate artifacts via @fleet-factory/runtime, store versioned config snapshot, transition through states to live
 - Implemented retryDeployment (creates fresh deployment from current state) and rollbackDeployment (restores from previous snapshot)
 - Added four thin Server Actions (deployAction, retryDeploymentAction, rollbackDeploymentAction, getDeploymentsAction)
 - Fixed pre-existing build failure by splitting core barrel exports into client-safe and server-only entry points
@@ -92,15 +92,15 @@ Each task was committed atomically:
 - `packages/core/deployment/snapshot.ts` - ConfigSnapshot type, createConfigSnapshot, restoreFromSnapshot
 - `packages/core/server.ts` - Server-only barrel exports (crypto, deployment service) using node:crypto
 - `packages/core/index.ts` - Removed crypto and deployment service exports (moved to server.ts), added deployment lifecycle and snapshot exports
-- `packages/core/package.json` - Added @agency-factory/runtime workspace dependency
-- `packages/runtime/package.json` - Removed unused @agency-factory/core dependency (broke circular dep)
+- `packages/core/package.json` - Added @fleet-factory/runtime workspace dependency
+- `packages/runtime/package.json` - Removed unused @fleet-factory/core dependency (broke circular dep)
 - `apps/web/_actions/deployment-actions.ts` - Four thin Server Actions for deployment operations
 - `apps/web/_lib/env.ts` - Added getEncryptionKey helper with graceful development fallback
 - `pnpm-lock.yaml` - Updated workspace dependency graph
 
 ## Decisions Made
-- Split `@agency-factory/core` barrel into `index.ts` (client-safe exports) and `server.ts` (Node.js-dependent exports like crypto and deployment service) to prevent `node:crypto` from being bundled in client components via webpack
-- Removed unused `@agency-factory/core` dependency from `@agency-factory/runtime` to eliminate circular workspace dependency warning
+- Split `@fleet-factory/core` barrel into `index.ts` (client-safe exports) and `server.ts` (Node.js-dependent exports like crypto and deployment service) to prevent `node:crypto` from being bundled in client components via webpack
+- Removed unused `@fleet-factory/core` dependency from `@fleet-factory/runtime` to eliminate circular workspace dependency warning
 - Deployment service returns the full deployment record on both success and failure paths for consistent API
 - Secrets decryption errors handled gracefully in triggerDeployment -- continues with empty secrets array and logs a warning for development without ENCRYPTION_KEY
 
@@ -108,10 +108,10 @@ Each task was committed atomically:
 
 ### Auto-fixed Issues
 
-**1. [Rule 3 - Blocking] Added @agency-factory/runtime as dependency to packages/core**
+**1. [Rule 3 - Blocking] Added @fleet-factory/runtime as dependency to packages/core**
 - **Found during:** Task 1 (deployment service imports runtime generators)
-- **Issue:** `@agency-factory/runtime` not in packages/core dependencies, causing TS2307 module not found error
-- **Fix:** Added `"@agency-factory/runtime": "workspace:*"` to packages/core/package.json
+- **Issue:** `@fleet-factory/runtime` not in packages/core dependencies, causing TS2307 module not found error
+- **Fix:** Added `"@fleet-factory/runtime": "workspace:*"` to packages/core/package.json
 - **Files modified:** packages/core/package.json, pnpm-lock.yaml
 - **Verification:** `pnpm turbo typecheck` passes cleanly
 - **Committed in:** 4862ab7 (Task 1 commit)
@@ -119,15 +119,15 @@ Each task was committed atomically:
 **2. [Rule 3 - Blocking] Removed circular dependency between core and runtime**
 - **Found during:** Task 1 (pnpm install warning about cyclic workspace dependencies)
 - **Issue:** core depends on runtime (for generators), runtime depends on core (unused) -- circular dependency
-- **Fix:** Removed unused `@agency-factory/core` dependency from packages/runtime/package.json (runtime generators are pure functions with local interfaces, no actual imports from core)
+- **Fix:** Removed unused `@fleet-factory/core` dependency from packages/runtime/package.json (runtime generators are pure functions with local interfaces, no actual imports from core)
 - **Files modified:** packages/runtime/package.json
 - **Verification:** `pnpm install` runs without circular dependency warning
 - **Committed in:** 4862ab7 (Task 1 commit)
 
 **3. [Rule 1 - Bug] Split core barrel exports to fix node:crypto build failure**
 - **Found during:** Task 2 (pnpm turbo build fails with UnhandledSchemeError for node:crypto)
-- **Issue:** Pre-existing issue from 03-01: `packages/core/index.ts` barrel exports `encrypt/decrypt` which import `node:crypto`. Client components importing from `@agency-factory/core` pull in node:crypto transitively, causing webpack build failure.
-- **Fix:** Created `packages/core/server.ts` as server-only entry point for Node.js-dependent modules (crypto, deployment service). Removed those exports from main barrel. Updated deployment-actions.ts to import from `@agency-factory/core/server`.
+- **Issue:** Pre-existing issue from 03-01: `packages/core/index.ts` barrel exports `encrypt/decrypt` which import `node:crypto`. Client components importing from `@fleet-factory/core` pull in node:crypto transitively, causing webpack build failure.
+- **Fix:** Created `packages/core/server.ts` as server-only entry point for Node.js-dependent modules (crypto, deployment service). Removed those exports from main barrel. Updated deployment-actions.ts to import from `@fleet-factory/core/server`.
 - **Files modified:** packages/core/index.ts, packages/core/server.ts, apps/web/_actions/deployment-actions.ts
 - **Verification:** `pnpm turbo build` compiles successfully across all routes
 - **Committed in:** f6ea52d (Task 2 commit)
@@ -148,7 +148,7 @@ None - no new external service configuration required. ENCRYPTION_KEY setup was 
 - Server Actions ready to be called from React components
 - State machine and snapshot versioning ready for deployment history views
 - All runtime generators integrated into the deploy pipeline
-- `@agency-factory/core/server` pattern established for future server-only modules
+- `@fleet-factory/core/server` pattern established for future server-only modules
 
 ## Self-Check: PASSED
 

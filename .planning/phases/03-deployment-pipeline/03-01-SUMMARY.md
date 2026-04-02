@@ -110,7 +110,7 @@ Each task was committed atomically:
 - `packages/core/integrations/mock-messaging.ts` - Mock messaging adapter with messages sample data
 - `packages/core/integrations/index.ts` - Adapter registry with getAdapter factory
 - `packages/core/index.ts` - Added re-exports for crypto, types, and integration modules
-- `packages/runtime/package.json` - New workspace package with @agency-factory/core dependency
+- `packages/runtime/package.json` - New workspace package with @fleet-factory/core dependency
 - `packages/runtime/tsconfig.json` - TypeScript config targeting ES2022
 - `packages/runtime/generators/tenant-config.ts` - Generates tenant-config.json from business data
 - `packages/runtime/generators/docker-compose.ts` - Generates docker-compose.yml with per-agent services

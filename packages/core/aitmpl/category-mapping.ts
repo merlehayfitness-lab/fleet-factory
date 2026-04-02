@@ -1,12 +1,12 @@
 /**
- * Static mapping from Agency Factory department types to relevant AITMPL categories.
+ * Static mapping from Fleet Factory department types to relevant AITMPL categories.
  * Used for recommendation badges and default filtering in the catalog browser.
  *
  * See 15-RESEARCH.md for the full AITMPL category breakdown.
  */
 
 /**
- * Maps Agency Factory department types to arrays of relevant AITMPL categories.
+ * Maps Fleet Factory department types to arrays of relevant AITMPL categories.
  * Used to show "Recommended" badges and pre-filter catalog results.
  */
 export const DEPARTMENT_CATEGORY_MAP: Record<string, string[]> = {
@@ -16,6 +16,12 @@ export const DEPARTMENT_CATEGORY_MAP: Record<string, string[]> = {
     "expert-advisors",
     "analytics",
     "productivity",
+  ],
+  executive: [
+    "productivity",
+    "analytics",
+    "development",
+    "database",
   ],
   sales: [
     "business-marketing",
@@ -30,6 +36,13 @@ export const DEPARTMENT_CATEGORY_MAP: Record<string, string[]> = {
     "productivity",
     "education",
   ],
+  marketing: [
+    "business-marketing",
+    "marketing",
+    "seo",
+    "web-data",
+    "enterprise-communication",
+  ],
   operations: [
     "security",
     "development-team",
@@ -39,6 +52,13 @@ export const DEPARTMENT_CATEGORY_MAP: Record<string, string[]> = {
     "database",
     "development",
     "web-development",
+  ],
+  rd: [
+    "development",
+    "data-ai",
+    "web-development",
+    "database",
+    "security",
   ],
 };
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Check, X, Loader2, Circle, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { VpsDeployProgressEvent } from "@agency-factory/core";
+import type { VpsDeployProgressEvent } from "@fleet-factory/core";
 import { getDeploymentStatusAction } from "@/_actions/deployment-actions";
 
 interface DeploymentProgressStreamProps {

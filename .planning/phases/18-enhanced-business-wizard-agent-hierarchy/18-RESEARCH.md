@@ -9,7 +9,7 @@
 
 | ID | Requirement | Source |
 |----|-------------|--------|
-| WIZ-01 | Wizard includes subdomain step with availability checking and preview (subdomain.agencyfactory.ai) | ROADMAP Phase 18 SC#1 |
+| WIZ-01 | Wizard includes subdomain step with availability checking and preview (subdomain.fleetfactory.ai) | ROADMAP Phase 18 SC#1 |
 | WIZ-02 | Wizard includes API keys step collecting Anthropic (required), OpenAI, Google, and Mistral keys with secure storage | ROADMAP Phase 18 SC#2 |
 | WIZ-03 | Department tree selector shows hierarchical structure (CEO > Department Heads > Specialists) with expand/collapse and cascade selection | ROADMAP Phase 18 SC#3 |
 | HIER-01 | Agent templates store role_level (0=C-suite, 1=dept head, 2=specialist), reporting_chain, token_budget, and parent_template_id | ROADMAP Phase 18 SC#4 |
@@ -48,7 +48,7 @@ The ROADMAP.md shows Phase 18 as already completed on 2026-03-31. The git status
 | `apps/web/_components/create-business-wizard.tsx` | Modified | 5-step wizard: Business Details -> Departments -> API Keys -> Subdomain -> Review |
 | `apps/web/_components/department-tree-select.tsx` | New (untracked) | Tree component with expand/collapse, cascade selection, role-level coloring |
 | `apps/web/_components/wizard-api-keys-step.tsx` | New (untracked) | 4-provider API key collection (Anthropic required, OpenAI/Google/Mistral optional) |
-| `apps/web/_components/wizard-subdomain-step.tsx` | New (untracked) | Subdomain input with .agencyfactory.ai suffix, debounced availability stub |
+| `apps/web/_components/wizard-subdomain-step.tsx` | New (untracked) | Subdomain input with .fleetfactory.ai suffix, debounced availability stub |
 | `apps/web/_actions/business-actions.ts` | Modified | Added `createBusinessV2` server action |
 | `packages/db/schema/042_expand_agent_templates.sql` | New | Adds role_level, reporting_chain, token_budget, parent_template_id, skills_package, mcp_servers |
 | `packages/db/schema/043_businesses_subdomain.sql` | New | Adds subdomain column with UNIQUE constraint |
@@ -90,7 +90,7 @@ The ROADMAP.md shows Phase 18 as already completed on 2026-03-31. The git status
 - **GAP:** Providers are static, not dynamically determined by selected departments
 
 #### wizard-subdomain-step.tsx (118 lines)
-- **IMPLEMENTED:** Input with .agencyfactory.ai suffix
+- **IMPLEMENTED:** Input with .fleetfactory.ai suffix
 - **IMPLEMENTED:** Auto-suggest from slug
 - **IMPLEMENTED:** Manual edit override
 - **IMPLEMENTED:** Debounced check (500ms setTimeout)

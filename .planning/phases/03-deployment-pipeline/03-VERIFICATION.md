@@ -148,8 +148,8 @@ All code fixes confirmed in static analysis. DB migration application confirmed 
 | `packages/core/deployment/service.ts` | `packages/core/deployment/lifecycle.ts` | `assertDeploymentTransition` (line 2 import) | WIRED |
 | `packages/core/deployment/service.ts` | `packages/core/deployment/snapshot.ts` | `createConfigSnapshot` (line 3 import) | WIRED |
 | `packages/core/deployment/service.ts` | `packages/core/crypto/encryption.ts` | `decrypt` (line 4 import) | WIRED |
-| `packages/core/deployment/service.ts` | `@agency-factory/runtime` | all 4 generators (lines 5-10 import) | WIRED |
-| `apps/web/_actions/deployment-actions.ts` | `packages/core/deployment/service.ts` | via `@agency-factory/core/server` re-export | WIRED |
+| `packages/core/deployment/service.ts` | `@fleet-factory/runtime` | all 4 generators (lines 5-10 import) | WIRED |
+| `apps/web/_actions/deployment-actions.ts` | `packages/core/deployment/service.ts` | via `@fleet-factory/core/server` re-export | WIRED |
 
 ### Plan 03-03 Key Links
 

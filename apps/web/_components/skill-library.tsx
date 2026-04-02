@@ -32,7 +32,7 @@ import { SkillUsageCard } from "@/_components/skill-usage-card";
 import { SkillTemplateBrowser } from "@/_components/skill-template-browser";
 import { GitHubImportDialog } from "@/_components/github-import-dialog";
 import { deleteSkillAction, listSkillsForBusinessAction } from "@/_actions/skill-actions";
-import type { Skill } from "@agency-factory/core";
+import type { Skill } from "@fleet-factory/core";
 
 interface SkillLibraryProps {
   businessId: string;

@@ -1,4 +1,4 @@
--- Combined schema for Agency Factory
+-- Combined schema for Fleet Factory
 -- Paste this entire file into Supabase SQL Editor and run it.
 
 -- ====== 001_businesses.sql ======
@@ -2052,7 +2052,7 @@ COMMENT ON COLUMN public.agent_templates.role_level IS '0=C-suite, 1=dept head, 
 
 -- ====== 043_businesses_subdomain.sql ======
 -- 043: Add subdomain column to businesses
--- Supports per-tenant subdomain routing (e.g. acme.agencyfactory.ai)
+-- Supports per-tenant subdomain routing (e.g. acme.fleetfactory.ai)
 
 ALTER TABLE public.businesses
   ADD COLUMN IF NOT EXISTS subdomain text UNIQUE;
@@ -2060,7 +2060,7 @@ ALTER TABLE public.businesses
 CREATE INDEX IF NOT EXISTS idx_businesses_subdomain
   ON public.businesses (subdomain) WHERE subdomain IS NOT NULL;
 
-COMMENT ON COLUMN public.businesses.subdomain IS 'Tenant subdomain for portal access e.g. acme.agencyfactory.ai';
+COMMENT ON COLUMN public.businesses.subdomain IS 'Tenant subdomain for portal access e.g. acme.fleetfactory.ai';
 
 
 -- ====== 044_port_allocations.sql ======

@@ -52,7 +52,7 @@ key-decisions:
 patterns-established:
   - "Server Actions in _actions/ validate via Zod, check auth, delegate to packages/core"
   - "App-specific components in _components/ directory (separate from shadcn components/ui/)"
-  - "Form validation: react-hook-form + zodResolver + schemas from @agency-factory/core"
+  - "Form validation: react-hook-form + zodResolver + schemas from @fleet-factory/core"
   - "Atomic provisioning: all multi-table operations via Postgres RPC, never sequential inserts"
 
 requirements-completed: [PROV-01, PROV-02, PROV-03, PROV-04, PROV-05, PROV-06, DASH-03]
@@ -64,7 +64,7 @@ completed: 2026-03-25
 
 # Phase 1 Plan 03: Atomic Provisioning RPC + Create Business Wizard Summary
 
-**Postgres provision_business_tenant() RPC with idempotent atomic transaction, Zod v4 validation schemas in @agency-factory/core, and a 3-step create business wizard using react-hook-form at /businesses/new**
+**Postgres provision_business_tenant() RPC with idempotent atomic transaction, Zod v4 validation schemas in @fleet-factory/core, and a 3-step create business wizard using react-hook-form at /businesses/new**
 
 ## Performance
 
@@ -77,7 +77,7 @@ completed: 2026-03-25
 ## Accomplishments
 - Created provision_business_tenant() SECURITY DEFINER RPC that atomically creates business, owner membership, 4 departments, agents from templates, and a queued deployment in a single Postgres transaction
 - Built idempotency check into the RPC -- re-running with the same slug returns the existing business ID (PROV-06)
-- Established @agency-factory/core as the shared domain package with Zod schemas, domain types, and provisioning logic
+- Established @fleet-factory/core as the shared domain package with Zod schemas, domain types, and provisioning logic
 - Built a 3-step create business wizard (Business Details, Departments preview, Review & Deploy) with auto-slug generation
 
 ## Task Commits
@@ -142,7 +142,7 @@ None - no external service configuration required. The RPC function will need to
 ## Next Phase Readiness
 - Provisioning pipeline is complete end-to-end: wizard form -> Server Action -> Postgres RPC -> atomic tenant creation
 - Ready for Plan 04 (Business listing + overview dashboard) which will query the provisioned data
-- @agency-factory/core package is established with domain types and validation schemas for reuse
+- @fleet-factory/core package is established with domain types and validation schemas for reuse
 - All shadcn/ui components needed for forms are installed (Button, Card, Input, Label, Select, Badge)
 
 ## Self-Check: PASSED

@@ -125,7 +125,7 @@ export interface CatalogSearchResult {
 // Import types
 // ---------------------------------------------------------------------------
 
-/** Options for importing an AITMPL component into Agency Factory. */
+/** Options for importing an AITMPL component into Fleet Factory. */
 export interface AitmplImportOptions {
   businessId: string;
   componentPath: string;

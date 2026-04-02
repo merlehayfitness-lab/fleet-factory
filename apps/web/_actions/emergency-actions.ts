@@ -10,7 +10,7 @@ import {
   restoreAgent,
   disableTenant,
   restoreTenant,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 
 /**
  * Emergency freeze an agent with reason and audit trail.

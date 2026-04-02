@@ -14,7 +14,7 @@ provides:
   - "Catalog service with 24h TTL server-side caching"
   - "searchComponents() with query/type/department filtering"
   - "getComponentDetail() for full content retrieval"
-  - "importFromAitmpl() converting AITMPL types to Agency Factory entities"
+  - "importFromAitmpl() converting AITMPL types to Fleet Factory entities"
 affects: [15-02, 15-03]
 
 # Tech tracking
@@ -50,7 +50,7 @@ completed: 2026-03-30
 
 # Phase 15 Plan 01: AITMPL Catalog Service Summary
 
-**AITMPL catalog service with 24h TTL caching, department-based search/filter, and import service converting skills/agents/MCPs into Agency Factory entities**
+**AITMPL catalog service with 24h TTL caching, department-based search/filter, and import service converting skills/agents/MCPs into Fleet Factory entities**
 
 ## Performance
 

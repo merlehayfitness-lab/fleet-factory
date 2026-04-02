@@ -4,7 +4,7 @@ import {
   handleSlackOAuthCallback,
   createDepartmentChannels,
   getSlackClient,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 
 /**
  * GET handler for Slack OAuth redirect callback.

@@ -5,7 +5,7 @@ import { createServerClient } from "@/_lib/supabase/server";
 import { BusinessList } from "@/_components/business-list";
 
 export const metadata = {
-  title: "Businesses | Agency Factory",
+  title: "Businesses | Fleet Factory",
 };
 
 export default async function BusinessesPage() {

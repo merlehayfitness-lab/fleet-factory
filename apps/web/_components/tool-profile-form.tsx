@@ -5,11 +5,11 @@ import type {
   ToolProfileShape,
   McpServerConfig,
   KnownMcpServer,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 import {
   KNOWN_MCP_SERVERS,
   DEPARTMENT_DEFAULT_TOOL_PROFILES,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";

@@ -71,10 +71,12 @@ export interface SshDeployResult {
 // ---------------------------------------------------------------------------
 
 const TENANT_DATA_DIR = "/data/tenants";
-const AGENT_IMAGE = "agency-factory/agent:latest";
+const AGENT_IMAGE = "fleet-factory/agent:latest";
 const CONTAINER_PORT = 18789;
 const HEALTH_CHECK_TIMEOUT_MS = 60_000;
 const HEALTH_CHECK_INTERVAL_MS = 3_000;
+/** Static gateway password for container OpenClaw instances (host-local only) */
+const GATEWAY_PASSWORD = "fleetfactory2026";
 
 // ---------------------------------------------------------------------------
 // Main deployment function (Docker CEO-first flow)
@@ -493,7 +495,7 @@ async function deployContainer(
   const dockerCmd = [
     "docker run -d",
     `--name ${vpsAgentId}`,
-    `--label agency-factory=true`,
+    `--label fleet-factory=true`,
     `--label tenant=${businessSlug}`,
     `-e AGENT_ID=${vpsAgentId}`,
     `-e BUSINESS_SLUG=${businessSlug}`,
@@ -504,6 +506,7 @@ async function deployContainer(
     `-e TOKEN_BUDGET=${tokenBudget}`,
     `-e MEMORY_DIR=/memory`,
     `-e ANTHROPIC_API_KEY=${anthropicApiKey}`,
+    `-e OPENCLAW_GATEWAY_PASSWORD=${GATEWAY_PASSWORD}`,
     `-v ${tenantDir}/workspace/workspace-${vpsAgentId}:/workspace:rw`,
     `-v ${tenantDir}/config:/config:ro`,
     `-v ${tenantDir}/memory/${vpsAgentId}:/memory:rw`,
@@ -521,11 +524,11 @@ async function deployContainer(
     return { success: false, error: `docker run failed: ${runResult.stderr}` };
   }
 
-  // Health check loop
+  // Health check loop — curl from host via port mapping (gateway binds 0.0.0.0 with password auth)
   const startTime = Date.now();
   while (Date.now() - startTime < HEALTH_CHECK_TIMEOUT_MS) {
     const healthResult = await execCommand(
-      `curl -sf http://127.0.0.1:${hostPort}/healthz 2>/dev/null && echo "OK" || echo "FAIL"`,
+      `curl -sf -H "Authorization: Bearer ${GATEWAY_PASSWORD}" http://127.0.0.1:${hostPort}/healthz 2>/dev/null && echo "OK" || echo "FAIL"`,
       { sshConfig },
     );
 

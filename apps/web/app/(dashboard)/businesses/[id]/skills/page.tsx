@@ -1,10 +1,10 @@
 import { redirect, notFound } from "next/navigation";
 import { createServerClient } from "@/_lib/supabase/server";
 import { SkillLibrary } from "@/_components/skill-library";
-import type { Skill } from "@agency-factory/core";
+import type { Skill } from "@fleet-factory/core";
 
 export const metadata = {
-  title: "Skills | Agency Factory",
+  title: "Skills | Fleet Factory",
 };
 
 /**

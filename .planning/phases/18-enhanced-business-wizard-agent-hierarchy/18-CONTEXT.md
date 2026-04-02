@@ -31,7 +31,7 @@ Business creation wizard collects subdomain, API keys, and lets admin select fro
 - No token budget summary needed — individual budgets visible on hover is enough
 
 ### Subdomain & Routing
-- Every business gets a default subdomain: slug.agencyfactory.ai (always works)
+- Every business gets a default subdomain: slug.fleetfactory.ai (always works)
 - Custom domain support as optional upgrade (e.g., agents.acme.com)
 - Auto-suggest subdomain from slugified business name (e.g., "Acme Corp" → acme-corp), user can edit
 - Real-time debounced availability check (500ms) — green checkmark or red X

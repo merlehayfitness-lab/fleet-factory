@@ -67,7 +67,7 @@ Plan 04 was created and executed. Both fixes were committed atomically (`6dd3ad1
 | 2 | Wizard/panel shows 7 AITMPL category tabs | VERIFIED | No changes to catalog-browser.tsx tab definition |
 | 3 | Components browsable with search, category filter, and sort | VERIFIED | No changes to search/filter logic |
 | 4 | Recommendations shown based on department type | VERIFIED | `category-mapping.ts` unchanged (62 lines) |
-| 5 | Skills, Commands, Settings, Hooks importable as Agency Factory skills | VERIFIED | `import-service.ts` unchanged (275 lines) |
+| 5 | Skills, Commands, Settings, Hooks importable as Fleet Factory skills | VERIFIED | `import-service.ts` unchanged (275 lines) |
 | 6 | Agent type importable as system_prompt | VERIFIED | `import-service.ts` unchanged |
 | 7 | MCP type importable by merging into tool_profile.mcp_servers[] | VERIFIED | `import-service.ts` unchanged |
 | 8 | Plugin type returns decomposition guidance | VERIFIED | `import-service.ts` unchanged |

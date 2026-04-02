@@ -38,7 +38,7 @@ export function generateDockerCompose(input: DockerComposeInput): string {
     const containerName = `${business.slug}-agent-${agent.id.slice(0, 8)}`;
 
     lines.push(`  ${serviceName}:`);
-    lines.push(`    image: agency-factory/openclaw-worker:latest`);
+    lines.push(`    image: fleet-factory/openclaw-worker:latest`);
     lines.push(`    container_name: ${containerName}`);
     lines.push(`    environment:`);
     lines.push(`      - AGENT_ID=${agent.id}`);

@@ -9,7 +9,7 @@
 - `deployments` table has: id, business_id, version (int), status (queued|building|deploying|live|failed|rolled_back), config_snapshot (jsonb), error_message, started_at, completed_at, created_at
 - RLS policies already allow member SELECT, owner/admin INSERT and UPDATE
 - Provision RPC already creates a version=1 queued deployment per business
-- `DeploymentStatus` type exported from `@agency-factory/core`
+- `DeploymentStatus` type exported from `@fleet-factory/core`
 
 ### Missing Schema Elements
 - **No `secrets` table** — need to store encrypted secrets per business

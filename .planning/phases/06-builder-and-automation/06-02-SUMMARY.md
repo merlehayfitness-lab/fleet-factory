@@ -110,7 +110,7 @@ Each task was committed atomically:
 - `apps/web/app/(dashboard)/businesses/[id]/page.tsx` - Passes vpsStatus to HealthDashboard
 
 ## Decisions Made
-- Re-exported generateOpenClawWorkspace through core/server.ts because the web app does not (and should not) depend on @agency-factory/runtime directly. This follows the existing pattern where core re-exports runtime functions for server-only use.
+- Re-exported generateOpenClawWorkspace through core/server.ts because the web app does not (and should not) depend on @fleet-factory/runtime directly. This follows the existing pattern where core re-exports runtime functions for server-only use.
 - Serial deployment guard explicitly excludes the current deployment ID to prevent self-blocking on initial creation.
 - VPS push is integrated as a conditional branch within the existing deployment pipeline rather than a separate function, preserving the local-only fallback path.
 - WebSocket URL is generated server-side by createVpsWebSocket and passed as a string through the component chain, so the client component can connect directly without needing access to VPS credentials.
@@ -121,8 +121,8 @@ Each task was committed atomically:
 
 **1. [Rule 3 - Blocking] Re-exported generateOpenClawWorkspace through core/server.ts**
 - **Found during:** Task 1 (deployment-actions.ts import)
-- **Issue:** deployment-actions.ts imported generateOpenClawWorkspace from @agency-factory/runtime, but the web app package.json does not include runtime as a dependency. TypeScript could not resolve the module.
-- **Fix:** Added `export { generateOpenClawWorkspace } from "@agency-factory/runtime"` to packages/core/server.ts and updated the import in deployment-actions.ts to use @agency-factory/core/server.
+- **Issue:** deployment-actions.ts imported generateOpenClawWorkspace from @fleet-factory/runtime, but the web app package.json does not include runtime as a dependency. TypeScript could not resolve the module.
+- **Fix:** Added `export { generateOpenClawWorkspace } from "@fleet-factory/runtime"` to packages/core/server.ts and updated the import in deployment-actions.ts to use @fleet-factory/core/server.
 - **Files modified:** packages/core/server.ts, apps/web/_actions/deployment-actions.ts
 - **Verification:** `pnpm turbo typecheck` passes with no errors
 - **Committed in:** 037298e (Task 1 commit)

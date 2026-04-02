@@ -1,5 +1,5 @@
 import { createServerClient } from "@/_lib/supabase/server";
-import { getMemos, getSessionCount, getNextSessionTime, COUNCIL_AGENTS } from "@agency-factory/core/server";
+import { getMemos, getSessionCount, getNextSessionTime, COUNCIL_AGENTS } from "@fleet-factory/core/server";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,

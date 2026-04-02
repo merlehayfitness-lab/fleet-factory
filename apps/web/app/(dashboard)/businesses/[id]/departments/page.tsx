@@ -2,7 +2,7 @@ import { createServerClient } from "@/_lib/supabase/server";
 import { DepartmentsList } from "@/_components/departments-list";
 
 export const metadata = {
-  title: "Departments | Agency Factory",
+  title: "Departments | Fleet Factory",
 };
 
 /**

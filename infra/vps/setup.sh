@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "=== Agency Factory VPS Setup ==="
+echo "=== Fleet Factory VPS Setup ==="
 echo "This script installs Node.js, Docker, OpenClaw, and configures the API proxy server."
 echo ""
 
@@ -59,10 +59,10 @@ fi
 echo "[5/10] Creating directory structure..."
 mkdir -p /data/tenants
 mkdir -p /data/state
-mkdir -p /opt/agency-factory/vps-proxy
+mkdir -p /opt/fleet-factory/vps-proxy
 echo "  /data/tenants/ created"
 echo "  /data/state/ created"
-echo "  /opt/agency-factory/vps-proxy/ created"
+echo "  /opt/fleet-factory/vps-proxy/ created"
 
 # ---------------------------------------------------------------------------
 # 6. Copy API proxy files
@@ -70,26 +70,26 @@ echo "  /opt/agency-factory/vps-proxy/ created"
 
 echo "[6/10] Copying API proxy files..."
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cp "$SCRIPT_DIR/package.json" /opt/agency-factory/vps-proxy/
-cp "$SCRIPT_DIR/package-lock.json" /opt/agency-factory/vps-proxy/ 2>/dev/null || true
-cp "$SCRIPT_DIR/tsconfig.json" /opt/agency-factory/vps-proxy/
-cp "$SCRIPT_DIR/api-server.ts" /opt/agency-factory/vps-proxy/
-cp "$SCRIPT_DIR/api-routes.ts" /opt/agency-factory/vps-proxy/
-cp "$SCRIPT_DIR/api-types.ts" /opt/agency-factory/vps-proxy/
-cp "$SCRIPT_DIR/deploy-state.ts" /opt/agency-factory/vps-proxy/
-cp "$SCRIPT_DIR/container-manager.ts" /opt/agency-factory/vps-proxy/
-cp "$SCRIPT_DIR/openclaw-client.ts" /opt/agency-factory/vps-proxy/
-cp "$SCRIPT_DIR/.env.example" /opt/agency-factory/vps-proxy/
-cp "$SCRIPT_DIR/bootstrap-prompt.md" /opt/agency-factory/vps-proxy/
-cp "$SCRIPT_DIR/terminal-bridge.ts" /opt/agency-factory/vps-proxy/
-echo "  Files copied to /opt/agency-factory/vps-proxy/"
+cp "$SCRIPT_DIR/package.json" /opt/fleet-factory/vps-proxy/
+cp "$SCRIPT_DIR/package-lock.json" /opt/fleet-factory/vps-proxy/ 2>/dev/null || true
+cp "$SCRIPT_DIR/tsconfig.json" /opt/fleet-factory/vps-proxy/
+cp "$SCRIPT_DIR/api-server.ts" /opt/fleet-factory/vps-proxy/
+cp "$SCRIPT_DIR/api-routes.ts" /opt/fleet-factory/vps-proxy/
+cp "$SCRIPT_DIR/api-types.ts" /opt/fleet-factory/vps-proxy/
+cp "$SCRIPT_DIR/deploy-state.ts" /opt/fleet-factory/vps-proxy/
+cp "$SCRIPT_DIR/container-manager.ts" /opt/fleet-factory/vps-proxy/
+cp "$SCRIPT_DIR/openclaw-client.ts" /opt/fleet-factory/vps-proxy/
+cp "$SCRIPT_DIR/.env.example" /opt/fleet-factory/vps-proxy/
+cp "$SCRIPT_DIR/bootstrap-prompt.md" /opt/fleet-factory/vps-proxy/
+cp "$SCRIPT_DIR/terminal-bridge.ts" /opt/fleet-factory/vps-proxy/
+echo "  Files copied to /opt/fleet-factory/vps-proxy/"
 
 # ---------------------------------------------------------------------------
 # 7. Install proxy dependencies
 # ---------------------------------------------------------------------------
 
 echo "[7/10] Installing API proxy dependencies..."
-cd /opt/agency-factory/vps-proxy
+cd /opt/fleet-factory/vps-proxy
 npm install
 echo "  Dependencies installed"
 
@@ -98,9 +98,9 @@ echo "  Dependencies installed"
 # ---------------------------------------------------------------------------
 
 echo "[8/10] Configuring environment..."
-if [ ! -f /opt/agency-factory/vps-proxy/.env ]; then
-  cp /opt/agency-factory/vps-proxy/.env.example /opt/agency-factory/vps-proxy/.env
-  echo "  IMPORTANT: Edit /opt/agency-factory/vps-proxy/.env with your API key and OpenClaw token"
+if [ ! -f /opt/fleet-factory/vps-proxy/.env ]; then
+  cp /opt/fleet-factory/vps-proxy/.env.example /opt/fleet-factory/vps-proxy/.env
+  echo "  IMPORTANT: Edit /opt/fleet-factory/vps-proxy/.env with your API key and OpenClaw token"
 else
   echo "  .env already exists -- skipping (will not overwrite)"
 fi
@@ -117,14 +117,14 @@ docker pull openclaw-sandbox-common:bookworm-slim 2>/dev/null || echo "  Sandbox
 # ---------------------------------------------------------------------------
 
 echo "[10/10] Configuring systemd service..."
-cat > /etc/systemd/system/agency-factory-proxy.service << 'SYSTEMD'
+cat > /etc/systemd/system/fleet-factory-proxy.service << 'SYSTEMD'
 [Unit]
-Description=Agency Factory VPS API Proxy
+Description=Fleet Factory VPS API Proxy
 After=network.target docker.service
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/agency-factory/vps-proxy
+WorkingDirectory=/opt/fleet-factory/vps-proxy
 ExecStart=/usr/bin/node --loader tsx api-server.ts
 Restart=always
 RestartSec=5
@@ -135,8 +135,8 @@ WantedBy=multi-user.target
 SYSTEMD
 
 systemctl daemon-reload
-systemctl enable agency-factory-proxy
-echo "  Service configured: agency-factory-proxy"
+systemctl enable fleet-factory-proxy
+echo "  Service configured: fleet-factory-proxy"
 
 # ---------------------------------------------------------------------------
 # Done
@@ -146,7 +146,7 @@ echo ""
 echo "=== Setup Complete ==="
 echo ""
 echo "Next steps:"
-echo "  1. Edit /opt/agency-factory/vps-proxy/.env with your values:"
+echo "  1. Edit /opt/fleet-factory/vps-proxy/.env with your values:"
 echo "     - API_KEY: shared secret between admin app and VPS"
 echo "     - OPENCLAW_AUTH_TOKEN: your OpenClaw gateway token"
 echo "  2. Configure OpenClaw gateway:"
@@ -154,11 +154,11 @@ echo "     openclaw config set api.http.enabled true"
 echo "     openclaw config set api.http.port 18790"
 echo "     Restart OpenClaw daemon after configuration"
 echo "  3. Start the API proxy:"
-echo "     systemctl start agency-factory-proxy"
+echo "     systemctl start fleet-factory-proxy"
 echo "  4. Verify it's running:"
 echo "     curl http://localhost:3100/healthz"
 echo "  5. Bootstrap Claude Code:"
-echo "     openclaw chat < /opt/agency-factory/vps-proxy/bootstrap-prompt.md"
+echo "     openclaw chat < /opt/fleet-factory/vps-proxy/bootstrap-prompt.md"
 echo ""
 echo "Logs:"
-echo "  journalctl -u agency-factory-proxy -f"
+echo "  journalctl -u fleet-factory-proxy -f"

@@ -51,7 +51,7 @@ export default function SignInPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
-        <CardTitle className="text-xl">Sign in to Agency Factory</CardTitle>
+        <CardTitle className="text-xl">Sign in to Fleet Factory</CardTitle>
         <CardDescription>
           Enter your email and password to continue.
         </CardDescription>

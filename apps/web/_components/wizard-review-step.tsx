@@ -5,7 +5,7 @@ import { ChevronDown, ChevronUp, FileText, Loader2, Plug, BookOpen } from "lucid
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { RoleDefinition, PromptSections } from "@agency-factory/core";
+import type { RoleDefinition, PromptSections } from "@fleet-factory/core";
 
 interface KnowledgeDoc {
   id: string;

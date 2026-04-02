@@ -1,5 +1,5 @@
 import { createServerClient } from "@/_lib/supabase/server";
-import { getUsageAnalytics } from "@agency-factory/core/server";
+import { getUsageAnalytics } from "@fleet-factory/core/server";
 import { UsageCharts } from "@/_components/usage-charts";
 
 const VALID_PERIODS = new Set(["24h", "7d", "30d", "mtd", "ytd"]);

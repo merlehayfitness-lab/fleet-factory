@@ -4,7 +4,7 @@ import { createServerClient } from "@/_lib/supabase/server";
 import { requireActiveBusiness } from "@/_lib/require-active-business";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import type { ApprovalStatus, RiskLevel } from "@agency-factory/core";
+import type { ApprovalStatus, RiskLevel } from "@fleet-factory/core";
 import {
   getApprovalsForBusiness,
   getApprovalById,
@@ -14,7 +14,7 @@ import {
   bulkApprove,
   bulkReject,
   executeTask,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 
 /**
  * Fetch approvals for a business with optional filters.

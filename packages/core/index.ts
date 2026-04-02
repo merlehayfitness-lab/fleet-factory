@@ -1,5 +1,5 @@
-// @agency-factory/core
-// Shared domain logic for Agency Factory
+// @fleet-factory/core
+// Shared domain logic for Fleet Factory
 
 // Domain types
 export type {
@@ -263,4 +263,4 @@ export type {
 } from "./dashboard/dashboard-service";
 
 // NOTE: Server-only exports (crypto, deployment service, task service, orchestrator, worker, approval service)
-// are in "@agency-factory/core/server" to prevent node:crypto from being bundled in client components.
+// are in "@fleet-factory/core/server" to prevent node:crypto from being bundled in client components.

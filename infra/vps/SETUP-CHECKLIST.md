@@ -1,12 +1,12 @@
 # VPS Activation Checklist
 
-Step-by-step guide for activating the Agency Factory VPS from a bare server to running agents.
+Step-by-step guide for activating the Fleet Factory VPS from a bare server to running agents.
 
 ## Prerequisites
 
 - [ ] Hostinger VPS with Ubuntu 22+ or Debian 12+
 - [ ] Root SSH access to the VPS
-- [ ] Agency Factory admin app deployed to Vercel with `VPS_API_URL` and `VPS_API_KEY` env vars
+- [ ] Fleet Factory admin app deployed to Vercel with `VPS_API_URL` and `VPS_API_KEY` env vars
 - [ ] Anthropic API key for Claude API access on VPS
 - [ ] OpenClaw account and auth token
 
@@ -17,10 +17,10 @@ Step-by-step guide for activating the Agency Factory VPS from a bare server to r
 ssh root@your-vps-ip
 
 # Upload setup files from the infra/vps directory
-scp infra/vps/* root@your-vps-ip:/tmp/agency-factory-setup/
+scp infra/vps/* root@your-vps-ip:/tmp/fleet-factory-setup/
 ssh root@your-vps-ip
 
-cd /tmp/agency-factory-setup
+cd /tmp/fleet-factory-setup
 chmod +x setup.sh
 ./setup.sh
 ```
@@ -30,16 +30,16 @@ This installs:
 - Docker
 - OpenClaw CLI
 - Creates `/data/tenants/` and `/data/state/` directories
-- Copies API proxy files to `/opt/agency-factory/vps-proxy/`
+- Copies API proxy files to `/opt/fleet-factory/vps-proxy/`
 - Installs npm dependencies (express, ws, ssh2, dockerode, dotenv)
-- Creates systemd service (`agency-factory-proxy`)
+- Creates systemd service (`fleet-factory-proxy`)
 
 Verify the script completed without errors. All 10 steps should show success output.
 
 ## Step 2: Configure Environment
 
 ```bash
-nano /opt/agency-factory/vps-proxy/.env
+nano /opt/fleet-factory/vps-proxy/.env
 ```
 
 Required values:
@@ -128,8 +128,8 @@ chmod 600 /root/.ssh/id_rsa
 ## Step 6: Start the API Proxy
 
 ```bash
-systemctl start agency-factory-proxy
-systemctl status agency-factory-proxy
+systemctl start fleet-factory-proxy
+systemctl status fleet-factory-proxy
 ```
 
 Verify the proxy is running:
@@ -145,13 +145,13 @@ curl -H "X-API-Key: YOUR_API_KEY" http://localhost:3100/api/health
 
 If the proxy fails to start, check logs:
 ```bash
-journalctl -u agency-factory-proxy -f
+journalctl -u fleet-factory-proxy -f
 ```
 
 ## Step 7: Bootstrap Claude Code
 
 ```bash
-openclaw chat < /opt/agency-factory/vps-proxy/bootstrap-prompt.md
+openclaw chat < /opt/fleet-factory/vps-proxy/bootstrap-prompt.md
 ```
 
 This gives Claude Code its operational context for managing agent workspaces. The bootstrap prompt configures:
@@ -250,7 +250,7 @@ Follow this sequence to verify the full loop works after completing all 8 setup 
 
 1. Check the proxy is running:
    ```bash
-   systemctl status agency-factory-proxy
+   systemctl status fleet-factory-proxy
    ```
 2. Check the port is accessible:
    ```bash
@@ -299,7 +299,7 @@ Follow this sequence to verify the full loop works after completing all 8 setup 
 2. Check SSH credentials in `.env` match a valid user
 3. Check proxy logs for terminal WebSocket entries:
    ```bash
-   journalctl -u agency-factory-proxy -f
+   journalctl -u fleet-factory-proxy -f
    ```
    Look for `[ws:terminal]` entries
 4. Verify the WebSocket URL includes the correct `apiKey` parameter
@@ -318,7 +318,7 @@ Follow this sequence to verify the full loop works after completing all 8 setup 
    ```bash
    usermod -aG docker $(whoami)
    # Then restart the proxy
-   systemctl restart agency-factory-proxy
+   systemctl restart fleet-factory-proxy
    ```
 
 ---

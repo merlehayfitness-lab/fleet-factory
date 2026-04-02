@@ -9,7 +9,7 @@
 set -euo pipefail
 
 DESIGNER_DIR="/data/system/designer-agent"
-ENTRYPOINT="/opt/agency-factory/agent-entrypoint.sh"
+ENTRYPOINT="/opt/fleet-factory/agent-entrypoint.sh"
 CONTAINER_NAME="designer-agent"
 PORT=3200
 
@@ -25,7 +25,7 @@ mkdir -p "${DESIGNER_DIR}/output"
 cat > "${DESIGNER_DIR}/workspace/SOUL.md" << 'EOF'
 # Designer Agent
 
-You are a UI/UX code generation agent for Agency Factory. You specialize in creating:
+You are a UI/UX code generation agent for Fleet Factory. You specialize in creating:
 
 - Next.js 15+ App Router components (Server & Client Components)
 - Tailwind CSS v4 styling

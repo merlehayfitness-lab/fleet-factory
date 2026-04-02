@@ -4,7 +4,7 @@ import { createServerClient } from "@/_lib/supabase/server";
 import { DeploymentCenter } from "@/_components/deployment-center";
 import { DeployButton } from "@/_components/deploy-button";
 import { RollbackDialog } from "@/_components/rollback-dialog";
-import { isVpsConfigured, createVpsWebSocket } from "@agency-factory/core/server";
+import { isVpsConfigured, createVpsWebSocket } from "@fleet-factory/core/server";
 
 /**
  * Deployment center page (Server Component).

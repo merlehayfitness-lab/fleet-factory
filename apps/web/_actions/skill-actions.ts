@@ -19,7 +19,7 @@ import {
   parseGitHubUrl,
   fetchGitHubFile,
   fetchGitHubDirectory,
-} from "@agency-factory/core/server";
+} from "@fleet-factory/core/server";
 import type {
   Skill,
   SkillWithAssignment,
@@ -27,7 +27,7 @@ import type {
   SkillUsage,
   SkillAssignment,
   GitHubImportResult,
-} from "@agency-factory/core";
+} from "@fleet-factory/core";
 
 /**
  * Create a new skill in the business library.

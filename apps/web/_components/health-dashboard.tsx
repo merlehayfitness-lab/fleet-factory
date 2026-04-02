@@ -29,7 +29,7 @@ import { AgentHealthGrid } from "@/_components/agent-health-grid";
 import { VpsStatusIndicator } from "@/_components/vps-status-indicator";
 import { AitmplSuggestionBanner } from "@/_components/aitmpl-suggestion-banner";
 import { getHealthDashboard } from "@/_actions/health-actions";
-import type { SystemHealth } from "@agency-factory/core/server";
+import type { SystemHealth } from "@fleet-factory/core/server";
 
 interface HealthDashboardProps {
   business: {

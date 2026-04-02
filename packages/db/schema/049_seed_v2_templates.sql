@@ -14,19 +14,22 @@ WHERE name = 'Owner Agent' AND department_type = 'owner';
 UPDATE public.agent_templates SET
   role_level = 1,
   reporting_chain = 'ceo.sales',
-  token_budget = 150000
+  token_budget = 150000,
+  mcp_servers = '[{"name": "crm", "type": "crm", "config": {}}, {"name": "email", "type": "email", "config": {}}, {"name": "docs", "type": "documents", "config": {}}]'::jsonb
 WHERE name = 'Sales Agent' AND department_type = 'sales';
 
 UPDATE public.agent_templates SET
   role_level = 1,
   reporting_chain = 'ceo.support',
-  token_budget = 120000
+  token_budget = 120000,
+  mcp_servers = '[{"name": "helpdesk", "type": "support", "config": {}}, {"name": "knowledge-base", "type": "knowledge", "config": {"scope": "read"}}]'::jsonb
 WHERE name = 'Support Agent' AND department_type = 'support';
 
 UPDATE public.agent_templates SET
   role_level = 1,
   reporting_chain = 'ceo.operations',
-  token_budget = 120000
+  token_budget = 120000,
+  mcp_servers = '[{"name": "project-mgmt", "type": "tasks", "config": {}}, {"name": "calendar", "type": "calendar", "config": {}}]'::jsonb
 WHERE name = 'Operations Agent' AND department_type = 'operations';
 
 -- ============================================================================
@@ -49,7 +52,7 @@ You have authority over all other agents. When a new department or agent is need
 Current departments under your leadership: Marketing, Sales, Operations, Support, R&D.',
   0, 'ceo', 250000,
   '[{"name": "agent-orchestrator", "source": "builtin"}, {"name": "kpi-tracker", "source": "builtin"}]'::jsonb,
-  '[{"name": "filesystem", "type": "filesystem", "config": {}}, {"name": "memory", "type": "knowledge", "config": {}}, {"name": "brave-search", "type": "search", "config": {}}, {"name": "fetch", "type": "http", "config": {}}, {"name": "supabase", "type": "database", "config": {"scope": "read"}}, {"name": "slack", "type": "messaging", "config": {"scope": "send"}}]'::jsonb,
+  '[{"name": "filesystem", "type": "filesystem", "config": {}}, {"name": "memory", "type": "knowledge", "config": {}}, {"name": "brave-search", "type": "search", "config": {}}, {"name": "fetch", "type": "http", "config": {}}, {"name": "supabase", "type": "database", "config": {"scope": "read"}}, {"name": "slack", "type": "messaging", "config": {"scope": "send"}}, {"name": "sequential-thinking", "type": "reasoning", "config": {}}, {"name": "github", "type": "code", "config": {}}]'::jsonb,
   '{}', '{}'
 )
 ON CONFLICT DO NOTHING;
@@ -72,7 +75,7 @@ VALUES
 You manage 4 specialist agents: Content Writer, SEO Analyst, Cold Outreach, and Social Media Manager. You report directly to the CEO with weekly marketing performance reports.',
   1, 'ceo.marketing', 150000,
   '[{"name": "analytics-reader", "source": "builtin"}, {"name": "campaign-planner", "source": "builtin"}]'::jsonb,
-  '[{"name": "google-analytics", "type": "analytics", "config": {}}, {"name": "slack", "type": "messaging", "config": {"scope": "send"}}]'::jsonb,
+  '[{"name": "google-analytics", "type": "analytics", "config": {}}, {"name": "slack", "type": "messaging", "config": {"scope": "send"}}, {"name": "social-api", "type": "social", "config": {}}, {"name": "cms", "type": "content", "config": {}}]'::jsonb,
   '{}', '{}'
 ),
 (
@@ -324,7 +327,7 @@ VALUES
 In council sessions, you contribute your unique perspective based on your model strengths. You participate in structured debates: proposal → discussion → vote → memo. Rotate as proposer based on schedule.',
   2, 'ceo.rd.claude', 100000,
   '[{"name": "code-analyzer", "source": "builtin"}, {"name": "research-writer", "source": "builtin"}]'::jsonb,
-  '[]'::jsonb,
+  '[{"name": "puppeteer", "type": "browser", "config": {}}, {"name": "postgres", "type": "database", "config": {}}]'::jsonb,
   '{}', '{"model": "claude-sonnet-4-6", "provider": "anthropic"}'
 ),
 (
@@ -340,7 +343,7 @@ In council sessions, you contribute your unique perspective based on your model 
 In council sessions, you contribute your unique perspective. Participate in structured debates: proposal → discussion → vote → memo.',
   2, 'ceo.rd.gpt4', 100000,
   '[{"name": "data-analyzer", "source": "builtin"}, {"name": "ideation-engine", "source": "builtin"}]'::jsonb,
-  '[]'::jsonb,
+  '[{"name": "puppeteer", "type": "browser", "config": {}}, {"name": "postgres", "type": "database", "config": {}}]'::jsonb,
   '{}', '{"model": "gpt-4o", "provider": "openai"}'
 ),
 (
@@ -356,7 +359,7 @@ In council sessions, you contribute your unique perspective. Participate in stru
 In council sessions, you contribute your unique perspective. Participate in structured debates: proposal → discussion → vote → memo.',
   2, 'ceo.rd.gemini', 80000,
   '[{"name": "web-researcher", "source": "builtin"}, {"name": "multimodal-analyzer", "source": "builtin"}]'::jsonb,
-  '[]'::jsonb,
+  '[{"name": "puppeteer", "type": "browser", "config": {}}, {"name": "postgres", "type": "database", "config": {}}]'::jsonb,
   '{}', '{"model": "gemini-2.0-flash", "provider": "google"}'
 ),
 (
@@ -372,7 +375,7 @@ In council sessions, you contribute your unique perspective. Participate in stru
 In council sessions, you contribute your unique perspective. Participate in structured debates: proposal → discussion → vote → memo.',
   2, 'ceo.rd.mistral', 60000,
   '[{"name": "code-generator", "source": "builtin"}, {"name": "benchmark-runner", "source": "builtin"}]'::jsonb,
-  '[]'::jsonb,
+  '[{"name": "puppeteer", "type": "browser", "config": {}}, {"name": "postgres", "type": "database", "config": {}}]'::jsonb,
   '{}', '{"model": "mistral-large-latest", "provider": "mistral"}'
 ),
 (
@@ -388,7 +391,7 @@ In council sessions, you contribute your unique perspective. Participate in stru
 In council sessions, you contribute your unique perspective. Participate in structured debates: proposal → discussion → vote → memo.',
   2, 'ceo.rd.deepseek', 60000,
   '[{"name": "research-engine", "source": "builtin"}, {"name": "math-solver", "source": "builtin"}]'::jsonb,
-  '[]'::jsonb,
+  '[{"name": "puppeteer", "type": "browser", "config": {}}, {"name": "postgres", "type": "database", "config": {}}]'::jsonb,
   '{}', '{"model": "deepseek-chat", "provider": "deepseek"}'
 )
 ON CONFLICT DO NOTHING;

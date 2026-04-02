@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { getModelFriendlyName } from "@agency-factory/core";
+import { getModelFriendlyName } from "@fleet-factory/core";
 import {
   freezeAgent,
   pauseAgent,
