@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { createServerClient } from "@/_lib/supabase/server";
 import { HealthDashboard } from "@/_components/health-dashboard";
 import { HealthDashboardErrorBoundary } from "@/_components/health-dashboard-wrapper";
+import { getSystemHealth } from "@fleet-factory/core/server";
+import type { SystemHealth } from "@fleet-factory/core/server";
 
 /**
  * Business overview — rebuilt with safe data passing.
@@ -34,17 +36,22 @@ export default async function BusinessPage({
     created_at: (business.created_at ?? new Date().toISOString()) as string,
   };
 
-  // Empty but correctly shaped health data
-  const emptyHealth = {
-    agentHealth: { departments: [] as Array<{ department: { id: string; name: string; type: string }; agents: Array<{ id: string; name: string; status: string; lastTaskAt: string | null; errorCount: number }> }> },
-    errorRate: { failedCount: 0, totalCount: 0, rate: 0, assistanceRequestCount: 0 },
-    taskThroughput: { completedCount: 0, queuedCount: 0, avgCompletionMinutes: null as number | null },
-    recentActivity: [] as Array<{ id: string; action: string; entityType: string | null; entityId: string | null; metadata: Record<string, unknown>; createdAt: string; actorId: string | null }>,
-    latestDeployment: null as { id: string; status: string; version: number; created_at: string } | null,
-    pendingApprovals: 0,
-    activeTasks: 0,
-    vpsStatus: null as { status: string; lastCheckedAt: string; details?: Record<string, unknown> } | null,
-  };
+  // Fetch health data — fall back to empty on error
+  let health: SystemHealth;
+  try {
+    health = await getSystemHealth(supabase, id);
+  } catch {
+    health = {
+      agentHealth: { departments: [] },
+      errorRate: { failedCount: 0, totalCount: 0, rate: 0, assistanceRequestCount: 0 },
+      taskThroughput: { completedCount: 0, queuedCount: 0, avgCompletionMinutes: null },
+      recentActivity: [],
+      latestDeployment: null,
+      pendingApprovals: 0,
+      activeTasks: 0,
+      vpsStatus: null,
+    } as SystemHealth;
+  }
 
   const emptyUsage = {
     totalPromptTokens: 0,
@@ -64,7 +71,7 @@ export default async function BusinessPage({
       <HealthDashboardErrorBoundary>
         <HealthDashboard
           business={safeBusiness}
-          initialHealth={emptyHealth}
+          initialHealth={health}
           usageSummary={emptyUsage}
           vpsStatus={null}
           vpsWarning={null}
