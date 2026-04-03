@@ -305,6 +305,8 @@ export async function createBusinessV2(formData: FormData) {
   const apiKeys: Array<{ provider: string; key: string }> = JSON.parse(
     (formData.get("apiKeys") as string) || "[]",
   );
+  const slackTokens: { botToken?: string; appToken?: string; teamId?: string } =
+    JSON.parse((formData.get("slackTokens") as string) || "{}");
   const vpsConfigRaw = formData.get("vpsConfig") as string | null;
   const vpsConfigInput: {
     host: string;
@@ -545,6 +547,9 @@ export async function createBusinessV2(formData: FormData) {
         sshConfig: perBusinessVps?.sshConfig,
         mcpNpmPackages,
         anthropicApiKey: anthropicKey,
+        slackBotToken: slackTokens.botToken,
+        slackAppToken: slackTokens.appToken,
+        slackTeamId: slackTokens.teamId,
       });
     } catch {
       // Non-critical: SSH deploy can be retried from deployments page

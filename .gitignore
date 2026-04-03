@@ -32,3 +32,4 @@ pnpm-debug.log*
 
 # generated
 *.generated.*
+.vercel

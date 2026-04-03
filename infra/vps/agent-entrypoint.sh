@@ -136,8 +136,56 @@ fi
 jq --argjson port "${PORT:-18789}" '.gateway.port = $port' "${OPENCLAW_CONFIG}" > "${OPENCLAW_CONFIG}.tmp" && \
   mv "${OPENCLAW_CONFIG}.tmp" "${OPENCLAW_CONFIG}" 2>/dev/null || true
 
-# Set Anthropic API key for OpenClaw to use
-export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"
+# ---------------------------------------------------------------------------
+# OAuth token: prefer auth-profiles.json over API key
+# ---------------------------------------------------------------------------
+
+if [ -f "/root/.openclaw/agents/${AGENT_ID}/agent/auth-profiles.json" ]; then
+  echo "[entrypoint] OAuth auth-profiles.json found — using OAuth authentication"
+  # OpenClaw reads auth-profiles.json natively; unset API key to avoid conflicts
+  unset ANTHROPIC_API_KEY
+elif [ -f "/root/.openclaw/auth-profiles.json" ]; then
+  echo "[entrypoint] Shared auth-profiles.json found — copying to agent dir"
+  mkdir -p "/root/.openclaw/agents/${AGENT_ID}/agent"
+  cp "/root/.openclaw/auth-profiles.json" "/root/.openclaw/agents/${AGENT_ID}/agent/auth-profiles.json"
+  unset ANTHROPIC_API_KEY
+else
+  echo "[entrypoint] No OAuth found — using ANTHROPIC_API_KEY"
+  export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"
+fi
+
+# ---------------------------------------------------------------------------
+# Slack: configure native channel if tokens are present
+# ---------------------------------------------------------------------------
+
+if [ -n "${SLACK_BOT_TOKEN:-}" ] && [ -n "${SLACK_APP_TOKEN:-}" ]; then
+  echo "[entrypoint] Slack tokens found — adding native channel config"
+  SLACK_ACCOUNT="${DEPARTMENT_TYPE:-default}"
+  jq --arg botToken "${SLACK_BOT_TOKEN}" \
+     --arg appToken "${SLACK_APP_TOKEN}" \
+     --arg teamId "${SLACK_TEAM_ID:-}" \
+     --arg account "${SLACK_ACCOUNT}" \
+     --arg agentId "${AGENT_ID}" \
+     '
+     .channels.slack = {
+       mode: "socket",
+       enabled: true,
+       requireMention: true,
+       groupPolicy: "open",
+       accounts: {
+         ($account): {
+           name: $agentId,
+           enabled: true,
+           botToken: $botToken,
+           appToken: $appToken
+         }
+       }
+     } |
+     .bindings = [{ type: "route", agentId: $agentId, match: { channel: "slack", accountId: $account } }]
+     ' "${OPENCLAW_CONFIG}" > "${OPENCLAW_CONFIG}.tmp" && \
+    mv "${OPENCLAW_CONFIG}.tmp" "${OPENCLAW_CONFIG}" 2>/dev/null || \
+    echo "[entrypoint] WARNING: Failed to inject Slack config"
+fi
 
 # ---------------------------------------------------------------------------
 # Start OpenClaw gateway

@@ -38,6 +38,7 @@ import {
   type ProviderInfo,
 } from "./wizard-api-keys-step";
 import { WizardSubdomainStep } from "./wizard-subdomain-step";
+import { WizardSlackStep, type SlackTokens } from "./wizard-slack-step";
 import {
   WizardVpsStep,
   type VpsConfigInput,
@@ -68,6 +69,7 @@ const STEPS = [
   "API Keys",
   "Deployment Target",
   "Subdomain",
+  "Slack Integration",
   "Review & Deploy",
 ] as const;
 
@@ -196,6 +198,7 @@ export function CreateBusinessWizard() {
   const [vpsConfig, setVpsConfig] = useState<VpsConfigInput>(defaultVpsConfig);
   const [mcpConfig, setMcpConfig] = useState<McpConfigEntry[]>(getDefaultMcpConfig);
   const [subdomain, setSubdomain] = useState("");
+  const [slackTokens, setSlackTokens] = useState<SlackTokens>({ botToken: "", appToken: "", teamId: "" });
 
   const {
     register,
@@ -286,6 +289,9 @@ export function CreateBusinessWizard() {
     formData.set("subdomain", subdomain);
     formData.set("selectedTemplates", JSON.stringify(Array.from(selectedTemplates)));
     formData.set("apiKeys", JSON.stringify(apiKeys));
+    if (slackTokens.botToken && slackTokens.appToken) {
+      formData.set("slackTokens", JSON.stringify(slackTokens));
+    }
     if (vpsConfig.host) {
       formData.set("vpsConfig", JSON.stringify(vpsConfig));
     }
@@ -509,8 +515,31 @@ export function CreateBusinessWizard() {
         </Card>
       )}
 
-      {/* Step 6: Review & Deploy */}
+      {/* Step 6: Slack Integration */}
       {step === 5 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Slack Integration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <WizardSlackStep
+              slackTokens={slackTokens}
+              onSlackTokensChange={setSlackTokens}
+            />
+          </CardContent>
+          <CardFooter className="justify-between">
+            <Button type="button" variant="outline" onClick={() => goToStep(4)}>
+              Back
+            </Button>
+            <Button type="button" onClick={() => goToStep(6)}>
+              {slackTokens.botToken ? "Next" : "Skip"}
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
+
+      {/* Step 7: Review & Deploy */}
+      {step === 6 && (
         <Card>
           <CardHeader>
             <CardTitle>Review & Deploy</CardTitle>

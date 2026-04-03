@@ -37,8 +37,14 @@ export interface SshDeployOptions {
   onProgress?: SshProgressCallback;
   sshConfig?: SshConfig;
   mcpNpmPackages?: string[];
-  /** Anthropic API key for this business (per-tenant cost isolation) */
+  /** Anthropic API key or OAuth token for this business */
   anthropicApiKey?: string;
+  /** Slack bot token (xoxb-...) for native channel integration */
+  slackBotToken?: string;
+  /** Slack app-level token (xapp-...) for socket mode */
+  slackAppToken?: string;
+  /** Slack team/workspace ID (T...) */
+  slackTeamId?: string;
 }
 
 export interface SshDeployAgent {
@@ -70,13 +76,138 @@ export interface SshDeployResult {
 // Constants
 // ---------------------------------------------------------------------------
 
-const TENANT_DATA_DIR = "/data/tenants";
 const AGENT_IMAGE = "fleet-factory/agent:latest";
+
+/** Per-business tenant directory under the business user's home */
+function getTenantDir(businessSlug: string): string {
+  return `/home/${businessSlug}/tenants/${businessSlug}`;
+}
 const CONTAINER_PORT = 18789;
 const HEALTH_CHECK_TIMEOUT_MS = 60_000;
 const HEALTH_CHECK_INTERVAL_MS = 3_000;
 /** Static gateway password for container OpenClaw instances (host-local only) */
 const GATEWAY_PASSWORD = "fleetfactory2026";
+
+// ---------------------------------------------------------------------------
+// Pre-deployment: ensure Linux user + Docker image exist
+// ---------------------------------------------------------------------------
+
+/**
+ * Create a non-root Linux user for this business and set up directory structure.
+ * Idempotent — skips if user already exists.
+ */
+async function ensureBusinessUser(
+  businessSlug: string,
+  sshConfig?: SshConfig,
+  log: SshProgressCallback = console.log,
+): Promise<void> {
+  const tenantDir = getTenantDir(businessSlug);
+
+  // Create user if it doesn't exist (--create-home makes /home/{slug})
+  await execCommand(
+    `id "${businessSlug}" &>/dev/null || useradd --create-home --shell /bin/bash "${businessSlug}"`,
+    { sshConfig },
+  );
+
+  // Create directory structure under user's home
+  await execCommand(
+    `mkdir -p "${tenantDir}/workspace" "${tenantDir}/memory" "${tenantDir}/config"`,
+    { sshConfig },
+  );
+
+  // Set up OpenClaw dirs for OAuth token sharing
+  await execCommand(
+    `mkdir -p "/home/${businessSlug}/.openclaw/agents"`,
+    { sshConfig },
+  );
+
+  // Copy OAuth credentials from Claude Code if available
+  await execCommand(
+    `if [ -f /root/.claude/.credentials.json ]; then
+      python3 -c "
+import json
+with open('/root/.claude/.credentials.json') as f:
+    creds = json.load(f)
+oauth = creds.get('claudeAiOauth', {})
+if oauth.get('accessToken'):
+    profile = {
+        'version': 1,
+        'profiles': {
+            'anthropic:oauth': {
+                'type': 'oauth',
+                'provider': 'anthropic',
+                'access': oauth['accessToken'],
+                'refresh': oauth.get('refreshToken', ''),
+                'expires': oauth.get('expiresAt', 0)
+            }
+        },
+        'lastGood': {'anthropic': 'anthropic:oauth'},
+        'usageStats': {}
+    }
+    with open('/home/${businessSlug}/.openclaw/auth-profiles.json', 'w') as f:
+        json.dump(profile, f, indent=2)
+    print('OAuth token copied')
+else:
+    print('No OAuth token found')
+"
+    fi`,
+    { sshConfig },
+  );
+
+  // Set ownership
+  await execCommand(
+    `chown -R "${businessSlug}:${businessSlug}" "/home/${businessSlug}"`,
+    { sshConfig },
+  );
+
+  log(`[ssh] Business user "${businessSlug}" ready`);
+}
+
+/**
+ * Ensure the Docker agent image exists on the VPS. Auto-builds if missing.
+ */
+async function ensureAgentImage(
+  sshConfig?: SshConfig,
+  log: SshProgressCallback = console.log,
+): Promise<void> {
+  const imageCheck = await execCommand(
+    `docker image inspect ${AGENT_IMAGE} > /dev/null 2>&1 && echo "exists" || echo "missing"`,
+    { sshConfig },
+  );
+
+  if (imageCheck.stdout.trim() === "exists") {
+    log("[ssh] Docker agent image found");
+    return;
+  }
+
+  log("[ssh] Docker agent image missing — building...");
+
+  // Upload Dockerfile and entrypoint to a temp build dir
+  const buildDir = "/tmp/fleet-factory-build";
+  await execCommand(`mkdir -p ${buildDir}`, { sshConfig });
+
+  // The Dockerfile and entrypoint are at known paths on this VPS
+  // (placed during initial setup or by the admin). If they exist in
+  // infra/vps/ on the VPS, use them. Otherwise, copy from the standard location.
+  await execCommand(
+    `if [ -f /data/tenants/fleet-test-2/frontend/infra/vps/Dockerfile.agent ]; then
+       cp /data/tenants/fleet-test-2/frontend/infra/vps/Dockerfile.agent ${buildDir}/Dockerfile.agent
+       cp /data/tenants/fleet-test-2/frontend/infra/vps/agent-entrypoint.sh ${buildDir}/agent-entrypoint.sh
+     fi`,
+    { sshConfig },
+  );
+
+  const buildResult = await execCommand(
+    `cd ${buildDir} && docker build -t ${AGENT_IMAGE} -f Dockerfile.agent . 2>&1`,
+    { sshConfig, timeout: 180000 },
+  );
+
+  if (buildResult.code !== 0) {
+    throw new Error(`Docker image build failed: ${buildResult.stderr || buildResult.stdout}`);
+  }
+
+  log("[ssh] Docker agent image built successfully");
+}
 
 // ---------------------------------------------------------------------------
 // Main deployment function (Docker CEO-first flow)
@@ -105,7 +236,7 @@ export async function sshDeployBusiness(
   }
 
   const log = options.onProgress ?? console.log;
-  const tenantDir = `${TENANT_DATA_DIR}/${options.businessSlug}`;
+  const tenantDir = getTenantDir(options.businessSlug);
   const agentResults: SshDeployResult["agentResults"] = [];
 
   try {
@@ -120,6 +251,13 @@ export async function sshDeployBusiness(
     if (!ceoAgent) {
       return { success: false, agentResults: [], error: "No CEO agent found in deployment" };
     }
+
+    // -----------------------------------------------------------------------
+    // Pre-deploy: ensure Linux user + Docker image
+    // -----------------------------------------------------------------------
+    log("[ssh] Pre-deploy: Ensuring business user and Docker image");
+    await ensureBusinessUser(options.businessSlug, options.sshConfig, log);
+    await ensureAgentImage(options.sshConfig, log);
 
     // -----------------------------------------------------------------------
     // Phase 0: Cleanup old containers for this tenant
@@ -172,19 +310,6 @@ export async function sshDeployBusiness(
       options.sshConfig,
     );
 
-    // Verify Docker image exists
-    const imageCheck = await execCommand(
-      `docker image inspect ${AGENT_IMAGE} > /dev/null 2>&1 && echo "exists" || echo "missing"`,
-      { sshConfig: options.sshConfig },
-    );
-    if (imageCheck.stdout.trim() !== "exists") {
-      return {
-        success: false,
-        agentResults: [],
-        error: `Docker image ${AGENT_IMAGE} not found on VPS. Build it first: docker build -t ${AGENT_IMAGE} -f Dockerfile.agent .`,
-      };
-    }
-
     // -----------------------------------------------------------------------
     // Phase B: Deploy CEO container
     // -----------------------------------------------------------------------
@@ -213,6 +338,9 @@ export async function sshDeployBusiness(
       image: AGENT_IMAGE,
       sshConfig: options.sshConfig,
       log,
+      slackBotToken: options.slackBotToken,
+      slackAppToken: options.slackAppToken,
+      slackTeamId: options.slackTeamId,
     });
 
     if (!ceoResult.success) {
@@ -303,6 +431,9 @@ export async function sshDeployBusiness(
         image: useTemplateImage,
         sshConfig: options.sshConfig,
         log,
+        slackBotToken: options.slackBotToken,
+        slackAppToken: options.slackAppToken,
+        slackTeamId: options.slackTeamId,
       });
 
       if (!agentResult.success) {
@@ -368,7 +499,7 @@ export async function sshDeployAgent(
   }
 
   const log = onProgress ?? console.log;
-  const tenantDir = `${TENANT_DATA_DIR}/${businessSlug}`;
+  const tenantDir = getTenantDir(businessSlug);
   const agentWorkspaceDir = `${tenantDir}/workspace/workspace-${agent.vpsAgentId}`;
 
   try {
@@ -471,6 +602,9 @@ interface DeployContainerOptions {
   image: string;
   sshConfig?: SshConfig;
   log: SshProgressCallback;
+  slackBotToken?: string;
+  slackAppToken?: string;
+  slackTeamId?: string;
 }
 
 /**
@@ -492,7 +626,7 @@ async function deployContainer(
   );
 
   // Build docker run command
-  const dockerCmd = [
+  const dockerParts = [
     "docker run -d",
     `--name ${vpsAgentId}`,
     `--label fleet-factory=true`,
@@ -507,15 +641,31 @@ async function deployContainer(
     `-e MEMORY_DIR=/memory`,
     `-e ANTHROPIC_API_KEY=${anthropicApiKey}`,
     `-e OPENCLAW_GATEWAY_PASSWORD=${GATEWAY_PASSWORD}`,
+    // Mount workspace, config, memory
     `-v ${tenantDir}/workspace/workspace-${vpsAgentId}:/workspace:rw`,
     `-v ${tenantDir}/config:/config:ro`,
     `-v ${tenantDir}/memory/${vpsAgentId}:/memory:rw`,
+    // Mount OAuth auth profiles from business user's home (read-only)
+    `-v /home/${businessSlug}/.openclaw:/root/.openclaw:ro`,
     `-p ${hostPort}:${CONTAINER_PORT}`,
     `--memory=512m`,
     `--cpus=0.5`,
     `--restart=unless-stopped`,
-    image,
-  ].join(" ");
+  ];
+
+  // Add Slack tokens if provided
+  if (opts.slackBotToken) {
+    dockerParts.push(`-e SLACK_BOT_TOKEN=${opts.slackBotToken}`);
+  }
+  if (opts.slackAppToken) {
+    dockerParts.push(`-e SLACK_APP_TOKEN=${opts.slackAppToken}`);
+  }
+  if (opts.slackTeamId) {
+    dockerParts.push(`-e SLACK_TEAM_ID=${opts.slackTeamId}`);
+  }
+
+  dockerParts.push(image);
+  const dockerCmd = dockerParts.join(" ");
 
   log(`[ssh] Starting container ${vpsAgentId} on port ${hostPort}`);
   const runResult = await execCommand(dockerCmd, { sshConfig });
