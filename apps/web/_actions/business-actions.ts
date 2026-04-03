@@ -551,8 +551,9 @@ export async function createBusinessV2(formData: FormData) {
         slackAppToken: slackTokens.appToken,
         slackTeamId: slackTokens.teamId,
       });
-    } catch {
-      // Non-critical: SSH deploy can be retried from deployments page
+    } catch (sshErr) {
+      console.error("[createBusinessV2] SSH deploy failed:", sshErr);
+      // Continue — business was created, deploy can be retried
     }
   }
 
