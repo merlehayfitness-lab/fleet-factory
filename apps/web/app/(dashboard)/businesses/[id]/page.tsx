@@ -146,12 +146,13 @@ export default async function BusinessPage({
   const vpsConfigured = !!(process.env.VPS_API_URL && process.env.VPS_API_KEY);
   const effectiveVpsStatus = health.vpsStatus ?? (vpsConfigured ? { status: "checking", lastCheckedAt: new Date().toISOString() } : null);
 
-  let budgetInfo: { allowed: boolean; warningLevel: string; businessUtilization?: number; businessTokensUsed?: number; businessTokenLimit?: number };
-  try {
-    budgetInfo = await checkBudget(supabase, id);
-  } catch {
-    budgetInfo = { allowed: true, warningLevel: "none" };
-  }
+  const budgetInfo = await checkBudget(supabase, id).catch(() => ({
+    allowed: true as const,
+    warningLevel: "none" as const,
+    businessUtilization: undefined as number | undefined,
+    businessTokensUsed: undefined as number | undefined,
+    businessTokenLimit: undefined as number | undefined,
+  }));
 
   return (
     <div className="space-y-0">
