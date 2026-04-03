@@ -142,13 +142,20 @@ export async function validateApiKey(
   try {
     switch (provider) {
       case "anthropic": {
+        // Support both API keys (sk-ant-api...) and OAuth tokens (sk-ant-oat01-...)
+        const isOAuth = apiKey.startsWith("sk-ant-oat01-");
+        const headers: Record<string, string> = {
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        };
+        if (isOAuth) {
+          headers["Authorization"] = `Bearer ${apiKey}`;
+        } else {
+          headers["x-api-key"] = apiKey;
+        }
         const res = await fetch("https://api.anthropic.com/v1/messages", {
           method: "POST",
-          headers: {
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
-            "content-type": "application/json",
-          },
+          headers,
           body: JSON.stringify({
             model: "claude-haiku-4-20250514",
             max_tokens: 1,
@@ -156,9 +163,9 @@ export async function validateApiKey(
           }),
           signal: controller.signal,
         });
-        // 200 = valid, 401 = invalid key, other = likely valid key but some other issue
+        // 200 = valid, 401 = invalid key/token, other = likely valid but some other issue
         if (res.status === 401 || res.status === 403) {
-          return { valid: false, error: "Invalid API key" };
+          return { valid: false, error: isOAuth ? "Invalid OAuth token" : "Invalid API key" };
         }
         return { valid: true };
       }

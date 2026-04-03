@@ -23,6 +23,8 @@ export interface ProviderInfo {
   placeholder: string;
   required: boolean;
   description: string;
+  /** If true, show OAuth instructions instead of just a text field */
+  isOAuth?: boolean;
 }
 
 interface ValidationStatus {
@@ -43,10 +45,12 @@ interface Props {
 const DEFAULT_PROVIDERS: ProviderInfo[] = [
   {
     provider: "anthropic",
-    label: "Anthropic",
-    placeholder: "sk-ant-...",
+    label: "Claude OAuth Token",
+    placeholder: "sk-ant-oat01-...",
     required: true,
-    description: "Powers your Sales and Support agents",
+    description:
+      "Powers all your AI agents. Get this from Claude Code: run 'openclaw models auth setup-token --provider anthropic' on your VPS, or paste your OAuth token from claude.ai.",
+    isOAuth: true,
   },
   {
     provider: "openai",
@@ -200,8 +204,8 @@ export function WizardApiKeysStep({
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        API keys are encrypted and stored securely. Only the Anthropic key is
-        required. Other keys enable multi-model R&D council features.
+        Credentials are encrypted and stored securely. A Claude OAuth token is
+        required to power your agents. Other keys are optional.
       </p>
 
       <div className="space-y-3">
@@ -243,6 +247,18 @@ export function WizardApiKeysStep({
               <p className="mb-2 text-xs text-muted-foreground">
                 {provider.description}
               </p>
+              {provider.isOAuth && (
+                <div className="mb-3 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
+                  <p className="font-medium text-foreground">How to get your Claude OAuth token:</p>
+                  <ol className="list-decimal list-inside space-y-0.5">
+                    <li>Open Claude Code CLI on your machine</li>
+                    <li>Run: <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">openclaw models auth setup-token --provider anthropic</code></li>
+                    <li>Complete the browser OAuth flow</li>
+                    <li>Copy the token (starts with <code className="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">sk-ant-oat01-</code>)</li>
+                  </ol>
+                  <p className="pt-1 text-[10px]">This uses your Claude account — no API key needed, no separate billing.</p>
+                </div>
+              )}
               <div className="flex gap-2">
                 <Input
                   id={`key-${provider.provider}`}
@@ -294,12 +310,12 @@ export function WizardApiKeysStep({
       {/* Warning messages */}
       {!hasAnthropicKey && (
         <p className="text-sm text-amber-600">
-          An Anthropic API key is required to deploy agents.
+          A Claude OAuth token is required to deploy agents.
         </p>
       )}
       {hasAnthropicKey && !isAnthropicValidated && anthropicValidation?.status !== "validating" && (
         <p className="text-sm text-amber-600">
-          Please validate your Anthropic API key before continuing.
+          Please validate your Claude OAuth token before continuing.
         </p>
       )}
     </div>
