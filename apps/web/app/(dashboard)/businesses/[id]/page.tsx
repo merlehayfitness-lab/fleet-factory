@@ -38,16 +38,15 @@ export default async function BusinessPage({
   } catch (e) {
     console.error("[BusinessPage] getSystemHealth crashed:", e);
     health = {
-      agents: [],
-      departments: [],
-      errorRate: { total: 0, errors: 0, rate: 0 },
-      taskThroughput: { completed: 0, failed: 0, pending: 0 },
+      agentHealth: { departments: [] },
+      errorRate: { failedCount: 0, totalCount: 0, rate: 0, assistanceRequestCount: 0 },
+      taskThroughput: { completedCount: 0, queuedCount: 0, avgCompletionMinutes: null },
       recentActivity: [],
       latestDeployment: null,
       pendingApprovals: 0,
       activeTasks: 0,
       vpsStatus: null,
-    };
+    } satisfies import("@fleet-factory/core/server").SystemHealth;
   }
 
   // If business is disabled/suspended, check for VPS warning in latest disable audit log
