@@ -14,6 +14,6 @@ export const config = {
      * - favicon.ico (favicon)
      * - Public assets (svg, png, jpg, jpeg, gif, webp, ico)
      */
-    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|api/debug|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };
