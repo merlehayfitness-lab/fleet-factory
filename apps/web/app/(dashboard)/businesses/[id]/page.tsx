@@ -1,12 +1,8 @@
 import { notFound } from "next/navigation";
 import { createServerClient } from "@/_lib/supabase/server";
-import { HealthDashboard } from "@/_components/health-dashboard";
-import { HealthDashboardErrorBoundary } from "@/_components/health-dashboard-wrapper";
-import { getSystemHealth } from "@fleet-factory/core/server";
-import type { SystemHealth } from "@fleet-factory/core/server";
 
 /**
- * Business overview — rebuilt with safe data passing.
+ * Business overview — test #2: HealthDashboard with NO core/server import.
  */
 export default async function BusinessPage({
   params,
@@ -18,7 +14,7 @@ export default async function BusinessPage({
 
   const { data: business, error: businessError } = await supabase
     .from("businesses")
-    .select("id, name, slug, industry, status, created_at, plan_tier, monthly_token_limit")
+    .select("id, name, slug, industry, status, created_at, plan_tier")
     .eq("id", id)
     .single();
 
@@ -26,59 +22,26 @@ export default async function BusinessPage({
     notFound();
   }
 
-  // Build a safe business object with only the fields HealthDashboard needs
-  const safeBusiness = {
-    id: (business.id ?? "") as string,
-    name: (business.name ?? "") as string,
-    slug: (business.slug ?? "") as string,
-    industry: (business.industry ?? "general") as string,
-    status: (business.status ?? "provisioning") as string,
-    created_at: (business.created_at ?? new Date().toISOString()) as string,
-  };
-
-  // Fetch health data — fall back to empty on error
-  let health: SystemHealth;
+  // Test: dynamically import to see if it crashes
+  let healthError = "";
   try {
-    health = await getSystemHealth(supabase, id);
-  } catch {
-    health = {
-      agentHealth: { departments: [] },
-      errorRate: { failedCount: 0, totalCount: 0, rate: 0, assistanceRequestCount: 0 },
-      taskThroughput: { completedCount: 0, queuedCount: 0, avgCompletionMinutes: null },
-      recentActivity: [],
-      latestDeployment: null,
-      pendingApprovals: 0,
-      activeTasks: 0,
-      vpsStatus: null,
-    } as SystemHealth;
+    const { getSystemHealth } = await import("@fleet-factory/core/server");
+    healthError = "import OK";
+    const health = await getSystemHealth(supabase, id);
+    healthError = `health OK: ${health.agentHealth.departments.length} depts`;
+  } catch (e) {
+    healthError = `CRASH: ${(e as Error).message}\n${(e as Error).stack?.split("\n").slice(0, 5).join("\n")}`;
   }
 
-  const emptyUsage = {
-    totalPromptTokens: 0,
-    totalCompletionTokens: 0,
-    totalCostCents: 0,
-    byAgent: [] as Array<{ agentId: string; agentName: string; promptTokens: number; completionTokens: number; costCents: number }>,
-  };
-
   return (
-    <div className="space-y-0">
-      <div className="mb-4 flex items-center gap-3">
-        <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
-          {((business.plan_tier as string) ?? "PRO").toUpperCase()} Plan
-        </span>
-      </div>
-
-      <HealthDashboardErrorBoundary>
-        <HealthDashboard
-          business={safeBusiness}
-          initialHealth={health}
-          usageSummary={emptyUsage}
-          vpsStatus={null}
-          vpsWarning={null}
-          bannerAgents={[]}
-          bannerDepartments={[]}
-        />
-      </HealthDashboardErrorBoundary>
+    <div style={{ padding: "2rem", fontFamily: "monospace" }}>
+      <h1 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>
+        {business.name} ({business.status})
+      </h1>
+      <h2>Import + Health Test:</h2>
+      <pre style={{ background: "#f5f5f5", padding: "1rem", borderRadius: "8px", whiteSpace: "pre-wrap" }}>
+        {healthError}
+      </pre>
     </div>
   );
 }
