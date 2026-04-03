@@ -314,5 +314,5 @@ export type {
   UsageAnalytics,
 } from "./dashboard/dashboard-service";
 
-// OpenClaw workspace generator (re-exported for server-only use in web app)
-export { generateOpenClawWorkspace } from "@fleet-factory/runtime";
+// OpenClaw workspace + team plan generators (re-exported for server-only use in web app)
+export { generateOpenClawWorkspace, generateTeamPlan } from "@fleet-factory/runtime";
