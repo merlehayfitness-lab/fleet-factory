@@ -239,23 +239,35 @@ export function CreateBusinessWizard() {
       if (step === 2) {
         const anthropicKey = apiKeys.find((k) => k.provider === "anthropic");
         if (!anthropicKey || anthropicKey.key.length < 10) {
-          setError("An Anthropic API key is required");
+          setError("A Claude OAuth token or Anthropic API key is required");
           return;
         }
-        // Validate Anthropic key via real API call before advancing
-        try {
-          const result = await validateApiKey("anthropic", anthropicKey.key);
-          if (!result.valid) {
-            setError(
-              `Anthropic API key validation failed: ${result.error ?? "Invalid key"}`,
-            );
+        // OAuth tokens (sk-ant-oat01-) are validated by format only since
+        // the Anthropic Messages API doesn't support OAuth authentication.
+        const isOAuth = anthropicKey.key.startsWith("sk-ant-oat01-");
+        if (isOAuth) {
+          if (anthropicKey.key.length < 40) {
+            setError("OAuth token looks too short — check you copied the full token");
             return;
           }
-        } catch {
-          setError("Failed to validate Anthropic API key");
-          return;
+          // Format looks good — skip API validation
+          setError(null);
+        } else {
+          // Standard API key — validate via real API call before advancing
+          try {
+            const result = await validateApiKey("anthropic", anthropicKey.key);
+            if (!result.valid) {
+              setError(
+                `Anthropic API key validation failed: ${result.error ?? "Invalid key"}`,
+              );
+              return;
+            }
+          } catch {
+            setError("Failed to validate Anthropic API key");
+            return;
+          }
+          setError(null);
         }
-        setError(null);
       }
       // Step 3 = Deployment Target: no required fields, always allow advance
     }
