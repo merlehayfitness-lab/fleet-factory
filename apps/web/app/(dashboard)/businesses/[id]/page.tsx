@@ -32,7 +32,23 @@ export default async function BusinessPage({
   }
 
   // Fetch combined health payload via the health service
-  const health = await getSystemHealth(supabase, id);
+  let health;
+  try {
+    health = await getSystemHealth(supabase, id);
+  } catch (e) {
+    console.error("[BusinessPage] getSystemHealth crashed:", e);
+    health = {
+      agents: [],
+      departments: [],
+      errorRate: { total: 0, errors: 0, rate: 0 },
+      taskThroughput: { completed: 0, failed: 0, pending: 0 },
+      recentActivity: [],
+      latestDeployment: null,
+      pendingApprovals: 0,
+      activeTasks: 0,
+      vpsStatus: null,
+    };
+  }
 
   // If business is disabled/suspended, check for VPS warning in latest disable audit log
   let vpsWarning: string | null = null;
@@ -76,9 +92,9 @@ export default async function BusinessPage({
     name: d.name as string,
   }));
 
-  // Fetch usage summary: aggregate from usage_records grouped by agent
+  // Fetch usage summary: aggregate from api_usage grouped by agent
   const { data: usageRecords } = await supabase
-    .from("usage_records")
+    .from("api_usage")
     .select("agent_id, prompt_tokens, completion_tokens, cost_cents")
     .eq("business_id", id);
 
@@ -142,7 +158,13 @@ export default async function BusinessPage({
   const effectiveVpsStatus = health.vpsStatus ?? (vpsConfigured ? { status: "checking", lastCheckedAt: new Date().toISOString() } : null);
 
   // Check business-level budget (no agentId = business-wide check)
-  const budgetInfo = await checkBudget(supabase, id);
+  let budgetInfo;
+  try {
+    budgetInfo = await checkBudget(supabase, id);
+  } catch (e) {
+    console.error("[BusinessPage] checkBudget crashed:", e);
+    budgetInfo = { allowed: true, warningLevel: "none" as const };
+  }
 
   return (
     <div className="space-y-0">
