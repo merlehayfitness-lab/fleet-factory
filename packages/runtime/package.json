@@ -6,7 +6,8 @@
   "types": "index.ts",
   "exports": {
     ".": "./index.ts",
-    "./generators/openclaw-workspace": "./generators/openclaw-workspace.ts"
+    "./generators/openclaw-workspace": "./generators/openclaw-workspace.ts",
+    "./generators/team-plan": "./generators/team-plan.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
