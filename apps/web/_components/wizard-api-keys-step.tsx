@@ -102,11 +102,20 @@ export function WizardApiKeysStep({
     const existing = apiKeys.find((k) => k.provider === provider);
     const providerInfo = providers.find((p) => p.provider === provider);
 
-    // Reset validation status when key changes
-    setValidationStatus((prev) => ({
-      ...prev,
-      [provider]: { status: "idle" },
-    }));
+    // Auto-validate OAuth tokens by format as user types
+    if (provider === "anthropic" && value.startsWith("sk-ant-oat01-")) {
+      setValidationStatus((prev) => ({
+        ...prev,
+        [provider]: value.length >= 40
+          ? { status: "valid" }
+          : { status: "idle" },
+      }));
+    } else {
+      setValidationStatus((prev) => ({
+        ...prev,
+        [provider]: { status: "idle" },
+      }));
+    }
 
     if (existing) {
       onApiKeysChange(
@@ -130,6 +139,18 @@ export function WizardApiKeysStep({
   const validateSingleKey = useCallback(
     async (provider: string, key: string) => {
       if (!key || key.length < 5) return;
+
+      // OAuth tokens (sk-ant-oat01-) can't be validated against the Anthropic
+      // Messages API — it rejects OAuth auth. Validate format only.
+      if (provider === "anthropic" && key.startsWith("sk-ant-oat01-")) {
+        setValidationStatus((prev) => ({
+          ...prev,
+          [provider]: key.length >= 40
+            ? { status: "valid" }
+            : { status: "invalid", error: "Token looks too short" },
+        }));
+        return;
+      }
 
       setValidationStatus((prev) => ({
         ...prev,
