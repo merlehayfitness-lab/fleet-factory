@@ -305,17 +305,19 @@ export function CreateBusinessWizard() {
       if (result?.error) {
         setError(result.error);
         setDeployProgress((prev) => [...prev, `Error: ${result.error}`]);
+        setSubmitting(false);
       }
+      // If no error returned, the server action called redirect() which
+      // Next.js handles automatically — no need to catch it.
     } catch (err: unknown) {
-      // redirect() throws NEXT_REDIRECT which is expected on success
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("NEXT_REDIRECT") || msg.includes("NEXT_NOT_FOUND")) {
-        // Expected — redirect happened, deployment succeeded
-        return;
+      // Re-throw redirect/not-found errors so Next.js can handle navigation
+      const digest = (err as { digest?: string })?.digest ?? "";
+      if (digest.startsWith("NEXT_REDIRECT") || digest.startsWith("NEXT_NOT_FOUND")) {
+        throw err;
       }
+      const msg = err instanceof Error ? err.message : String(err);
       setError(msg || "Deployment failed — check server logs");
       setDeployProgress((prev) => [...prev, `Error: ${msg}`]);
-    } finally {
       setSubmitting(false);
     }
   }
