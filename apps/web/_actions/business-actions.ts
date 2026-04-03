@@ -532,7 +532,7 @@ export async function createBusinessV2(formData: FormData) {
       ) ?? slackTokens.agents?.[0];
 
       // Generate TEAM_PLAN.md for sub-agents (non-CEO)
-      const { generateTeamPlan } = await import("@fleet-factory/runtime/generators/team-plan");
+      const { generateTeamPlan } = await import("@fleet-factory/runtime");
       const subAgents = (slackTokens.agents ?? []).filter(
         (a) => a.agentName !== ceoAgentData?.name,
       );

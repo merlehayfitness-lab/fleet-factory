@@ -19,3 +19,7 @@ export { generateUserMd } from "./generators/openclaw-user-md";
 export { generateOpenClawConfig } from "./generators/openclaw-config";
 export { generateOpenClawWorkspace } from "./generators/openclaw-workspace";
 export type { WorkspaceFile } from "./generators/openclaw-workspace";
+
+// Team plan generator (CEO self-deploy)
+export { generateTeamPlan } from "./generators/team-plan";
+export type { TeamPlanInput, TeamPlanAgent } from "./generators/team-plan";
