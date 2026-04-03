@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
+import { XCircle } from "lucide-react";
 import { createServerClient } from "@/_lib/supabase/server";
+import { HealthDashboard } from "@/_components/health-dashboard";
+import { HealthDashboardErrorBoundary } from "@/_components/health-dashboard-wrapper";
+import { getSystemHealth, checkBudget } from "@fleet-factory/core/server";
+import type { UsageSummaryData } from "@/_components/usage-summary";
 
-/**
- * Business overview — test #2: HealthDashboard with NO core/server import.
- */
 export default async function BusinessPage({
   params,
 }: {
@@ -14,7 +16,7 @@ export default async function BusinessPage({
 
   const { data: business, error: businessError } = await supabase
     .from("businesses")
-    .select("id, name, slug, industry, status, created_at, plan_tier")
+    .select("*")
     .eq("id", id)
     .single();
 
@@ -22,26 +24,140 @@ export default async function BusinessPage({
     notFound();
   }
 
-  // Test: dynamically import to see if it crashes
-  let healthError = "";
-  try {
-    const { getSystemHealth } = await import("@fleet-factory/core/server");
-    healthError = "import OK";
-    const health = await getSystemHealth(supabase, id);
-    healthError = `health OK: ${health.agentHealth.departments.length} depts`;
-  } catch (e) {
-    healthError = `CRASH: ${(e as Error).message}\n${(e as Error).stack?.split("\n").slice(0, 5).join("\n")}`;
+  // Fetch health — gracefully degrade on failure
+  const health = await getSystemHealth(supabase, id).catch((e) => {
+    console.error("[BusinessPage] getSystemHealth:", e);
+    return {
+      agentHealth: { departments: [] },
+      errorRate: { failedCount: 0, totalCount: 0, rate: 0, assistanceRequestCount: 0 },
+      taskThroughput: { completedCount: 0, queuedCount: 0, avgCompletionMinutes: null },
+      recentActivity: [],
+      latestDeployment: null,
+      pendingApprovals: 0,
+      activeTasks: 0,
+      vpsStatus: null,
+    } as Awaited<ReturnType<typeof getSystemHealth>>;
+  });
+
+  // VPS warning for disabled businesses
+  let vpsWarning: string | null = null;
+  if (business.status === "disabled" || business.status === "suspended") {
+    const { data: lastDisableLog } = await supabase
+      .from("audit_logs")
+      .select("metadata")
+      .eq("business_id", business.id)
+      .eq("action", "emergency.tenant_disabled")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    const meta = lastDisableLog?.metadata as Record<string, unknown> | null;
+    vpsWarning = (meta?.vps_warning as string) ?? null;
   }
 
+  // Agents and departments for banner
+  const [{ data: bannerAgents }, { data: bannerDepartments }] = await Promise.all([
+    supabase.from("agents").select("id, name, departments(name)").eq("business_id", id).eq("status", "active"),
+    supabase.from("departments").select("id, name").eq("business_id", id),
+  ]);
+
+  const agentsForBanner = (bannerAgents ?? []).map((a) => ({
+    id: a.id as string,
+    name: a.name as string,
+    department_name: (a.departments as unknown as { name: string } | null)?.name,
+  }));
+
+  const departmentsForBanner = (bannerDepartments ?? []).map((d) => ({
+    id: d.id as string,
+    name: d.name as string,
+  }));
+
+  // Usage from api_usage
+  const { data: usageRecords } = await supabase
+    .from("api_usage")
+    .select("agent_id, prompt_tokens, completion_tokens, cost_cents")
+    .eq("business_id", id);
+
+  const agentIds = [...new Set((usageRecords ?? []).map((r) => r.agent_id as string))];
+  const agentNameMap = new Map<string, string>();
+  if (agentIds.length > 0) {
+    const { data: agents } = await supabase.from("agents").select("id, name").in("id", agentIds);
+    for (const agent of agents ?? []) {
+      agentNameMap.set(agent.id as string, agent.name as string);
+    }
+  }
+
+  let totalPromptTokens = 0;
+  let totalCompletionTokens = 0;
+  let totalCostCents = 0;
+  const agentUsageMap = new Map<string, { promptTokens: number; completionTokens: number; costCents: number }>();
+  for (const record of usageRecords ?? []) {
+    totalPromptTokens += record.prompt_tokens;
+    totalCompletionTokens += record.completion_tokens;
+    totalCostCents += record.cost_cents;
+    const agentId = record.agent_id as string;
+    const existing = agentUsageMap.get(agentId) ?? { promptTokens: 0, completionTokens: 0, costCents: 0 };
+    existing.promptTokens += record.prompt_tokens;
+    existing.completionTokens += record.completion_tokens;
+    existing.costCents += record.cost_cents;
+    agentUsageMap.set(agentId, existing);
+  }
+
+  const usageSummary: UsageSummaryData = {
+    totalPromptTokens,
+    totalCompletionTokens,
+    totalCostCents,
+    byAgent: Array.from(agentUsageMap.entries()).map(([agentId, stats]) => ({
+      agentId,
+      agentName: agentNameMap.get(agentId) ?? "Unknown Agent",
+      ...stats,
+    })),
+  };
+
+  const vpsConfigured = !!(process.env.VPS_API_URL && process.env.VPS_API_KEY);
+  const effectiveVpsStatus = health.vpsStatus ?? (vpsConfigured ? { status: "checking", lastCheckedAt: new Date().toISOString() } : null);
+
+  const budgetInfo = await checkBudget(supabase, id).catch(() => ({
+    allowed: true as const,
+    warningLevel: "none" as const,
+    businessUtilization: undefined as number | undefined,
+    businessTokensUsed: undefined as number | undefined,
+    businessTokenLimit: undefined as number | undefined,
+  }));
+
   return (
-    <div style={{ padding: "2rem", fontFamily: "monospace" }}>
-      <h1 style={{ fontSize: "1.5rem", marginBottom: "1rem" }}>
-        {business.name} ({business.status})
-      </h1>
-      <h2>Import + Health Test:</h2>
-      <pre style={{ background: "#f5f5f5", padding: "1rem", borderRadius: "8px", whiteSpace: "pre-wrap" }}>
-        {healthError}
-      </pre>
+    <div className="space-y-0">
+      {budgetInfo.warningLevel === "red" && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <XCircle className="size-4 shrink-0" />
+          <div>
+            <p className="font-medium">Monthly token limit reached</p>
+            <p className="mt-1 text-destructive/80">All agents are blocked from making API calls.</p>
+          </div>
+        </div>
+      )}
+
+      <div className="mb-4 flex items-center gap-3">
+        <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
+          {((business.plan_tier as string) ?? "PRO").toUpperCase()} Plan
+        </span>
+        {budgetInfo.businessUtilization != null && budgetInfo.businessUtilization > 50 && (
+          <p className="text-xs text-muted-foreground">
+            {budgetInfo.businessTokensUsed?.toLocaleString()} / {budgetInfo.businessTokenLimit?.toLocaleString()} tokens ({budgetInfo.businessUtilization}%)
+          </p>
+        )}
+      </div>
+
+      <HealthDashboardErrorBoundary>
+        <HealthDashboard
+          business={business}
+          initialHealth={health}
+          usageSummary={usageSummary}
+          vpsStatus={effectiveVpsStatus}
+          vpsWarning={vpsWarning}
+          bannerAgents={agentsForBanner}
+          bannerDepartments={departmentsForBanner}
+        />
+      </HealthDashboardErrorBoundary>
     </div>
   );
 }
