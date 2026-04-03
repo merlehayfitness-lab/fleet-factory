@@ -416,29 +416,17 @@ export async function createBusinessV2(formData: FormData) {
     console.error("V2 agent provisioning error:", err);
   }
 
-  // 8. SSH Deploy (if configured) — dynamic import to avoid native node-ssh/ssh2 in webpack bundle
-  const { isSshConfigured } = await import(
-    "@fleet-factory/core/vps/ssh-client"
-  );
-  // Resolve per-business SSH config for this deploy
-  const { getVpsConfigForBusiness } = await import(
-    "@fleet-factory/core/vps/vps-config"
-  );
-  const perBusinessVps = await getVpsConfigForBusiness(supabase, businessId).catch(() => null);
+  // 8. Deploy via VPS Deploy API (HTTP, not SSH)
+  const vpsApiUrl = process.env.VPS_API_URL || (vpsConfigInput ? `http://${vpsConfigInput.host}:3100` : null);
+  const vpsApiKey = process.env.VPS_API_KEY || vpsConfigInput?.proxyApiKey || "ff-deploy-2026";
 
-  if (isSshConfigured(perBusinessVps?.sshConfig)) {
+  if (vpsApiUrl) {
     try {
-      const { sshDeployBusiness } = await import(
-        "@fleet-factory/core/vps/ssh-deploy"
-      );
-      const { generateOpenClawWorkspace } = await import(
+      const { generateOpenClawWorkspace, generateTeamPlan } = await import(
         "@fleet-factory/core/server"
       );
-      const { getMcpNpmPackages } = await import(
-        "@fleet-factory/core/agent/mcp-service"
-      );
 
-      // Fetch real agents for SSH deploy (with template data for MCP resolution)
+      // Fetch agents + departments
       const { data: allAgents } = await supabase
         .from("agents")
         .select("id, name, department_id, parent_agent_id, template_id, system_prompt, tool_profile, model_profile, status, skill_definition, token_budget, role_level, reporting_chain")
@@ -449,100 +437,48 @@ export async function createBusinessV2(formData: FormData) {
         .select("id, type, name, department_skill")
         .eq("business_id", businessId);
 
-      // Fetch template MCP servers for each agent
-      const templateIds = [...new Set((allAgents ?? []).map((a: { template_id: string }) => a.template_id).filter(Boolean))];
-      const { data: templates } = templateIds.length > 0
-        ? await supabase
-            .from("agent_templates")
-            .select("id, mcp_servers")
-            .in("id", templateIds)
-        : { data: [] };
-      const templateMcpMap = new Map(
-        (templates ?? []).map((t: { id: string; mcp_servers: unknown }) => [t.id, t.mcp_servers]),
-      );
-
       const deptMap = new Map(
         (allDepts ?? []).map((d: { id: string; type: string }) => [d.id, d.type]),
       );
 
-      // Convert MCP config entries to McpServerDef[] for workspace generation
-      const businessMcpDefs = mcpConfigEntries
-        .filter((m) => m.enabled)
-        .map((m) => ({
-          name: m.name,
-          type: m.isCustom ? "custom" : "standard",
-          config: m.npmPackage ? { npmPackage: m.npmPackage } : {},
-        }));
-
-      // Generate workspace files + OpenClaw config with MCPs
-      const agentsForWorkspace = (allAgents ?? []).map(
-        (a: {
-          id: string;
-          name: string;
-          department_id: string;
-          system_prompt: string;
-          tool_profile: Record<string, unknown>;
-          model_profile: Record<string, unknown>;
-          status: string;
-          skill_definition: string | null;
-          template_id: string;
-          token_budget: number | null;
-          role_level: number | null;
-          reporting_chain: string | null;
-        }) => ({
+      // Generate workspace files
+      const { files: workspaceFiles, config: openclawConfig } = generateOpenClawWorkspace(
+        { id: businessId, name: parsed.data.name, slug: parsed.data.slug, industry: parsed.data.industry },
+        (allAgents ?? []).map((a: { id: string; name: string; department_id: string; system_prompt: string; tool_profile: Record<string, unknown>; model_profile: Record<string, unknown>; status: string; skill_definition: string | null; template_id: string; token_budget: number | null; role_level: number | null; reporting_chain: string | null }) => ({
           ...a,
           token_budget: a.token_budget ?? undefined,
           role_level: a.role_level ?? undefined,
-          mcp_servers: (templateMcpMap.get(a.template_id) ?? []) as Array<{ name: string; type: string; config: Record<string, unknown> }>,
-        }),
-      );
-
-      const { files: workspaceFiles, config: openclawConfig } = generateOpenClawWorkspace(
-        { id: businessId, name: parsed.data.name, slug: parsed.data.slug, industry: parsed.data.industry },
-        agentsForWorkspace,
+          mcp_servers: [] as Array<{ name: string; type: string; config: Record<string, unknown> }>,
+        })),
         (allDepts ?? []).map((d: { id: string; type: string; name: string; department_skill: string | null }) => ({
-          id: d.id,
-          type: d.type,
-          name: d.name,
-          department_skill: d.department_skill,
+          id: d.id, type: d.type, name: d.name, department_skill: d.department_skill,
         })),
         {},
-        businessMcpDefs,
+        [],
       );
 
-      // Collect all MCP npm packages to install on VPS
-      const allMcpNames = [
-        ...mcpConfigEntries.filter((m) => m.enabled).map((m) => m.name),
-        ...(allAgents ?? []).flatMap((a: { template_id: string }) => {
-          const mcps = templateMcpMap.get(a.template_id) as Array<{ name: string }> | undefined;
-          return (mcps ?? []).map((m) => m.name);
-        }),
-      ];
-      const mcpNpmPackages = getMcpNpmPackages([...new Set(allMcpNames)]);
-
-      // Extract Anthropic API key / OAuth token
-      const anthropicKey = apiKeys.find((k) => k.provider === "anthropic")?.key;
-
-      // Find CEO agent and its Slack tokens
-      const ceoAgentData = (allAgents ?? []).find(
+      // Find CEO
+      const ceoAgent = (allAgents ?? []).find(
         (a: { parent_agent_id: string | null }) => a.parent_agent_id === null,
       );
       const ceoSlack = slackTokens.agents?.find(
-        (a) => a.agentName === ceoAgentData?.name,
+        (a) => a.agentName === ceoAgent?.name,
       ) ?? slackTokens.agents?.[0];
 
-      // Generate TEAM_PLAN.md for sub-agents (non-CEO)
-      // generateTeamPlan is already available from the core/server import above
-      const { generateTeamPlan } = await import("@fleet-factory/core/server");
+      const ceoVpsAgentId = ceoAgent
+        ? `${parsed.data.slug}-${deptMap.get(ceoAgent.department_id) ?? "executive"}-${ceoAgent.id.replace(/-/g, "").slice(0, 8)}`
+        : `${parsed.data.slug}-executive-ceo`;
+
+      // Generate TEAM_PLAN.md
       const subAgents = (slackTokens.agents ?? []).filter(
-        (a) => a.agentName !== ceoAgentData?.name,
+        (a) => a.agentName !== ceoAgent?.name,
       );
       let startPort = 19002;
       const teamPlan = generateTeamPlan({
         businessName: parsed.data.name,
         businessSlug: parsed.data.slug,
         industry: parsed.data.industry,
-        oauthToken: anthropicKey ?? "",
+        oauthToken: apiKeys.find((k) => k.provider === "anthropic")?.key ?? "",
         slackTeamId: slackTokens.teamId ?? "",
         agents: subAgents.map((a) => ({
           name: a.agentName,
@@ -555,42 +491,36 @@ export async function createBusinessV2(formData: FormData) {
         })),
       });
 
-      // Add TEAM_PLAN.md to CEO's workspace files
-      const ceoVpsAgentId = ceoAgentData
-        ? `${parsed.data.slug}-${deptMap.get(ceoAgentData.department_id) ?? "executive"}-${ceoAgentData.id.replace(/-/g, "").slice(0, 8)}`
-        : `${parsed.data.slug}-executive-ceo`;
-
-      workspaceFiles.push({
-        path: `workspace-${ceoVpsAgentId}/TEAM_PLAN.md`,
-        content: teamPlan,
+      // Call VPS Deploy API
+      const deployResponse = await fetch(`${vpsApiUrl}/deploy`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": vpsApiKey,
+        },
+        body: JSON.stringify({
+          businessSlug: parsed.data.slug,
+          businessName: parsed.data.name,
+          industry: parsed.data.industry,
+          ceoContainerId: ceoVpsAgentId,
+          ceoPort: 19001,
+          slackBotToken: ceoSlack?.botToken ?? "",
+          slackAppToken: ceoSlack?.appToken ?? "",
+          slackTeamId: slackTokens.teamId ?? "",
+          workspaceFiles,
+          openclawConfig,
+          teamPlan,
+        }),
       });
 
-      await sshDeployBusiness(supabase, {
-        businessId,
-        businessSlug: parsed.data.slug,
-        deploymentId: "",
-        subdomain,
-        agents: [{
-          agentId: ceoAgentData?.id ?? "",
-          vpsAgentId: ceoVpsAgentId,
-          departmentType: ceoAgentData ? (deptMap.get(ceoAgentData.department_id) ?? "executive") : "executive",
-          model: "claude-sonnet-4-6",
-          isCeo: true,
-          templateName: ceoAgentData?.name ?? "CEO Agent",
-          tokenBudget: 100000,
-        }],
-        workspaceFiles,
-        openclawConfig,
-        sshConfig: perBusinessVps?.sshConfig,
-        mcpNpmPackages,
-        anthropicApiKey: anthropicKey,
-        slackBotToken: ceoSlack?.botToken,
-        slackAppToken: ceoSlack?.appToken,
-        slackTeamId: slackTokens.teamId,
-      });
-    } catch (sshErr) {
-      console.error("[createBusinessV2] SSH deploy failed:", sshErr);
-      // Continue — business was created, deploy can be retried
+      const deployResult = await deployResponse.json();
+      if (!deployResult.ok) {
+        console.error("[createBusinessV2] VPS deploy failed:", deployResult.error, deployResult.log);
+      } else {
+        console.log("[createBusinessV2] VPS deploy success:", deployResult.log);
+      }
+    } catch (deployErr) {
+      console.error("[createBusinessV2] Deploy API call failed:", deployErr);
     }
   }
 

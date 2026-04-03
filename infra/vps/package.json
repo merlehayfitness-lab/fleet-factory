@@ -9,16 +9,16 @@
     "build": "tsc"
   },
   "dependencies": {
-    "express": "^4.21.0",
-    "ws": "^8.18.0",
+    "dockerode": "^4.0.9",
     "dotenv": "^16.4.0",
+    "express": "^4.22.1",
     "ssh2": "^1.16.0",
-    "dockerode": "^4.0.9"
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
-    "@types/ws": "^8.5.13",
     "@types/ssh2": "^1.15.0",
+    "@types/ws": "^8.5.13",
     "tsx": "^4.19.0",
     "typescript": "^5.6.0"
   }
