@@ -305,8 +305,10 @@ export async function createBusinessV2(formData: FormData) {
   const apiKeys: Array<{ provider: string; key: string }> = JSON.parse(
     (formData.get("apiKeys") as string) || "[]",
   );
-  const slackTokens: { botToken?: string; appToken?: string; teamId?: string } =
-    JSON.parse((formData.get("slackTokens") as string) || "{}");
+  const slackTokens: {
+    teamId?: string;
+    agents?: Array<{ agentName: string; department: string; botToken: string; appToken: string }>;
+  } = JSON.parse((formData.get("slackTokens") as string) || "{}");
   const vpsConfigRaw = formData.get("vpsConfig") as string | null;
   const vpsConfigInput: {
     host: string;
@@ -518,37 +520,71 @@ export async function createBusinessV2(formData: FormData) {
       ];
       const mcpNpmPackages = getMcpNpmPackages([...new Set(allMcpNames)]);
 
-      // Extract Anthropic API key for per-tenant Docker containers
+      // Extract Anthropic API key / OAuth token
       const anthropicKey = apiKeys.find((k) => k.provider === "anthropic")?.key;
+
+      // Find CEO agent and its Slack tokens
+      const ceoAgentData = (allAgents ?? []).find(
+        (a: { parent_agent_id: string | null }) => a.parent_agent_id === null,
+      );
+      const ceoSlack = slackTokens.agents?.find(
+        (a) => a.agentName === ceoAgentData?.name,
+      ) ?? slackTokens.agents?.[0];
+
+      // Generate TEAM_PLAN.md for sub-agents (non-CEO)
+      const { generateTeamPlan } = await import("@fleet-factory/runtime/generators/team-plan");
+      const subAgents = (slackTokens.agents ?? []).filter(
+        (a) => a.agentName !== ceoAgentData?.name,
+      );
+      let startPort = 19002;
+      const teamPlan = generateTeamPlan({
+        businessName: parsed.data.name,
+        businessSlug: parsed.data.slug,
+        industry: parsed.data.industry,
+        oauthToken: anthropicKey ?? "",
+        slackTeamId: slackTokens.teamId ?? "",
+        agents: subAgents.map((a) => ({
+          name: a.agentName,
+          department: a.department || "general",
+          containerId: `${parsed.data.slug}-${a.agentName.toLowerCase().replace(/\s+/g, "-")}-agent`,
+          hostPort: startPort++,
+          slackBotToken: a.botToken,
+          slackAppToken: a.appToken,
+          model: "claude-sonnet-4-6",
+        })),
+      });
+
+      // Add TEAM_PLAN.md to CEO's workspace files
+      const ceoVpsAgentId = ceoAgentData
+        ? `${parsed.data.slug}-${deptMap.get(ceoAgentData.department_id) ?? "executive"}-${ceoAgentData.id.replace(/-/g, "").slice(0, 8)}`
+        : `${parsed.data.slug}-executive-ceo`;
+
+      workspaceFiles.push({
+        path: `workspace-${ceoVpsAgentId}/TEAM_PLAN.md`,
+        content: teamPlan,
+      });
 
       await sshDeployBusiness(supabase, {
         businessId,
         businessSlug: parsed.data.slug,
         deploymentId: "",
         subdomain,
-        agents: (allAgents ?? []).map(
-          (agent: {
-            id: string;
-            name: string;
-            department_id: string;
-            parent_agent_id: string | null;
-          }) => ({
-            agentId: agent.id,
-            vpsAgentId: `${parsed.data.slug}-${deptMap.get(agent.department_id) ?? "general"}-${agent.id.replace(/-/g, "").slice(0, 8)}`,
-            departmentType: deptMap.get(agent.department_id) ?? "general",
-            model: "claude-sonnet-4-6",
-            isCeo: agent.parent_agent_id === null,
-            templateName: agent.name,
-            tokenBudget: 100000,
-          }),
-        ),
+        agents: [{
+          agentId: ceoAgentData?.id ?? "",
+          vpsAgentId: ceoVpsAgentId,
+          departmentType: ceoAgentData ? (deptMap.get(ceoAgentData.department_id) ?? "executive") : "executive",
+          model: "claude-sonnet-4-6",
+          isCeo: true,
+          templateName: ceoAgentData?.name ?? "CEO Agent",
+          tokenBudget: 100000,
+        }],
         workspaceFiles,
         openclawConfig,
         sshConfig: perBusinessVps?.sshConfig,
         mcpNpmPackages,
         anthropicApiKey: anthropicKey,
-        slackBotToken: slackTokens.botToken,
-        slackAppToken: slackTokens.appToken,
+        slackBotToken: ceoSlack?.botToken,
+        slackAppToken: ceoSlack?.appToken,
         slackTeamId: slackTokens.teamId,
       });
     } catch (sshErr) {

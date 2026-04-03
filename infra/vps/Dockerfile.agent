@@ -19,9 +19,9 @@
 
 FROM node:22-bookworm-slim
 
-# Install runtime dependencies: curl (health checks), jq (config filtering)
+# Install runtime dependencies: curl (health checks), jq (config filtering), docker CLI (CEO deploys agents)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl jq && \
+    apt-get install -y --no-install-recommends curl jq docker.io && \
     rm -rf /var/lib/apt/lists/*
 
 # Install OpenClaw gateway globally + Slack dependencies

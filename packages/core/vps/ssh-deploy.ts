@@ -217,11 +217,9 @@ async function ensureAgentImage(
  * Deploy a full business to VPS via SSH using Docker containers.
  *
  * Phase 0: Cleanup old containers for this tenant
- * Phase A: Upload workspace files + OpenClaw config
- * Phase B: Deploy CEO container, health check
- * Phase C: Commit CEO container as template image
- * Phase D: Deploy department head containers from template
- * Phase E: Register ports and update statuses
+ * Phase A: Upload workspace files + OpenClaw config + TEAM_PLAN.md
+ * Phase B: Deploy CEO container with Docker socket (CEO self-deploys sub-agents)
+ * Phase C: Verify CEO healthy + Slack connected
  */
 export async function sshDeployBusiness(
   supabase: SupabaseClient,
@@ -361,112 +359,15 @@ export async function sshDeployBusiness(
       port: ceoPort,
     });
     await updateAgentVpsStatus(supabase, options.businessId, ceoAgent.agentId, ceoAgent.vpsAgentId, "running");
-    log("[ssh] CEO container healthy");
+    log("[ssh] CEO container healthy — CEO will self-deploy sub-agents from TEAM_PLAN.md");
 
     // -----------------------------------------------------------------------
-    // Phase C: Commit CEO container as template image
+    // Phase C: Done — CEO handles the rest
     // -----------------------------------------------------------------------
-    log("[ssh] Phase C: Committing CEO as template image");
-    const templateImage = `${options.businessSlug}-base:latest`;
-    const commitResult = await execCommand(
-      `docker commit ${ceoAgent.vpsAgentId} ${templateImage}`,
-      { sshConfig: options.sshConfig },
-    );
-    if (commitResult.code !== 0) {
-      log(`[ssh] WARNING: docker commit failed: ${commitResult.stderr}. Falling back to base image.`);
-    } else {
-      log(`[ssh] Template image created: ${templateImage}`);
-    }
+    // The CEO reads TEAM_PLAN.md from its workspace and deploys sub-agents
+    // autonomously using the Docker socket. No further SSH commands needed.
 
-    const useTemplateImage = commitResult.code === 0 ? templateImage : AGENT_IMAGE;
-
-    // -----------------------------------------------------------------------
-    // Phase D: Deploy department head containers
-    // -----------------------------------------------------------------------
-    const departmentHeads = sortedAgents.filter((a) => !a.isCeo);
-    log(`[ssh] Phase D: Deploying ${departmentHeads.length} department head containers`);
-
-    for (const agent of departmentHeads) {
-      log(`[ssh] Deploying ${agent.vpsAgentId} (${agent.departmentType})`);
-
-      // Copy CEO workspace then overwrite identity files
-      const agentWorkspaceDir = `${tenantDir}/workspace/workspace-${agent.vpsAgentId}`;
-      const ceoWorkspaceDir = `${tenantDir}/workspace/workspace-${ceoAgent.vpsAgentId}`;
-
-      await execCommand(
-        `cp -r "${ceoWorkspaceDir}/." "${agentWorkspaceDir}/"`,
-        { sshConfig: options.sshConfig },
-      );
-
-      // Overwrite identity-specific files
-      const identityFiles = ["SOUL.md", "IDENTITY.md", "TOOLS.md", "SKILL.md"];
-      for (const fname of identityFiles) {
-        const uploadedFile = options.workspaceFiles.find(
-          (f) => f.path === `workspace-${agent.vpsAgentId}/${fname}`,
-        );
-        if (uploadedFile) {
-          await writeRemoteFile(`${agentWorkspaceDir}/${fname}`, uploadedFile.content, options.sshConfig);
-        }
-      }
-
-      // Allocate port
-      const agentPort = await allocateNextPort(options.businessSlug, agent.vpsAgentId, options.sshConfig);
-
-      // Create memory dir
-      await execCommand(
-        `mkdir -p "${tenantDir}/memory/${agent.vpsAgentId}"`,
-        { sshConfig: options.sshConfig },
-      );
-
-      const agentResult = await deployContainer({
-        vpsAgentId: agent.vpsAgentId,
-        businessSlug: options.businessSlug,
-        departmentType: agent.departmentType,
-        model: agent.model,
-        isCeo: false,
-        hostPort: agentPort,
-        tenantDir,
-        anthropicApiKey: options.anthropicApiKey ?? "",
-        tokenBudget: agent.tokenBudget ?? 100000,
-        image: useTemplateImage,
-        sshConfig: options.sshConfig,
-        log,
-        slackBotToken: options.slackBotToken,
-        slackAppToken: options.slackAppToken,
-        slackTeamId: options.slackTeamId,
-      });
-
-      if (!agentResult.success) {
-        agentResults.push({
-          agentId: agent.agentId,
-          vpsAgentId: agent.vpsAgentId,
-          status: "failed",
-          error: agentResult.error,
-        });
-        await updateAgentVpsStatus(supabase, options.businessId, agent.agentId, agent.vpsAgentId, "error");
-        log(`[ssh] ${agent.vpsAgentId} FAILED: ${agentResult.error}`);
-      } else {
-        agentResults.push({
-          agentId: agent.agentId,
-          vpsAgentId: agent.vpsAgentId,
-          status: "deployed",
-          port: agentPort,
-        });
-        await updateAgentVpsStatus(supabase, options.businessId, agent.agentId, agent.vpsAgentId, "running");
-        log(`[ssh] ${agent.vpsAgentId} healthy on port ${agentPort}`);
-      }
-    }
-
-    // -----------------------------------------------------------------------
-    // Phase E: Report
-    // -----------------------------------------------------------------------
-    const deployedCount = agentResults.filter((r) => r.status === "deployed").length;
-    const totalCount = agentResults.length;
-    const allDeployed = deployedCount === totalCount;
-
-    log(`[ssh] Deployment ${allDeployed ? "complete" : "partial"}: ${deployedCount}/${totalCount} agents running`);
-
-    return { success: allDeployed, agentResults };
+    return { success: true, agentResults };
   } catch (err) {
     const errorMsg = err instanceof Error ? err.message : "Unknown SSH deployment error";
     log(`[ssh] Deployment error: ${errorMsg}`);
@@ -647,6 +548,10 @@ async function deployContainer(
     `-v ${tenantDir}/memory/${vpsAgentId}:/memory:rw`,
     // Mount OAuth auth profiles from business user's home (read-only)
     `-v /home/${businessSlug}/.openclaw:/root/.openclaw:ro`,
+    // Mount Docker socket so CEO can deploy sub-agents
+    `-v /var/run/docker.sock:/var/run/docker.sock`,
+    // Mount tenant dir so CEO can create workspace dirs for sub-agents
+    `-v ${tenantDir}:${tenantDir}:rw`,
     `-p ${hostPort}:${CONTAINER_PORT}`,
     `--memory=512m`,
     `--cpus=0.5`,

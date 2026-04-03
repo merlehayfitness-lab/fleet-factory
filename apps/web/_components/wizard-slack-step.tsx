@@ -5,50 +5,65 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 
-export interface SlackTokens {
+export interface AgentSlackTokens {
+  agentName: string;
+  department: string;
   botToken: string;
   appToken: string;
+}
+
+export interface SlackTokens {
   teamId: string;
+  agents: AgentSlackTokens[];
 }
 
 interface Props {
   slackTokens: SlackTokens;
   onSlackTokensChange: (tokens: SlackTokens) => void;
+  selectedAgentNames: string[];
 }
 
-export function WizardSlackStep({ slackTokens, onSlackTokensChange }: Props) {
+export function WizardSlackStep({ slackTokens, onSlackTokensChange, selectedAgentNames }: Props) {
   const [showTokens, setShowTokens] = useState(false);
 
-  const hasBotToken = slackTokens.botToken.startsWith("xoxb-") && slackTokens.botToken.length > 20;
-  const hasAppToken = slackTokens.appToken.startsWith("xapp-") && slackTokens.appToken.length > 20;
+  // Ensure we have entries for all selected agents
+  const agents = selectedAgentNames.map((name) => {
+    const existing = slackTokens.agents.find((a) => a.agentName === name);
+    return existing ?? { agentName: name, department: "", botToken: "", appToken: "" };
+  });
+
+  function updateAgent(agentName: string, field: "botToken" | "appToken", value: string) {
+    const updated = agents.map((a) =>
+      a.agentName === agentName ? { ...a, [field]: value } : a,
+    );
+    onSlackTokensChange({ ...slackTokens, agents: updated });
+  }
+
+  function updateTeamId(value: string) {
+    onSlackTokensChange({ ...slackTokens, teamId: value, agents });
+  }
+
   const hasTeamId = slackTokens.teamId.startsWith("T") && slackTokens.teamId.length > 5;
-  const isComplete = hasBotToken && hasAppToken && hasTeamId;
+  const ceoAgent = agents[0]; // CEO is always first
+  const hasCeoTokens = ceoAgent && ceoAgent.botToken.startsWith("xoxb-") && ceoAgent.appToken.startsWith("xapp-");
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Connect a Slack workspace so your agents can communicate. Each agent
-        will be @mentionable in Slack channels after deployment.
+        Each agent needs its own Slack app for a distinct bot identity.
+        Create one Slack app per agent at api.slack.com/apps using the manifest below.
       </p>
-
-      <div className="rounded-md bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
-        <p className="font-medium text-foreground">Quick Setup:</p>
-        <ol className="list-decimal list-inside space-y-0.5">
-          <li>Go to <strong>api.slack.com/apps</strong> → Create New App → From an app manifest</li>
-          <li>Select your workspace and paste the manifest below</li>
-          <li>After creating, go to <strong>Settings → Socket Mode</strong> → enable it → create an App Token</li>
-          <li>Go to <strong>OAuth & Permissions</strong> → Install to Workspace → copy the Bot Token</li>
-          <li>Find your Team ID in the workspace URL: <code className="rounded bg-muted px-1">app.slack.com/client/<strong>T...</strong>/...</code></li>
-        </ol>
-      </div>
 
       <details className="rounded-lg border p-3">
         <summary className="cursor-pointer text-sm font-medium">Slack App Manifest (click to expand)</summary>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Change the <code>name</code> and <code>display_name</code> for each agent.
+        </p>
         <pre className="mt-2 overflow-auto rounded bg-muted p-2 text-[10px] font-mono">
 {JSON.stringify({
-  display_information: { name: "Fleet Agent", description: "AI Agent Fleet" },
+  display_information: { name: "AGENT_NAME_HERE", description: "AI Agent" },
   features: {
-    bot_user: { display_name: "Fleet Agent", always_online: true },
+    bot_user: { display_name: "AGENT_NAME_HERE", always_online: true },
     app_home: { messages_tab_enabled: true, messages_tab_read_only_enabled: false },
   },
   oauth_config: {
@@ -71,66 +86,65 @@ export function WizardSlackStep({ slackTokens, onSlackTokensChange }: Props) {
         </pre>
       </details>
 
+      {/* Team ID */}
+      <div className="rounded-lg border p-4">
+        <div className="mb-2 flex items-center gap-2">
+          <Label htmlFor="slack-team-id" className="font-medium">Slack Team ID</Label>
+          <Badge variant="default" className="text-[10px]">Required</Badge>
+          {hasTeamId && (
+            <Badge variant="secondary" className="text-[10px] text-green-600">
+              <span className="mr-0.5">&#10003;</span> Valid
+            </Badge>
+          )}
+        </div>
+        <p className="mb-2 text-xs text-muted-foreground">
+          Find in Slack URL: app.slack.com/client/<strong>T...</strong>/...
+        </p>
+        <Input
+          id="slack-team-id"
+          placeholder="T0ABC123..."
+          value={slackTokens.teamId}
+          onChange={(e) => updateTeamId(e.target.value)}
+          className="font-mono text-xs"
+        />
+      </div>
+
+      {/* Per-agent tokens */}
       <div className="space-y-3">
-        <div className="rounded-lg border p-4">
-          <div className="mb-2 flex items-center gap-2">
-            <Label htmlFor="slack-bot-token" className="font-medium">Bot Token</Label>
-            <Badge variant="default" className="text-[10px]">Required</Badge>
-            {hasBotToken && (
-              <Badge variant="secondary" className="text-[10px] text-green-600">
-                <span className="mr-0.5">&#10003;</span> Valid
-              </Badge>
-            )}
-          </div>
-          <Input
-            id="slack-bot-token"
-            type={showTokens ? "text" : "password"}
-            placeholder="xoxb-..."
-            value={slackTokens.botToken}
-            onChange={(e) => onSlackTokensChange({ ...slackTokens, botToken: e.target.value })}
-            className="font-mono text-xs"
-          />
-        </div>
-
-        <div className="rounded-lg border p-4">
-          <div className="mb-2 flex items-center gap-2">
-            <Label htmlFor="slack-app-token" className="font-medium">App Token (Socket Mode)</Label>
-            <Badge variant="default" className="text-[10px]">Required</Badge>
-            {hasAppToken && (
-              <Badge variant="secondary" className="text-[10px] text-green-600">
-                <span className="mr-0.5">&#10003;</span> Valid
-              </Badge>
-            )}
-          </div>
-          <Input
-            id="slack-app-token"
-            type={showTokens ? "text" : "password"}
-            placeholder="xapp-..."
-            value={slackTokens.appToken}
-            onChange={(e) => onSlackTokensChange({ ...slackTokens, appToken: e.target.value })}
-            className="font-mono text-xs"
-          />
-        </div>
-
-        <div className="rounded-lg border p-4">
-          <div className="mb-2 flex items-center gap-2">
-            <Label htmlFor="slack-team-id" className="font-medium">Team ID</Label>
-            <Badge variant="default" className="text-[10px]">Required</Badge>
-            {hasTeamId && (
-              <Badge variant="secondary" className="text-[10px] text-green-600">
-                <span className="mr-0.5">&#10003;</span> Valid
-              </Badge>
-            )}
-          </div>
-          <Input
-            id="slack-team-id"
-            type="text"
-            placeholder="T0ABC123..."
-            value={slackTokens.teamId}
-            onChange={(e) => onSlackTokensChange({ ...slackTokens, teamId: e.target.value })}
-            className="font-mono text-xs"
-          />
-        </div>
+        {agents.map((agent, idx) => {
+          const hasBoth = agent.botToken.startsWith("xoxb-") && agent.appToken.startsWith("xapp-");
+          const isCeo = idx === 0;
+          return (
+            <div key={agent.agentName} className="rounded-lg border p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <Label className="font-medium">{agent.agentName}</Label>
+                {isCeo && <Badge variant="default" className="text-[10px]">Required</Badge>}
+                {!isCeo && <Badge variant="outline" className="text-[10px]">CEO will deploy</Badge>}
+                {hasBoth && (
+                  <Badge variant="secondary" className="text-[10px] text-green-600">
+                    <span className="mr-0.5">&#10003;</span> Ready
+                  </Badge>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Input
+                  type={showTokens ? "text" : "password"}
+                  placeholder="Bot Token (xoxb-...)"
+                  value={agent.botToken}
+                  onChange={(e) => updateAgent(agent.agentName, "botToken", e.target.value)}
+                  className="font-mono text-xs"
+                />
+                <Input
+                  type={showTokens ? "text" : "password"}
+                  placeholder="App Token (xapp-...)"
+                  value={agent.appToken}
+                  onChange={(e) => updateAgent(agent.agentName, "appToken", e.target.value)}
+                  className="font-mono text-xs"
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       <button
@@ -141,19 +155,19 @@ export function WizardSlackStep({ slackTokens, onSlackTokensChange }: Props) {
         {showTokens ? "Hide tokens" : "Show tokens"}
       </button>
 
-      {isComplete && (
-        <p className="text-sm text-green-600">
-          Slack tokens look good — agents will be wired to Slack on deployment.
-        </p>
-      )}
-      {!isComplete && (slackTokens.botToken || slackTokens.appToken || slackTokens.teamId) && (
+      {!hasCeoTokens && (
         <p className="text-sm text-amber-600">
-          All three fields are needed for Slack integration.
+          At minimum, the CEO agent needs Slack tokens to deploy.
         </p>
       )}
-      {!slackTokens.botToken && !slackTokens.appToken && !slackTokens.teamId && (
-        <p className="text-sm text-muted-foreground">
-          You can skip this and configure Slack later from the Integrations page.
+      {hasCeoTokens && !hasTeamId && (
+        <p className="text-sm text-amber-600">
+          Please enter your Slack Team ID.
+        </p>
+      )}
+      {hasCeoTokens && hasTeamId && (
+        <p className="text-sm text-green-600">
+          CEO will deploy and configure the other agents automatically.
         </p>
       )}
     </div>

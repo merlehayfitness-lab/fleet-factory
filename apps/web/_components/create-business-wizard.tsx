@@ -198,7 +198,7 @@ export function CreateBusinessWizard() {
   const [vpsConfig, setVpsConfig] = useState<VpsConfigInput>(defaultVpsConfig);
   const [mcpConfig, setMcpConfig] = useState<McpConfigEntry[]>(getDefaultMcpConfig);
   const [subdomain, setSubdomain] = useState("");
-  const [slackTokens, setSlackTokens] = useState<SlackTokens>({ botToken: "", appToken: "", teamId: "" });
+  const [slackTokens, setSlackTokens] = useState<SlackTokens>({ teamId: "", agents: [] });
 
   const {
     register,
@@ -289,7 +289,7 @@ export function CreateBusinessWizard() {
     formData.set("subdomain", subdomain);
     formData.set("selectedTemplates", JSON.stringify(Array.from(selectedTemplates)));
     formData.set("apiKeys", JSON.stringify(apiKeys));
-    if (slackTokens.botToken && slackTokens.appToken) {
+    if (slackTokens.agents.some((a) => a.botToken)) {
       formData.set("slackTokens", JSON.stringify(slackTokens));
     }
     if (vpsConfig.host) {
@@ -534,6 +534,7 @@ export function CreateBusinessWizard() {
             <WizardSlackStep
               slackTokens={slackTokens}
               onSlackTokensChange={setSlackTokens}
+              selectedAgentNames={DEPARTMENT_TEMPLATES.filter((t) => selectedTemplates.has(t.id)).map((t) => t.name)}
             />
           </CardContent>
           <CardFooter className="justify-between">
@@ -541,7 +542,7 @@ export function CreateBusinessWizard() {
               Back
             </Button>
             <Button type="button" onClick={() => goToStep(6)}>
-              {slackTokens.botToken ? "Next" : "Skip"}
+              {slackTokens.agents.some((a) => a.botToken) ? "Next" : "Skip"}
             </Button>
           </CardFooter>
         </Card>
