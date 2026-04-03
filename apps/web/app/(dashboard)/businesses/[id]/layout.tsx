@@ -5,11 +5,6 @@ import { SuspendedBanner } from "@/_components/suspended-banner";
 
 /**
  * Business-specific layout.
- *
- * Validates that the current user has access to this business via RLS.
- * If the business doesn't exist or the user lacks access, returns 404.
- * Disabled/suspended businesses still render (frozen dashboard) instead of 404.
- * Wraps children in BusinessStatusProvider for context and renders SuspendedBanner when disabled.
  */
 export default async function BusinessLayout({
   children,
@@ -18,17 +13,31 @@ export default async function BusinessLayout({
   children: React.ReactNode;
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const supabase = await createServerClient();
+  let business: { id: string; name: string; status: string } | null = null;
 
-  const { data: business, error } = await supabase
-    .from("businesses")
-    .select("id, name, status")
-    .eq("id", id)
-    .single();
+  try {
+    const { id } = await params;
+    const supabase = await createServerClient();
 
-  if (error || !business) {
-    notFound();
+    const { data, error } = await supabase
+      .from("businesses")
+      .select("id, name, status")
+      .eq("id", id)
+      .single();
+
+    if (error || !data) {
+      console.error("[BusinessLayout] Failed to load business:", error?.message);
+      notFound();
+    }
+
+    business = data as { id: string; name: string; status: string };
+  } catch (e) {
+    // Re-throw Next.js navigation errors (notFound, redirect)
+    const digest = (e as { digest?: string })?.digest ?? "";
+    if (digest.startsWith("NEXT_")) throw e;
+    console.error("[BusinessLayout] Unexpected error:", e);
+    // Render children without the provider as fallback
+    return <>{children}</>;
   }
 
   const isDisabled =
@@ -36,15 +45,15 @@ export default async function BusinessLayout({
 
   return (
     <BusinessStatusProvider
-      status={business.status as string}
-      businessId={business.id as string}
-      businessName={business.name as string}
+      status={business.status}
+      businessId={business.id}
+      businessName={business.name}
     >
       {isDisabled && (
         <SuspendedBanner
-          businessId={business.id as string}
-          businessName={business.name as string}
-          status={business.status as string}
+          businessId={business.id}
+          businessName={business.name}
+          status={business.status}
         />
       )}
       {children}
