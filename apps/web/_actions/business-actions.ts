@@ -417,8 +417,16 @@ export async function createBusinessV2(formData: FormData) {
   }
 
   // 8. Deploy via VPS Deploy API (HTTP, not SSH)
-  const vpsApiUrl = process.env.VPS_API_URL || (vpsConfigInput ? `http://${vpsConfigInput.host}:3100` : null);
+  // Always prefer env var. Fallback to wizard form config if no env var.
+  let vpsApiUrl: string | null = null;
+  if (process.env.VPS_API_URL && process.env.VPS_API_URL.length > 5) {
+    vpsApiUrl = process.env.VPS_API_URL;
+  } else if (vpsConfigInput?.host) {
+    // Use nip.io to avoid raw IP DNS issues on some platforms
+    vpsApiUrl = `http://${vpsConfigInput.host}.nip.io:${vpsConfigInput.proxyPort || "3100"}`;
+  }
   const vpsApiKey = process.env.VPS_API_KEY || vpsConfigInput?.proxyApiKey || "ff-deploy-2026";
+  console.log("[createBusinessV2] VPS API URL:", vpsApiUrl, "from env:", !!process.env.VPS_API_URL);
 
   if (vpsApiUrl) {
     try {
