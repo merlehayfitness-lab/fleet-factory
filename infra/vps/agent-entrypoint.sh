@@ -85,7 +85,8 @@ fi
 # OpenClaw config: filter for this agent only
 # ---------------------------------------------------------------------------
 
-OPENCLAW_CONFIG_DIR="/root/.openclaw"
+OPENCLAW_CONFIG_DIR="/tmp/openclaw-config"
+mkdir -p "${OPENCLAW_CONFIG_DIR}"
 OPENCLAW_CONFIG="${OPENCLAW_CONFIG_DIR}/openclaw.json"
 
 if [ -f "/config/openclaw.json" ]; then
@@ -140,14 +141,20 @@ jq --argjson port "${PORT:-18789}" '.gateway.port = $port' "${OPENCLAW_CONFIG}" 
 # OAuth token: prefer auth-profiles.json over API key
 # ---------------------------------------------------------------------------
 
-if [ -f "/root/.openclaw/agents/${AGENT_ID}/agent/auth-profiles.json" ]; then
-  echo "[entrypoint] OAuth auth-profiles.json found — using OAuth authentication"
-  # OpenClaw reads auth-profiles.json natively; unset API key to avoid conflicts
+# Copy auth profiles to writable location for OpenClaw
+OPENCLAW_STATE="/root/.openclaw-state"
+mkdir -p "${OPENCLAW_STATE}/agents/${AGENT_ID}/agent"
+
+if [ -f "/root/.openclaw/auth-profiles.json" ]; then
+  echo "[entrypoint] OAuth auth-profiles.json found — setting up authentication"
+  cp "/root/.openclaw/auth-profiles.json" "${OPENCLAW_STATE}/agents/${AGENT_ID}/agent/auth-profiles.json"
+  # Point OpenClaw to writable state dir
+  export OPENCLAW_STATE_DIR="${OPENCLAW_STATE}"
   unset ANTHROPIC_API_KEY
-elif [ -f "/root/.openclaw/auth-profiles.json" ]; then
-  echo "[entrypoint] Shared auth-profiles.json found — copying to agent dir"
-  mkdir -p "/root/.openclaw/agents/${AGENT_ID}/agent"
-  cp "/root/.openclaw/auth-profiles.json" "/root/.openclaw/agents/${AGENT_ID}/agent/auth-profiles.json"
+elif [ -f "/root/.openclaw/agents/${AGENT_ID}/agent/auth-profiles.json" ]; then
+  echo "[entrypoint] Agent-specific auth found"
+  cp "/root/.openclaw/agents/${AGENT_ID}/agent/auth-profiles.json" "${OPENCLAW_STATE}/agents/${AGENT_ID}/agent/auth-profiles.json"
+  export OPENCLAW_STATE_DIR="${OPENCLAW_STATE}"
   unset ANTHROPIC_API_KEY
 else
   echo "[entrypoint] No OAuth found — using ANTHROPIC_API_KEY"
@@ -193,5 +200,15 @@ fi
 
 echo "[entrypoint] Agent ${AGENT_ID} ready"
 echo "[entrypoint] Starting OpenClaw gateway on port ${PORT:-18789}"
+
+# Copy config to OpenClaw's expected location
+mkdir -p /root/.openclaw 2>/dev/null || true
+cp "${OPENCLAW_CONFIG}" /root/.openclaw/openclaw.json 2>/dev/null || true
+
+# If we have a writable state dir, tell OpenClaw about it
+if [ -n "${OPENCLAW_STATE_DIR:-}" ]; then
+  # Copy config there too
+  cp "${OPENCLAW_CONFIG}" "${OPENCLAW_STATE_DIR}/openclaw.json" 2>/dev/null || true
+fi
 
 exec openclaw gateway 2>&1

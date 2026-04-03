@@ -24,8 +24,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends curl jq && \
     rm -rf /var/lib/apt/lists/*
 
-# Install OpenClaw gateway globally
-RUN npm install -g openclaw@latest
+# Install OpenClaw gateway globally + Slack dependencies
+RUN npm install -g openclaw@latest @slack/web-api @slack/socket-mode @slack/events-api @slack/bolt
 
 # Create working directories
 RUN mkdir -p /workspace /config /memory /root/.openclaw
