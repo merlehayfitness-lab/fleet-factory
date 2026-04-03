@@ -306,8 +306,15 @@ export function CreateBusinessWizard() {
         setError(result.error);
         setDeployProgress((prev) => [...prev, `Error: ${result.error}`]);
       }
-    } catch {
+    } catch (err: unknown) {
       // redirect() throws NEXT_REDIRECT which is expected on success
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("NEXT_REDIRECT") || msg.includes("NEXT_NOT_FOUND")) {
+        // Expected — redirect happened, deployment succeeded
+        return;
+      }
+      setError(msg || "Deployment failed — check server logs");
+      setDeployProgress((prev) => [...prev, `Error: ${msg}`]);
     } finally {
       setSubmitting(false);
     }
@@ -774,7 +781,7 @@ export function CreateBusinessWizard() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => goToStep(4)}
+              onClick={() => goToStep(5)}
               disabled={submitting}
             >
               Back
